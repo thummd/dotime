@@ -280,46 +280,48 @@ def load_benchmark(
 
 
 def _download_from_zenodo(meta: SuiteMetadata, dest: Path, *, force: bool) -> None:
-    """Download all files for a suite's Zenodo record into ``dest``.
+    """Download all files for a suite's Zenodo record into ``dest`` (stdlib only).
 
-    TODO(release): implement with `requests`/`urllib`:
-      1. GET meta.zenodo_files_url -> json, read `files[].links.self` + checksum.
-      2. Stream each file to dest, verify md5.
-      3. Write a manifest.json with version + checksums for cache validation.
-    Keep this dependency-light (stdlib urllib) so it stays in the core package.
+    Fetches the record JSON, streams each file, verifies its md5, and writes a
+    small ``download.json`` marker. The suite's own ``manifest.json`` (one of the
+    downloaded files) is what :func:`_parse_suite_dir` validates against.
     """
-    raise NotImplementedError(
-        f"Zenodo download not yet wired for {meta.name}; "
-        "set zenodo_record_id in _SUITE_REGISTRY and implement _download_from_zenodo()."
+    import hashlib
+    import urllib.request
+
+    dest.mkdir(parents=True, exist_ok=True)
+    with urllib.request.urlopen(meta.zenodo_files_url) as resp:  # noqa: S310
+        record = json.loads(resp.read().decode())
+
+    for entry in record.get("files", []):
+        url = entry["links"]["self"]
+        name = entry.get("key") or url.rsplit("/", 1)[-1]
+        out = dest / name
+        if out.exists() and not force:
+            continue
+        with urllib.request.urlopen(url) as resp, out.open("wb") as fh:  # noqa: S310
+            h = hashlib.md5()  # noqa: S324
+            for chunk in iter(lambda: resp.read(1 << 20), b""):
+                fh.write(chunk)
+                h.update(chunk)
+        checksum = entry.get("checksum", "")
+        if checksum.startswith("md5:") and h.hexdigest() != checksum[4:]:
+            raise ValueError(f"checksum mismatch for {name} from Zenodo record {meta.zenodo_record_id}")
+
+    (dest / "download.json").write_text(
+        json.dumps({"record_id": meta.zenodo_record_id, "doi": meta.doi})
     )
 
 
 def _parse_suite_dir(meta: SuiteMetadata, suite_dir: Path) -> BenchmarkSuite:
     """Parse a cached suite directory into a :class:`BenchmarkSuite`.
 
-    Expected layout::
-
-        <suite_dir>/
-            manifest.json          # {version, n_episodes, schema, shards: [...]}
-            shard-0000.parquet      # tidy rows keyed by (scm_id, t, variable)
-            shard-0001.parquet
-            ...
-
-    TODO(release): read the manifest, load shards (pyarrow), and reconstruct
-    Episode objects. Reuse the InterventionSpec (de)serialization from
-    `causaltimeprior.interventions` rather than re-inventing it here.
+    Delegates to the canonical reader in :mod:`causaltimeprior._release_io`, which
+    validates the manifest schema version and per-shard md5 checksums.
     """
-    manifest_path = suite_dir / "manifest.json"
-    if not manifest_path.exists():
-        raise FileNotFoundError(
-            f"cached suite at {suite_dir} is missing manifest.json; "
-            "delete it and reload with force_download=True"
-        )
-    _manifest = json.loads(manifest_path.read_text())  # noqa: F841  (used once wired)
-    raise NotImplementedError(
-        "suite parsing not yet implemented; wire _parse_suite_dir() to the "
-        "release schema produced by scripts/build_release.py"
-    )
+    from causaltimeprior import _release_io
+
+    return _release_io.read_suite(meta, suite_dir)
 
 
 def _generate_fallback(meta: SuiteMetadata, n: int = 64) -> BenchmarkSuite:
@@ -335,27 +337,50 @@ def _generate_fallback(meta: SuiteMetadata, n: int = 64) -> BenchmarkSuite:
     structures = meta.structures or (None,)
     for i in range(n):
         x_obs, x_int, intervention, _scm = prior.generate_pair(T=200)
-        t_query = x_int.shape[0] - 1  # last step
-        # Query the most intervention-affected variable that is not itself a
-        # treatment target — that is the outcome whose counterfactual we score.
-        effect = (x_int[t_query] - x_obs[t_query]).abs().clone()
-        for tgt in intervention.targets:
-            if 0 <= tgt < effect.numel():
-                effect[tgt] = -1.0
-        query_var = int(torch.argmax(effect).item())
-        # Exact interventional outcome from the simulated counterfactual trajectory.
-        y_true = x_int[t_query, query_var].reshape(1).clone()
         episodes.append(
-            Episode(
-                x_obs=x_obs,
-                x_int=x_int,
-                intervention=intervention,
-                y_true=y_true,
-                query_target=torch.tensor([query_var]),
-                query_time=torch.tensor([float(t_query)]),
+            episode_from_pair(
+                x_obs,
+                x_int,
+                intervention,
                 structure=structures[i % len(structures)],
                 scm_id=i,
-                metadata={"fallback": True, "y_oracle": y_true},
+                metadata={"fallback": True},
             )
         )
     return BenchmarkSuite(meta, episodes)
+
+
+def episode_from_pair(
+    x_obs: torch.Tensor,
+    x_int: torch.Tensor,
+    intervention: InterventionSpec,
+    *,
+    structure: str | None = None,
+    scm_id: int | None = None,
+    metadata: dict | None = None,
+) -> Episode:
+    """Build an :class:`Episode` from a paired (obs, int) trajectory.
+
+    The query targets the last step of the most intervention-affected variable
+    that is not itself a treatment target — its interventional value is the exact
+    counterfactual ground truth (also stored as ``y_oracle`` for the Oracle
+    baseline). Shared by the local fallback suite and ``ctp-generate``.
+    """
+    t_query = x_int.shape[0] - 1
+    effect = (x_int[t_query] - x_obs[t_query]).abs().clone()
+    for tgt in intervention.targets:
+        if 0 <= tgt < effect.numel():
+            effect[tgt] = -1.0
+    query_var = int(torch.argmax(effect).item())
+    y_true = x_int[t_query, query_var].reshape(1).clone()
+    return Episode(
+        x_obs=x_obs,
+        x_int=x_int,
+        intervention=intervention,
+        y_true=y_true,
+        query_target=torch.tensor([query_var]),
+        query_time=torch.tensor([float(t_query)]),
+        structure=structure,
+        scm_id=scm_id,
+        metadata={**(metadata or {}), "y_oracle": y_true},
+    )

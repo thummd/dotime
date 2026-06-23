@@ -108,7 +108,7 @@ def generate_main(argv: list[str] | None = None) -> int:
 
         torch.save(dataset, out)
     elif out.suffix == ".parquet":
-        _write_parquet(dataset, out)
+        _write_parquet(dataset, out, seed=args.seed)
     else:
         raise SystemExit(
             f"error: unsupported output extension {out.suffix!r} (use .pt or .parquet)"
@@ -118,12 +118,13 @@ def generate_main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def _write_parquet(dataset: object, out: Path) -> None:
-    """Serialize a generated dataset to a tidy parquet file.
+def _write_parquet(dataset: object, out: Path, *, seed: int) -> None:
+    """Serialize a generated dataset to the frozen-suite parquet schema.
 
-    The frozen-suite release format is a long/tidy frame keyed by
-    ``(scm_id, t, variable)`` with columns for the observational value, the
-    interventional value, and the intervention metadata.
+    Each ``(X_obs, X_int, intervention)`` tuple becomes one Episode (with a query
+    derived from the most intervention-affected variable), written via the
+    canonical :mod:`causaltimeprior._release_io` schema. ``out``'s ``.parquet``
+    suffix is treated as the suite-directory stem.
     """
     try:
         import pyarrow  # noqa: F401
@@ -133,11 +134,24 @@ def _write_parquet(dataset: object, out: Path) -> None:
             "    pip install 'causaltimeprior[evaluation]'"
         ) from exc
 
-    # TODO(release): flatten (X_obs, X_int, intervention) tuples into the tidy
-    # release schema and write with pandas.to_parquet / pyarrow. Tracked for the
-    # frozen-suite build script (scripts/build_release.py).
-    raise NotImplementedError(
-        "parquet serialization is not implemented yet; use --output ....pt for now"
+    from causaltimeprior import __version__, _release_io
+    from causaltimeprior.benchmarks import SuiteMetadata, episode_from_pair
+
+    episodes = [
+        episode_from_pair(x_obs, x_int, intervention, scm_id=i)
+        for i, (x_obs, x_int, intervention) in enumerate(dataset)
+    ]
+    suite_dir = out.with_suffix("") if out.suffix == ".parquet" else out
+    meta = SuiteMetadata(
+        name=suite_dir.name,
+        version="0.0.0",
+        zenodo_record_id="LOCAL",
+        doi="",
+        description="Locally generated via ctp-generate.",
+        n_episodes=len(episodes),
+    )
+    _release_io.write_suite(
+        meta, episodes, suite_dir, package_version=__version__, seed=seed
     )
 
 

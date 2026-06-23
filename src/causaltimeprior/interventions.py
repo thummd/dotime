@@ -48,10 +48,19 @@ class InterventionType(Enum):
     TIME_VARYING = "time_varying"  # do(X_i := c(t))
 
 
+# Picklable time-varying intervention profiles, keyed by name for (de)serialization.
+_PROFILE_REGISTRY = {
+    "StepIntervention": StepIntervention,
+    "RampIntervention": RampIntervention,
+    "SineIntervention": SineIntervention,
+    "TrajectoryIntervention": TrajectoryIntervention,
+}
+
+
 @dataclass
 class InterventionSpec:
     """Specification of an intervention on a temporal SCM.
-    
+
     Attributes:
         targets: List of variable indices to intervene on
         times: List of time indices when intervention is active
@@ -62,6 +71,53 @@ class InterventionSpec:
     times: List[int]
     intervention_type: InterventionType
     values: Union[float, torch.Tensor, Callable]
+
+    def to_dict(self) -> dict:
+        """JSON-serializable view of the spec (round-trips via :meth:`from_dict`).
+
+        The ``values`` field is encoded by kind: a scalar, a dense ``tensor``
+        list, or a named time-varying ``profile`` with its parameters.
+        """
+        from dataclasses import asdict, is_dataclass
+
+        v = self.values
+        if isinstance(v, torch.Tensor):
+            values = {"kind": "tensor", "data": v.detach().cpu().tolist()}
+        elif is_dataclass(v) and type(v).__name__ in _PROFILE_REGISTRY:
+            values = {"kind": "profile", "name": type(v).__name__, "params": asdict(v)}
+        elif callable(v):
+            raise TypeError(
+                f"cannot serialize intervention value of type {type(v).__name__!r}; "
+                "use a registered profile dataclass (StepIntervention, ...)"
+            )
+        else:
+            values = {"kind": "scalar", "data": float(v)}
+        return {
+            "targets": list(self.targets),
+            "times": list(self.times),
+            "intervention_type": self.intervention_type.value,
+            "values": values,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "InterventionSpec":
+        """Reconstruct an :class:`InterventionSpec` from :meth:`to_dict` output."""
+        v = d["values"]
+        kind = v["kind"]
+        if kind == "scalar":
+            values: Union[float, torch.Tensor, Callable] = float(v["data"])
+        elif kind == "tensor":
+            values = torch.tensor(v["data"], dtype=torch.float32)
+        elif kind == "profile":
+            values = _PROFILE_REGISTRY[v["name"]](**v["params"])
+        else:
+            raise ValueError(f"unknown intervention value kind {kind!r}")
+        return cls(
+            targets=list(d["targets"]),
+            times=list(d["times"]),
+            intervention_type=InterventionType(d["intervention_type"]),
+            values=values,
+        )
 
 
 class InterventionSampler:
