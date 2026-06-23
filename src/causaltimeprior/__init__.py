@@ -63,6 +63,7 @@ from causaltimeprior.utils import DEFAULT_CONFIG
 _LAZY_SUBMODULES = frozenset(
     {
         "extended",
+        "continuous",
         "data",
         "benchmarks",
         "baselines",
@@ -91,6 +92,7 @@ if TYPE_CHECKING:
     from causaltimeprior import (  # noqa: F401
         baselines,
         benchmarks,
+        continuous,
         data,
         evaluation,
         extended,
@@ -115,6 +117,7 @@ __all__ = [
     "DEFAULT_CONFIG",
     # --- lazy submodules ---
     "extended",
+    "continuous",
     "data",
     "benchmarks",
     "baselines",
