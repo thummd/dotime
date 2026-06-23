@@ -99,6 +99,19 @@ def test_suite_roundtrip_shapes():
     assert len(seen_structures) >= 2
 
 
+def test_released_episodes_store_full_unmasked_xobs():
+    # Identifiability episodes must store the FULL observational trajectory
+    # (causal masking is a model-input transform, not part of the released data).
+    from causaltimeprior.benchmarks import episode_from_sample
+    from causaltimeprior.extended import ExtendedCausalTimePrior
+
+    prior = ExtendedCausalTimePrior(tscm_structure="back_door", n_max=41, seed=0)
+    ep = episode_from_sample(prior.generate_sample(T=80), structure="back_door")
+    onset = min(ep.intervention.times)
+    # At least some post-onset observational values are non-zero (i.e. not masked).
+    assert bool((ep.x_obs[onset:] != 0).any())
+
+
 def test_oracle_is_exact_on_fallback():
     suite = ctp.benchmarks.load_benchmark("CTP-Generic-100k")
     results = ctp.evaluation.evaluate(ctp.baselines.get("Oracle"), suite)

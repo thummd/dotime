@@ -307,6 +307,7 @@ class ExtendedCausalTimePrior:
 
         # Pad to N_max
         X_obs_padded = pad_to_max_nodes(X_obs_masked, self.n_max)
+        X_obs_full_padded = pad_to_max_nodes(X_obs, self.n_max)  # unmasked, for release
         X_int_padded = pad_to_max_nodes(X_int, self.n_max)
 
         # Variable mask.  Hidden-variable exclusion and hidden-position
@@ -511,7 +512,8 @@ class ExtendedCausalTimePrior:
             y_effect_t = torch.tensor(y_effects, dtype=torch.float32)
 
         return {
-            "X_obs": X_obs_padded,  # (T, N_max)
+            "X_obs": X_obs_padded,  # (T, N_max) causally masked (model input)
+            "X_obs_full": X_obs_full_padded,  # (T, N_max) unmasked (released data)
             "X_int": X_int_padded,  # (T, N_max)
             "variable_mask": variable_mask,  # (N_max,)
             "int_onset_idx": torch.tensor(int_onset, dtype=torch.long),

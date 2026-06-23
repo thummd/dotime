@@ -525,6 +525,7 @@ class ContinuousExtendedPrior:
         # 11. Pad to n_max and build the variable mask.  Hidden positions are
         #     marked with 0 so the encoder treats them as padding.
         X_obs_padded = _pad_to_max_nodes(X_obs_masked, self.n_max)
+        X_obs_full_padded = _pad_to_max_nodes(X_obs, self.n_max)  # unmasked, for release
         X_int_padded = _pad_to_max_nodes(X_int, self.n_max)
         variable_mask = torch.zeros(self.n_max)
         variable_mask[:n_vars] = 1.0
@@ -556,6 +557,7 @@ class ContinuousExtendedPrior:
         sample: dict[str, torch.Tensor] = {
             # Trajectories
             "X_obs": X_obs_padded,
+            "X_obs_full": X_obs_full_padded,
             "X_int": X_int_padded,
             "variable_mask": variable_mask,
             "num_vars": torch.tensor(n_vars),

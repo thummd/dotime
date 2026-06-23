@@ -395,7 +395,9 @@ def episode_from_sample(
     """
     from causaltimeprior.interventions import InterventionType
 
-    x_obs = sample["X_obs"]
+    # Released episodes carry the FULL observational trajectory; causal masking
+    # (zeroing post-onset) is a model-input transform applied by the baseline.
+    x_obs = sample.get("X_obs_full", sample["X_obs"])
     x_int = sample["X_int"]
     # Un-pad to the true number of variables when the sample reports it.
     n_vars = int(sample["num_vars"].item()) if "num_vars" in sample else x_obs.shape[-1]
