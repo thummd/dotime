@@ -335,19 +335,27 @@ def _generate_fallback(meta: SuiteMetadata, n: int = 64) -> BenchmarkSuite:
     structures = meta.structures or (None,)
     for i in range(n):
         x_obs, x_int, intervention, _scm = prior.generate_pair(T=200)
-        # TODO(release): pull true counterfactual targets from the SCM instead
-        # of this placeholder; the live prior already exposes them.
+        t_query = x_int.shape[0] - 1  # last step
+        # Query the most intervention-affected variable that is not itself a
+        # treatment target — that is the outcome whose counterfactual we score.
+        effect = (x_int[t_query] - x_obs[t_query]).abs().clone()
+        for tgt in intervention.targets:
+            if 0 <= tgt < effect.numel():
+                effect[tgt] = -1.0
+        query_var = int(torch.argmax(effect).item())
+        # Exact interventional outcome from the simulated counterfactual trajectory.
+        y_true = x_int[t_query, query_var].reshape(1).clone()
         episodes.append(
             Episode(
                 x_obs=x_obs,
                 x_int=x_int,
                 intervention=intervention,
-                y_true=torch.zeros(1),
-                query_target=torch.tensor([0]),
-                query_time=torch.tensor([1.0]),
+                y_true=y_true,
+                query_target=torch.tensor([query_var]),
+                query_time=torch.tensor([float(t_query)]),
                 structure=structures[i % len(structures)],
                 scm_id=i,
-                metadata={"fallback": True},
+                metadata={"fallback": True, "y_oracle": y_true},
             )
         )
     return BenchmarkSuite(meta, episodes)

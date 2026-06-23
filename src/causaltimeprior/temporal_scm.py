@@ -1,5 +1,6 @@
 """Temporal SCM with time-stepped forward simulation."""
 
+import warnings
 import torch
 from torch import Tensor
 from typing import Dict, List, Optional
@@ -218,7 +219,7 @@ class TemporalSCM:
         result = self._simulate(T + burn_in, burn_in=burn_in, generator=generator)
         if result is None:
             N = len(self._topo)
-            print("Warning: SCM diverged during simulation. Returning zeros.")
+            warnings.warn("SCM diverged during simulation; returning zeros.", RuntimeWarning, stacklevel=2)
             return torch.zeros(T, N, device=self.device, dtype=self.dtype)
         return result
 
@@ -254,6 +255,6 @@ class TemporalSCM:
         )
         if result is None:
             N = len(self._topo)
-            print("Warning: SCM diverged during interventional simulation. Returning zeros.")
+            warnings.warn("SCM diverged during interventional simulation; returning zeros.", RuntimeWarning, stacklevel=2)
             return torch.zeros(T, N, device=self.device, dtype=self.dtype)
         return result

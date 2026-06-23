@@ -4,6 +4,7 @@ This module implements temporal SCMs where the causal structure and/or mechanism
 can change over time according to a discrete Markov process.
 """
 
+import warnings
 import torch
 import numpy as np
 from typing import Dict, List, Optional, Tuple
@@ -155,7 +156,7 @@ class RegimeSwitchingTemporalSCM:
                 buffer[t, i] = value.item()
         
         if check_divergence(buffer):
-            print("Warning: Regime-switching SCM diverged. Returning zeros.")
+            warnings.warn("Regime-switching SCM diverged; returning zeros.", RuntimeWarning, stacklevel=2)
             if return_regimes:
                 return torch.zeros(T, N, device=self.device, dtype=self.dtype), regimes[burn_in:]
             return torch.zeros(T, N, device=self.device, dtype=self.dtype)
@@ -250,7 +251,7 @@ class RegimeSwitchingTemporalSCM:
                     buffer[t, i] = value.item()
         
         if check_divergence(buffer):
-            print("Warning: Regime-switching SCM diverged. Returning zeros.")
+            warnings.warn("Regime-switching SCM diverged; returning zeros.", RuntimeWarning, stacklevel=2)
             if return_regimes:
                 return torch.zeros(T, N, device=self.device, dtype=self.dtype), regimes[burn_in:]
             return torch.zeros(T, N, device=self.device, dtype=self.dtype)
