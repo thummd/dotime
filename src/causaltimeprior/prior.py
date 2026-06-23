@@ -217,7 +217,40 @@ class CausalTimePrior:
         )
         
         return X_obs, X_int, intervention, scm
-    
+
+    def generate_regime_pair(
+        self,
+        T: Optional[int] = None,
+        num_regimes: int = 2,
+    ) -> Tuple[torch.Tensor, torch.Tensor, InterventionSpec, "RegimeSwitchingTemporalSCM"]:
+        """Generate a paired (obs, int) trajectory from a regime-switching SCM.
+
+        Like :meth:`generate_pair` but forces a regime-switching SCM with a fixed
+        number of regimes (for the regime-density benchmark tiers).
+        """
+        if T is None:
+            T = self.config['T']
+
+        N = int(torch.randint(3, self.config['N_max'] + 1, (1,), generator=self.generator).item())
+        K = int(torch.randint(1, self.config['K_max'] + 1, (1,), generator=self.generator).item())
+        rs_builder = RegimeSwitchingSCMBuilder(
+            num_nodes=N,
+            max_lag=K,
+            activations=self.activations,
+            gamma=self.config['gamma'],
+            sigma_w=self.config['sigma_w'],
+            sigma_b=self.config['sigma_b'],
+            device=self.config['device'],
+        )
+        scm = rs_builder.sample(self.generator, num_regimes=num_regimes)
+
+        intervention = InterventionSampler(N=N, T=T, generator=self.generator).sample()
+        X_obs = scm.sample_observational(T=T, burn_in=self.config['burn_in'], generator=self.generator)
+        X_int = scm.sample_interventional(
+            T=T, intervention=intervention, burn_in=self.config['burn_in'], generator=self.generator
+        )
+        return X_obs, X_int, intervention, scm
+
     def generate_dataset(
         self,
         n_scms: int,

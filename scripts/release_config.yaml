@@ -1,0 +1,54 @@
+# Config-driven generation for the frozen CausalTimePrior benchmark suites.
+#
+# scripts/build_release.py reads this file and regenerates every suite with the
+# recorded seeds, writing each to a timestamped, manifested output directory.
+# `--scale F` multiplies every `n_*` count by F (e.g. 0.001 for a smoke run);
+# the full-scale numbers below are the released-artifact targets.
+#
+# Difficulty tiers (CausalDynamics "challenge" pattern): every episode carries a
+# `tier` in its metadata, surfaced in the leaderboard and the paper's per-tier
+# columns. Tiers increase with #variables, lag depth, confounding, and
+# intervention-window complexity.
+
+seed: 20260719          # global base seed (per-suite seeds derive from this)
+T: 200                  # default trajectory length
+
+suites:
+
+  CTP-Identifiability-v1:
+    version: "1.0.0"
+    generator: identifiability
+    T: 200
+    episodes_per_structure: 1350     # ~10.8k total across 8 structures
+    # structure -> difficulty tier (1 = simplest identification, 3 = hardest/non-id)
+    structures:
+      rct_no_confounding:      1
+      back_door:               1
+      observed_confounder:     1
+      mediator:                2
+      front_door:              2
+      confounder_mediator:     2
+      instrumental_variable:   3
+      unobserved_confounder:   3
+
+  CTP-RegimeSwitch-v1:
+    version: "1.0.0"
+    generator: regime
+    T: 200
+    # regime density -> tier; episodes split evenly across densities
+    densities: {2: 1, 3: 2, 5: 3}
+    n_episodes: 10000
+
+  CTP-Continuous-v1:
+    version: "1.0.0"
+    generator: continuous
+    T: 200
+    query_offsets: [1, 2, 3, 5, 10]
+    structures: [back_door, front_door, instrumental_variable]
+    n_episodes: 10000
+
+  CTP-Generic-100k:
+    version: "1.0.0"
+    generator: generic
+    T: 200
+    n_episodes: 100000

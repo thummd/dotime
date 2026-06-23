@@ -53,21 +53,29 @@ class RegimeSwitchingSCMBuilder:
         self.sigma_b = sigma_b
         self.device = device
     
-    def sample(self, generator: Optional[torch.Generator] = None) -> RegimeSwitchingTemporalSCM:
+    def sample(
+        self,
+        generator: Optional[torch.Generator] = None,
+        num_regimes: Optional[int] = None,
+    ) -> RegimeSwitchingTemporalSCM:
         """Sample a regime-switching temporal SCM.
-        
+
         Parameters
         ----------
         generator : torch.Generator, optional
             RNG for reproducibility.
-            
+        num_regimes : int, optional
+            Fix the number of regimes (e.g. for a regime-density benchmark tier).
+            When ``None`` (default), it is sampled uniformly from ``{2, 3}``.
+
         Returns
         -------
         RegimeSwitchingTemporalSCM
             Sampled regime-switching SCM.
         """
-        # Sample number of regimes (2 or 3)
-        num_regimes = int(torch.randint(2, 4, (1,), generator=generator).item())
+        # Number of regimes: fixed when requested (benchmark tiers), else 2 or 3.
+        if num_regimes is None:
+            num_regimes = int(torch.randint(2, 4, (1,), generator=generator).item())
         
         # Sample transition matrix (sticky: high self-transition probability)
         # Dirichlet(alpha) with high alpha on diagonal

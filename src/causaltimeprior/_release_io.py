@@ -54,8 +54,8 @@ _COLUMNS = (
 
 def _require_pyarrow():
     try:
-        import pyarrow as pa  # noqa: F401
-        import pyarrow.parquet as pq  # noqa: F401
+        import pyarrow as pa
+        import pyarrow.parquet as pq
     except ModuleNotFoundError as exc:  # pragma: no cover
         raise ImportError(
             "reading/writing frozen suites needs the 'evaluation' extra:\n"
@@ -65,16 +65,23 @@ def _require_pyarrow():
 
 
 def _md5(path: Path) -> str:
-    h = hashlib.md5()  # noqa: S324  (integrity check, not security)
+    h = hashlib.md5()
     with path.open("rb") as fh:
         for chunk in iter(lambda: fh.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()
 
 
+def _jsonable(value):
+    """Coerce a metadata value to something JSON-serializable (tensors -> lists)."""
+    if isinstance(value, torch.Tensor):
+        return value.detach().cpu().tolist()
+    return value
+
+
 def _episode_to_row(ep: Episode) -> dict:
     length, n_vars = int(ep.x_obs.shape[0]), int(ep.x_obs.shape[1])
-    meta = {k: v for k, v in ep.metadata.items() if k != "y_oracle"}
+    meta = {k: _jsonable(v) for k, v in ep.metadata.items() if k != "y_oracle"}
     return {
         "scm_id": int(ep.scm_id if ep.scm_id is not None else -1),
         "structure": ep.structure or "",
@@ -158,7 +165,7 @@ def write_suite(
 
 def read_suite(meta: SuiteMetadata, suite_dir: str | Path) -> BenchmarkSuite:
     """Read a suite directory written by :func:`write_suite` into a BenchmarkSuite."""
-    pa, pq = _require_pyarrow()
+    _pa, pq = _require_pyarrow()
     from causaltimeprior.benchmarks import BenchmarkSuite
 
     suite_dir = Path(suite_dir)

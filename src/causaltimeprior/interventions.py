@@ -1,10 +1,11 @@
 """Intervention specifications and sampling for CausalTimePrior."""
 
-import torch
-import numpy as np
-from typing import Optional, List, Union, Callable
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
+
+import numpy as np
+import torch
 
 
 @dataclass
@@ -67,10 +68,10 @@ class InterventionSpec:
         intervention_type: Type of intervention (hard, soft, time-varying)
         values: Intervention values (constant, shift, or time-varying function)
     """
-    targets: List[int]
-    times: List[int]
+    targets: list[int]
+    times: list[int]
     intervention_type: InterventionType
-    values: Union[float, torch.Tensor, Callable]
+    values: float | torch.Tensor | Callable
 
     def to_dict(self) -> dict:
         """JSON-serializable view of the spec (round-trips via :meth:`from_dict`).
@@ -105,7 +106,7 @@ class InterventionSpec:
         v = d["values"]
         kind = v["kind"]
         if kind == "scalar":
-            values: Union[float, torch.Tensor, Callable] = float(v["data"])
+            values: float | torch.Tensor | Callable = float(v["data"])
         elif kind == "tensor":
             values = torch.tensor(v["data"], dtype=torch.float32)
         elif kind == "profile":
@@ -122,7 +123,7 @@ class InterventionSpec:
 
 class InterventionSampler:
     """Samples random intervention specifications for temporal SCMs."""
-    
+
     def __init__(
         self,
         N: int,
@@ -132,7 +133,7 @@ class InterventionSampler:
         p_time_varying: float = 0.2,
         max_targets: int = 2,
         min_intervention_length: int = 10,
-        generator: Optional[torch.Generator] = None,
+        generator: torch.Generator | None = None,
     ):
         """
         Parameters
@@ -162,13 +163,13 @@ class InterventionSampler:
         self.max_targets = min(max_targets, N)
         self.min_intervention_length = min_intervention_length
         self.generator = generator
-        
+
         # Normalize probabilities
         total = p_hard + p_soft + p_time_varying
         self.p_hard /= total
         self.p_soft /= total
         self.p_time_varying /= total
-    
+
     def sample(self) -> InterventionSpec:
         """Sample a random intervention specification.
         
@@ -185,11 +186,11 @@ class InterventionSampler:
             intervention_type = InterventionType.SOFT
         else:
             intervention_type = InterventionType.TIME_VARYING
-        
+
         # Sample targets (1 to max_targets variables)
         num_targets = int(torch.randint(1, self.max_targets + 1, (1,), generator=self.generator).item())
         targets = torch.randperm(self.N, generator=self.generator)[:num_targets].tolist()
-        
+
         # Sample intervention times (contiguous period)
         intervention_length = int(torch.randint(
             self.min_intervention_length,
@@ -204,22 +205,22 @@ class InterventionSampler:
             generator=self.generator
         ).item())
         times = list(range(start_time, start_time + intervention_length))
-        
+
         # Sample intervention values based on type
         if intervention_type == InterventionType.HARD:
             # Hard intervention: constant value
             value = torch.randn(1, generator=self.generator).item() * 2.0
             values = value
-            
+
         elif intervention_type == InterventionType.SOFT:
             # Soft intervention: additive shift
             value = torch.randn(1, generator=self.generator).item() * 1.0
             values = value
-            
+
         else:  # TIME_VARYING
             # Time-varying intervention: choose profile type
             profile_type = int(torch.randint(0, 4, (1,), generator=self.generator).item())
-            
+
             if profile_type == 0:  # Step function
                 step_time = start_time + intervention_length // 2
                 values = StepIntervention(step_time)
@@ -235,7 +236,7 @@ class InterventionSampler:
                 trajectory = torch.randn(intervention_length, generator=self.generator) * 2.0
                 trajectory_dict = {start_time + i: trajectory[i].item() for i in range(intervention_length)}
                 values = TrajectoryIntervention(trajectory_dict)
-        
+
         return InterventionSpec(
             targets=targets,
             times=times,

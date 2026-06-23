@@ -67,10 +67,12 @@ def compute_nmse(predictions: torch.Tensor, targets: torch.Tensor) -> float:
     """Normalized MSE: ``MSE / Var(targets)``.
 
     Equals 1.0 for a predict-the-mean baseline, <1.0 when better, >1.0 worse.
-    Returns NaN when the target variance is ~0.
+    Returns NaN when there are fewer than two targets or the variance is ~0.
     """
+    if targets.numel() < 2:
+        return float("nan")
     mse = torch.mean((predictions - targets) ** 2)
-    var = torch.var(targets)
+    var = torch.var(targets, unbiased=False)
     if var < 1e-8:
         return float("nan")
     return (mse / var).item()

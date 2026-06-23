@@ -32,11 +32,11 @@ import torch
 from causaltimeprior.interventions import InterventionSpec
 
 __all__ = [
-    "Episode",
     "BenchmarkSuite",
+    "Episode",
     "SuiteMetadata",
-    "load_benchmark",
     "available_suites",
+    "load_benchmark",
 ]
 
 
@@ -290,7 +290,7 @@ def _download_from_zenodo(meta: SuiteMetadata, dest: Path, *, force: bool) -> No
     import urllib.request
 
     dest.mkdir(parents=True, exist_ok=True)
-    with urllib.request.urlopen(meta.zenodo_files_url) as resp:  # noqa: S310
+    with urllib.request.urlopen(meta.zenodo_files_url) as resp:
         record = json.loads(resp.read().decode())
 
     for entry in record.get("files", []):
@@ -299,8 +299,8 @@ def _download_from_zenodo(meta: SuiteMetadata, dest: Path, *, force: bool) -> No
         out = dest / name
         if out.exists() and not force:
             continue
-        with urllib.request.urlopen(url) as resp, out.open("wb") as fh:  # noqa: S310
-            h = hashlib.md5()  # noqa: S324
+        with urllib.request.urlopen(url) as resp, out.open("wb") as fh:
+            h = hashlib.md5()
             for chunk in iter(lambda: resp.read(1 << 20), b""):
                 fh.write(chunk)
                 h.update(chunk)
@@ -348,6 +348,62 @@ def _generate_fallback(meta: SuiteMetadata, n: int = 64) -> BenchmarkSuite:
             )
         )
     return BenchmarkSuite(meta, episodes)
+
+
+_INT_TYPE_BY_CODE = {0: "hard", 1: "soft", 2: "time_varying"}
+
+
+def episode_from_sample(
+    sample: dict,
+    *,
+    structure: str | None = None,
+    scm_id: int | None = None,
+    metadata: dict | None = None,
+) -> Episode:
+    """Build an :class:`Episode` from a generator ``generate_sample`` dict.
+
+    Works for the structured generators (``ExtendedCausalTimePrior``,
+    ``ContinuousExtendedPrior``) whose samples carry exact counterfactual targets
+    and a per-structure query protocol. Trajectories padded to ``n_max`` are
+    un-padded to clean ``(T, n_vars)`` here — this is the model-facing/release
+    boundary for the padding, so released tensors carry no zero columns.
+    """
+    from causaltimeprior.interventions import InterventionType
+
+    x_obs = sample["X_obs"]
+    x_int = sample["X_int"]
+    # Un-pad to the true number of variables when the sample reports it.
+    n_vars = int(sample["num_vars"].item()) if "num_vars" in sample else x_obs.shape[-1]
+    x_obs = x_obs[:, :n_vars].clone()
+    x_int = x_int[:, :n_vars].clone()
+
+    int_type_code = int(sample["intervention_type"].item())
+    raw_value = sample.get("intervention_value_raw", sample.get("intervention_value"))
+    onset = sample.get("int_onset_idx")
+    intervention = InterventionSpec(
+        targets=[int(sample["intervention_target"].item())],
+        times=[int(onset.item())] if onset is not None else [],
+        intervention_type=InterventionType(_INT_TYPE_BY_CODE.get(int_type_code, "hard")),
+        values=float(raw_value.item()) if raw_value is not None else 0.0,
+    )
+
+    y_true = torch.as_tensor(sample["Y_true"], dtype=torch.float32).reshape(-1)
+    extra = {}
+    if "Y_causal_effect" in sample:
+        extra["y_causal_effect"] = torch.as_tensor(
+            sample["Y_causal_effect"], dtype=torch.float32
+        ).reshape(-1)
+    return Episode(
+        x_obs=x_obs,
+        x_int=x_int,
+        intervention=intervention,
+        y_true=y_true,
+        query_target=torch.as_tensor(sample["query_target"], dtype=torch.long).reshape(-1),
+        query_time=torch.as_tensor(sample["query_time"], dtype=torch.float32).reshape(-1),
+        structure=structure,
+        scm_id=scm_id,
+        metadata={**(metadata or {}), "y_oracle": y_true, **extra},
+    )
 
 
 def episode_from_pair(
