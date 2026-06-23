@@ -57,6 +57,7 @@ class SuiteMetadata:
     n_episodes: int
     structures: tuple[str, ...] = ()
     license: str = "CC-BY-4.0"
+    hf_repo_id: str = ""  # Hugging Face dataset repo, e.g. "thummd/CTP-Identifiability-v1"
 
     @property
     def zenodo_files_url(self) -> str:
@@ -263,13 +264,42 @@ def load_benchmark(
     suite_dir = _cache_root(cache_dir) / f"{name}-{meta.version}"
 
     if force_download or not suite_dir.exists():
-        if meta.zenodo_record_id == "TODO":
-            # TODO(release): remove this fallback once suites are minted on Zenodo.
-            # For now, regenerate a small suite locally so downstream code is testable.
+        # Prefer Hugging Face (faster mirror), fall back to Zenodo (archive of
+        # record). If neither is configured yet, regenerate locally so downstream
+        # code stays testable before the suites are hosted.
+        if meta.hf_repo_id:
+            _download_from_hf(meta, suite_dir, force=force_download)
+        elif meta.zenodo_record_id not in ("TODO", "LOCAL"):
+            _download_from_zenodo(meta, suite_dir, force=force_download)
+        else:
             return _generate_fallback(meta)
-        _download_from_zenodo(meta, suite_dir, force=force_download)
 
     return _parse_suite_dir(meta, suite_dir)
+
+
+def _download_from_hf(meta: SuiteMetadata, dest: Path, *, force: bool) -> None:
+    """Download a suite from its Hugging Face dataset repo into ``dest``.
+
+    Needs the ``hf`` extra (``huggingface_hub``). Uses ``snapshot_download`` to
+    pull the suite directory (parquet shards + ``manifest.json``); md5 validation
+    happens in :func:`_parse_suite_dir`.
+    """
+    try:
+        from huggingface_hub import snapshot_download
+    except ModuleNotFoundError as exc:  # pragma: no cover
+        raise ImportError(
+            "downloading suites from Hugging Face needs the 'hf' extra:\n"
+            "    pip install 'causaltimeprior[hf]'"
+        ) from exc
+
+    dest.mkdir(parents=True, exist_ok=True)
+    snapshot_download(
+        repo_id=meta.hf_repo_id,
+        repo_type="dataset",
+        revision=f"v{meta.version}",
+        local_dir=str(dest),
+        force_download=force,
+    )
 
 
 def _download_from_zenodo(meta: SuiteMetadata, dest: Path, *, force: bool) -> None:

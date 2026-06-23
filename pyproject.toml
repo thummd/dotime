@@ -104,6 +104,12 @@ evaluation = [
     "pyarrow>=14.0",       # parquet I/O for frozen benchmark suites
 ]
 
+# Hugging Face Hub mirror for suites + model checkpoints (faster discovery
+# surface; Zenodo remains the citable archive).
+hf = [
+    "huggingface_hub>=0.20",
+]
+
 # Documentation build chain (Sphinx + Read the Docs theme + myst + nbsphinx).
 docs = [
     "sphinx>=7.0",
