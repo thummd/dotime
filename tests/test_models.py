@@ -18,9 +18,7 @@ from causaltimeprior.extended import ExtendedCausalTimePrior
 
 _CKPTS = sorted(
     glob.glob(
-        os.path.expanduser(
-            "~/repos/do-over-time-pfn/checkpoints/**/do_over_time_pfn_best.pt"
-        ),
+        os.path.expanduser("~/repos/do-over-time-pfn/checkpoints/**/do_over_time_pfn_best.pt"),
         recursive=True,
     )
 )

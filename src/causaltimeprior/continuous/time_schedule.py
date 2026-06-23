@@ -19,8 +19,6 @@ and ``dts`` has shape ``(T - 1,)`` with ``dts[i] = times[i+1] - times[i]``.
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
-
 import torch
 
 
@@ -28,9 +26,9 @@ def regular_schedule(
     T: int,
     dt: float = 1.0,
     t0: float = 0.0,
-    device: Optional[torch.device] = None,
+    device: torch.device | None = None,
     dtype: torch.dtype = torch.float32,
-) -> Tuple[torch.Tensor, torch.Tensor]:
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Uniform grid ``t_i = t0 + i * dt`` for ``i = 0, ..., T - 1``.
 
     Parameters
@@ -60,10 +58,10 @@ def jittered_schedule(
     dt: float = 1.0,
     jitter: float = 0.2,
     t0: float = 0.0,
-    generator: Optional[torch.Generator] = None,
-    device: Optional[torch.device] = None,
+    generator: torch.Generator | None = None,
+    device: torch.device | None = None,
     dtype: torch.dtype = torch.float32,
-) -> Tuple[torch.Tensor, torch.Tensor]:
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Regular grid with uniform-noise perturbation of each gap.
 
     Each inter-observation gap is ``dt * (1 + jitter * U)`` where
@@ -91,10 +89,10 @@ def exponential_schedule(
     T: int,
     rate: float = 1.0,
     t0: float = 0.0,
-    generator: Optional[torch.Generator] = None,
-    device: Optional[torch.device] = None,
+    generator: torch.Generator | None = None,
+    device: torch.device | None = None,
     dtype: torch.dtype = torch.float32,
-) -> Tuple[torch.Tensor, torch.Tensor]:
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Poisson point process: inter-arrivals ~ Exp(rate).
 
     Expected gap between observations is ``1 / rate``; the produced
@@ -122,7 +120,7 @@ def exponential_schedule(
 
 def from_times(
     times: torch.Tensor,
-) -> Tuple[torch.Tensor, torch.Tensor]:
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Wrap an arbitrary 1-D tensor of observation times into (times, dts).
 
     Useful for replaying a fixed clinical schedule or for importing an

@@ -58,18 +58,22 @@ print(suite)
 ## 4. Evaluate a baseline
 
 ```python
-from causaltimeprior.baselines import VAROLSBaseline
-from causaltimeprior.evaluation import evaluate
+from causaltimeprior import baselines, evaluation
 
-baseline = VAROLSBaseline(lag=3)
-results = evaluate(baseline, suite, metrics=["rmse", "direction_accuracy", "lift_over_naive"])
-print(results.to_dataframe())
+baseline = baselines.get("VAR-OLS", lag=3)
+results = evaluation.evaluate(baseline, suite)
+print(results.summary())        # pooled + per-structure table
+results.to_dict()               # JSON-serializable
+```
+
+Or from the command line:
+
+```bash
+ctp-benchmark --suite CTP-Identifiability-v1 --baseline VAR-OLS
 ```
 
 ## Where to go next
 
-- {doc}`../user_guide/data_generation` — full prior configuration.
-- {doc}`../user_guide/interventions` — hard, soft, time-varying, and continuous-window interventions.
-- {doc}`../user_guide/counterfactuals` — the four counterfactual sampling modes.
-- {doc}`../user_guide/benchmarks` — the four frozen suites and their evaluation protocols.
-- {doc}`../tutorials/index` — end-to-end notebook walkthroughs.
+- {doc}`benchmarks` — the four frozen suites and their evaluation protocol.
+- {doc}`troubleshoot` — common install / runtime issues.
+- {doc}`api` — the full API reference.

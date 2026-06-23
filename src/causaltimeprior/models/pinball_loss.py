@@ -5,7 +5,6 @@ as an auxiliary objective alongside the bar distribution loss.
 """
 
 import torch
-from typing import List, Union
 
 
 def extract_quantiles(
@@ -34,8 +33,7 @@ def extract_quantiles(
 
     # CDF at left edge of each bucket
     cdf_left = torch.cat(
-        [torch.zeros(probs.shape[0], 1, device=probs.device, dtype=probs.dtype),
-         cdf[:, :-1]],
+        [torch.zeros(probs.shape[0], 1, device=probs.device, dtype=probs.dtype), cdf[:, :-1]],
         dim=-1,
     )  # (B, K)
 

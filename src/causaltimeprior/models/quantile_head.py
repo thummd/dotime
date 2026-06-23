@@ -6,7 +6,6 @@ pinball (quantile) loss. No bucket calibration needed.
 
 import torch
 import torch.nn as nn
-from typing import List, Optional, Union
 
 
 class QuantileHead(nn.Module):
@@ -15,15 +14,13 @@ class QuantileHead(nn.Module):
     def __init__(
         self,
         embed_size: int = 512,
-        tau_levels: Optional[List[float]] = None,
+        tau_levels: list[float] | None = None,
     ):
         super().__init__()
         if tau_levels is None:
             tau_levels = [0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 0.8, 0.9, 0.95]
         self.n_quantiles = len(tau_levels)
-        self.register_buffer(
-            'tau_levels', torch.tensor(tau_levels, dtype=torch.float32)
-        )
+        self.register_buffer("tau_levels", torch.tensor(tau_levels, dtype=torch.float32))
 
         self.projection = nn.Sequential(
             nn.Linear(embed_size, embed_size),
@@ -57,7 +54,7 @@ class QuantileHead(nn.Module):
         loss : scalar
         """
         error = y_true.unsqueeze(-1) - preds  # (B, Q)
-        tau = self.tau_levels.unsqueeze(0)     # (1, Q)
+        tau = self.tau_levels.unsqueeze(0)  # (1, Q)
         loss = torch.where(error >= 0, tau * error, (tau - 1.0) * error)
         return loss.mean()
 

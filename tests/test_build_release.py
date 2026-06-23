@@ -11,8 +11,8 @@ import pytest
 pytest.importorskip("pyarrow", reason="build_release writes parquet (evaluation extra)")
 pytest.importorskip("yaml")
 
-from causaltimeprior import _release_io, baselines, evaluation  # noqa: E402
-from causaltimeprior.benchmarks import SuiteMetadata  # noqa: E402
+from causaltimeprior import _release_io, baselines, evaluation
+from causaltimeprior.benchmarks import SuiteMetadata
 
 _SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "build_release.py"
 
@@ -39,7 +39,8 @@ def test_build_release_micro_all_suites(tmp_path):
         "CTP-Continuous-v1",
         "CTP-Generic-100k",
     }
-    assert "torch" in build_manifest and "config_hash" in build_manifest
+    assert "torch" in build_manifest
+    assert "config_hash" in build_manifest
 
     # Every suite round-trips through the loader and Oracle is exact.
     for suite_dir in sorted(run_dir.glob("CTP-*")):
@@ -64,8 +65,16 @@ def test_build_release_micro_all_suites(tmp_path):
 def test_identifiability_covers_all_eight_structures(tmp_path):
     br = _load_build_release()
     rc = br.main(
-        ["--suite", "CTP-Identifiability-v1", "--scale", "0.001",
-         "--output-dir", str(tmp_path), "--timestamp", "T"]
+        [
+            "--suite",
+            "CTP-Identifiability-v1",
+            "--scale",
+            "0.001",
+            "--output-dir",
+            str(tmp_path),
+            "--timestamp",
+            "T",
+        ]
     )
     assert rc == 0
     suite_dir = next((tmp_path / "T").glob("CTP-Identifiability-v1*"))

@@ -11,7 +11,9 @@ import torch
 @dataclass
 class StepIntervention:
     """Step function intervention profile (picklable replacement for lambda)."""
+
     step_time: int
+
     def __call__(self, t):
         return 2.0 if t >= self.step_time else -2.0
 
@@ -19,8 +21,10 @@ class StepIntervention:
 @dataclass
 class RampIntervention:
     """Ramp intervention profile (picklable replacement for lambda)."""
+
     start_time: int
     intervention_length: int
+
     def __call__(self, t):
         return -2.0 + 4.0 * (t - self.start_time) / self.intervention_length
 
@@ -28,8 +32,10 @@ class RampIntervention:
 @dataclass
 class SineIntervention:
     """Sinusoidal intervention profile (picklable replacement for lambda)."""
+
     start_time: int
     freq: float
+
     def __call__(self, t):
         return 2.0 * np.sin(self.freq * (t - self.start_time))
 
@@ -37,15 +43,18 @@ class SineIntervention:
 @dataclass
 class TrajectoryIntervention:
     """Trajectory-based intervention profile (picklable replacement for lambda)."""
+
     trajectory_dict: dict
+
     def __call__(self, t):
         return self.trajectory_dict.get(t, 0.0)
 
 
 class InterventionType(Enum):
     """Types of interventions."""
-    HARD = "hard"           # do(X_i := c)
-    SOFT = "soft"           # X_i = f_i(...) + delta
+
+    HARD = "hard"  # do(X_i := c)
+    SOFT = "soft"  # X_i = f_i(...) + delta
     TIME_VARYING = "time_varying"  # do(X_i := c(t))
 
 
@@ -68,6 +77,7 @@ class InterventionSpec:
         intervention_type: Type of intervention (hard, soft, time-varying)
         values: Intervention values (constant, shift, or time-varying function)
     """
+
     targets: list[int]
     times: list[int]
     intervention_type: InterventionType
@@ -172,7 +182,7 @@ class InterventionSampler:
 
     def sample(self) -> InterventionSpec:
         """Sample a random intervention specification.
-        
+
         Returns
         -------
         InterventionSpec
@@ -188,22 +198,28 @@ class InterventionSampler:
             intervention_type = InterventionType.TIME_VARYING
 
         # Sample targets (1 to max_targets variables)
-        num_targets = int(torch.randint(1, self.max_targets + 1, (1,), generator=self.generator).item())
+        num_targets = int(
+            torch.randint(1, self.max_targets + 1, (1,), generator=self.generator).item()
+        )
         targets = torch.randperm(self.N, generator=self.generator)[:num_targets].tolist()
 
         # Sample intervention times (contiguous period)
-        intervention_length = int(torch.randint(
-            self.min_intervention_length,
-            self.T - self.min_intervention_length + 1,
-            (1,),
-            generator=self.generator
-        ).item())
-        start_time = int(torch.randint(
-            self.min_intervention_length,
-            self.T - intervention_length + 1,
-            (1,),
-            generator=self.generator
-        ).item())
+        intervention_length = int(
+            torch.randint(
+                self.min_intervention_length,
+                self.T - self.min_intervention_length + 1,
+                (1,),
+                generator=self.generator,
+            ).item()
+        )
+        start_time = int(
+            torch.randint(
+                self.min_intervention_length,
+                self.T - intervention_length + 1,
+                (1,),
+                generator=self.generator,
+            ).item()
+        )
         times = list(range(start_time, start_time + intervention_length))
 
         # Sample intervention values based on type
@@ -234,7 +250,9 @@ class InterventionSampler:
 
             else:  # Sampled trajectory
                 trajectory = torch.randn(intervention_length, generator=self.generator) * 2.0
-                trajectory_dict = {start_time + i: trajectory[i].item() for i in range(intervention_length)}
+                trajectory_dict = {
+                    start_time + i: trajectory[i].item() for i in range(intervention_length)
+                }
                 values = TrajectoryIntervention(trajectory_dict)
 
         return InterventionSpec(

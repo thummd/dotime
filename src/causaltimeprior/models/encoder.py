@@ -10,7 +10,6 @@ Supports two backends:
 Both backends follow the same interface: (B, T, N_max) -> (B, N, E)
 """
 
-
 import torch
 import torch.nn as nn
 
@@ -98,27 +97,31 @@ class TemporalEncoder(nn.Module):
         }
         config.update(encoder_config)
 
-        self.encoder_layers = nn.ModuleList([
-            GatedDeltaProductEncoder(
-                layer_idx=i,
-                token_embed_dim=embed_size,
-                num_heads=n_heads,
-                **config,
-            )
-            for i in range(n_layers)
-        ])
+        self.encoder_layers = nn.ModuleList(
+            [
+                GatedDeltaProductEncoder(
+                    layer_idx=i,
+                    token_embed_dim=embed_size,
+                    num_heads=n_heads,
+                    **config,
+                )
+                for i in range(n_layers)
+            ]
+        )
 
         # Learnable initial hidden states (weaving, from TempoPFN)
         head_k_dim = embed_size // n_heads
         expand_v = config.get("expand_v", 1.0)
         head_v_dim = int(head_k_dim * expand_v)
-        self.initial_hidden_state = nn.ParameterList([
-            nn.Parameter(
-                torch.randn(1, n_heads, head_k_dim, head_v_dim) / head_k_dim,
-                requires_grad=True,
-            )
-            for _ in range(n_layers)
-        ])
+        self.initial_hidden_state = nn.ParameterList(
+            [
+                nn.Parameter(
+                    torch.randn(1, n_heads, head_k_dim, head_v_dim) / head_k_dim,
+                    requires_grad=True,
+                )
+                for _ in range(n_layers)
+            ]
+        )
         self.weaving = config.get("weaving", True)
 
     def _init_transformer_layers(self, embed_size, n_heads, n_layers):
@@ -154,7 +157,7 @@ class TemporalEncoder(nn.Module):
         -------
         h_vars : (B, N_max, E) per-variable temporal representations
         """
-        B, T, N = X_obs.shape
+        _B, _T, _N = X_obs.shape
 
         if int_onset_idx is not None:
             return self._forward_relative(X_obs, variable_mask, int_onset_idx)
@@ -176,7 +179,7 @@ class TemporalEncoder(nn.Module):
             )
 
         # Time mask: which timesteps have data (pre-intervention, non-zero)
-        time_mask = (X_obs.abs().sum(dim=-1) > 0)  # (B, T)
+        time_mask = X_obs.abs().sum(dim=-1) > 0  # (B, T)
 
         # Embed per-variable: (B, T, N) -> (B, T, N, 1) -> (B, T, N, E)
         x = self.expand_values(X_obs.unsqueeze(-1))  # (B, T, N, E)
@@ -189,14 +192,11 @@ class TemporalEncoder(nn.Module):
         x = x.view(B * N, T, self.embed_size)
 
         # Encode
-        if self.backend == "gdp":
-            x = self._forward_gdp(x, B, N)
-        else:
-            x = self._forward_transformer(x)
+        x = self._forward_gdp(x, B, N) if self.backend == "gdp" else self._forward_transformer(x)
 
         # Mask-aware pool: average only over non-zero (pre-intervention) timesteps
         tm = time_mask.unsqueeze(1).expand(B, N, T)  # (B, N, T)
-        tm = tm.reshape(B * N, T).unsqueeze(-1)      # (B*N, T, 1)
+        tm = tm.reshape(B * N, T).unsqueeze(-1)  # (B*N, T, 1)
         h = (x * tm).sum(dim=1) / tm.sum(dim=1).clamp(min=1)  # (B*N, E)
 
         # Reshape: (B*N, E) -> (B, N, E)
@@ -206,7 +206,7 @@ class TemporalEncoder(nn.Module):
 
     def _forward_relative(self, X_obs, variable_mask, int_onset_idx):
         """Forward with relative positional encoding and context window truncation."""
-        B, T, N = X_obs.shape
+        B, _T, N = X_obs.shape
         cw = self.context_window
 
         # Truncate to context window: [int_onset - cw, int_onset) per sample
@@ -220,12 +220,12 @@ class TemporalEncoder(nn.Module):
             start = max(0, onset - cw)
             length = onset - start  # actual number of pre-intervention steps
             if length > 0:
-                X_trunc[b, cw - length:cw, :] = X_obs[b, start:onset, :]
+                X_trunc[b, cw - length : cw, :] = X_obs[b, start:onset, :]
                 # Relative positions: distance to intervention (negative = before)
                 # e.g., if onset=45, start=0, length=45: positions are -45, -44, ..., -1
                 rel_pos = torch.arange(start - onset, 0, device=X_obs.device)  # (length,)
-                rel_positions[b, cw - length:cw] = rel_pos + cw  # shift to non-negative index
-                time_mask[b, cw - length:cw] = True
+                rel_positions[b, cw - length : cw] = rel_pos + cw  # shift to non-negative index
+                time_mask[b, cw - length : cw] = True
 
         # Embed values: (B, cw, N, 1) -> (B, cw, N, E)
         x = self.expand_values(X_trunc.unsqueeze(-1))
@@ -240,14 +240,11 @@ class TemporalEncoder(nn.Module):
         x = x.view(B * N, cw, self.embed_size)
 
         # Encode
-        if self.backend == "gdp":
-            x = self._forward_gdp(x, B, N)
-        else:
-            x = self._forward_transformer(x)
+        x = self._forward_gdp(x, B, N) if self.backend == "gdp" else self._forward_transformer(x)
 
         # Mask-aware pool
         tm = time_mask.unsqueeze(1).expand(B, N, cw)  # (B, N, cw)
-        tm = tm.reshape(B * N, cw).unsqueeze(-1)      # (B*N, cw, 1)
+        tm = tm.reshape(B * N, cw).unsqueeze(-1)  # (B*N, cw, 1)
         h = (x * tm).sum(dim=1) / tm.sum(dim=1).clamp(min=1)  # (B*N, E)
 
         h = h.view(B, N, self.embed_size)
@@ -257,9 +254,7 @@ class TemporalEncoder(nn.Module):
     def _forward_gdp(self, x: torch.Tensor, B: int, N: int) -> torch.Tensor:
         """Forward through GatedDeltaProduct layers with state weaving."""
         if self.weaving:
-            hidden_state = torch.zeros_like(
-                self.initial_hidden_state[0].repeat(B * N, 1, 1, 1)
-            )
+            hidden_state = torch.zeros_like(self.initial_hidden_state[0].repeat(B * N, 1, 1, 1))
             for i, layer in enumerate(self.encoder_layers):
                 x, hidden_state = layer(
                     x,

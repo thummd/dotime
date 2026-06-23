@@ -41,8 +41,8 @@ Design choices
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Optional, Sequence
+from collections.abc import Sequence
+from dataclasses import dataclass
 
 import torch
 
@@ -95,16 +95,12 @@ class NeuralDriftMechanism:
 
         in_dim = 1 + len(self.parents)
         if self.W1.dim() != 2 or self.W1.shape[1] != in_dim:
-            raise ValueError(
-                f"W1 must have shape (hidden, {in_dim}), got {tuple(self.W1.shape)}"
-            )
+            raise ValueError(f"W1 must have shape (hidden, {in_dim}), got {tuple(self.W1.shape)}")
         hidden = self.W1.shape[0]
         if self.b1.shape != (hidden,):
             raise ValueError(f"b1 must have shape ({hidden},), got {tuple(self.b1.shape)}")
         if self.W2.shape != (1, hidden):
-            raise ValueError(
-                f"W2 must have shape (1, {hidden}), got {tuple(self.W2.shape)}"
-            )
+            raise ValueError(f"W2 must have shape (1, {hidden}), got {tuple(self.W2.shape)}")
         if self.b2.shape != (1,):
             raise ValueError(f"b2 must have shape (1,), got {tuple(self.b2.shape)}")
 
@@ -169,9 +165,9 @@ def sample_neural_drift_mechanism(
     sigma_range: tuple = (0.2, 0.8),
     out_scale_range: tuple = (0.5, 2.0),
     hidden_dim: int = 8,
-    weight_scale: Optional[float] = None,
-    generator: Optional[torch.Generator] = None,
-    device: Optional[torch.device] = None,
+    weight_scale: float | None = None,
+    generator: torch.Generator | None = None,
+    device: torch.device | None = None,
     dtype: torch.dtype = torch.float32,
 ) -> NeuralDriftMechanism:
     """Draw a random :class:`NeuralDriftMechanism` from priors on its parameters.
@@ -206,8 +202,8 @@ def sample_neural_drift_mechanism(
     out_scale = float(out_scale_range[0] + u[2] * (out_scale_range[1] - out_scale_range[0]))
 
     in_dim = 1 + len(parents)
-    std1 = ws / (in_dim ** 0.5)
-    std2 = ws / (hidden_dim ** 0.5)
+    std1 = ws / (in_dim**0.5)
+    std2 = ws / (hidden_dim**0.5)
 
     W1 = torch.empty(hidden_dim, in_dim, device=device, dtype=dtype)
     W1.normal_(mean=0.0, std=std1, generator=generator)

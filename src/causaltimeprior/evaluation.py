@@ -6,8 +6,8 @@ Do-Over-Time-PFN evaluation code (``dotime/eval/metrics.py`` and the
 dependency-light surface (torch + numpy only — R² is computed directly rather
 than via scikit-learn so it stays in the core install).
 
-Public surface
---------------
+**Public surface**
+
 - metric functions: :func:`compute_rmse`, :func:`compute_mae`,
   :func:`compute_nmse`, :func:`compute_r2`.
 - :func:`direction_accuracy` — sign-consistent accuracy, near-zero targets excluded.

@@ -1,31 +1,28 @@
 """Temporal SCM with time-stepped forward simulation."""
 
 import warnings
-import torch
-from torch import Tensor
-from typing import Dict, List, Optional
-import networkx as nx
-import numpy as np
 
+import torch
+
+from causaltimeprior._sampling import DistributionSampler
+from causaltimeprior.interventions import InterventionSpec, InterventionType
 from causaltimeprior.temporal_graph import TemporalDAG
 from causaltimeprior.temporal_mechanism import TemporalMechanism
-from causaltimeprior.interventions import InterventionSpec, InterventionType
-from causaltimeprior.utils import clip_values, check_divergence
-from causaltimeprior._sampling import DistributionSampler
+from causaltimeprior.utils import check_divergence, clip_values
 
 
 class TemporalSCM:
     """
     Temporal Structural Causal Model with time-stepped forward simulation.
-    
+
     Extends Do-PFN's SCM to support temporal dependencies with lags.
     """
-    
+
     def __init__(
         self,
         dag: TemporalDAG,
-        mechanisms: Dict[str, TemporalMechanism],
-        noise: Dict[str, DistributionSampler],
+        mechanisms: dict[str, TemporalMechanism],
+        noise: dict[str, DistributionSampler],
         device: torch.device = torch.device("cpu"),
         dtype: torch.dtype = torch.float32,
     ):
@@ -48,13 +45,13 @@ class TemporalSCM:
         self.noise = noise
         self.device = device
         self.dtype = dtype
-        
+
         # Store topology
         self._topo = dag.topo_order
         self._G_0 = dag.G_0
         self._G_lags = dag.G_lags
         self._K = dag.K
-        
+
         # Pre-compute name-to-index mapping (O(1) lookups instead of O(N) list scans)
         self._topo_idx = {v: i for i, v in enumerate(self._topo)}
 
@@ -68,8 +65,7 @@ class TemporalSCM:
             for i, v in enumerate(self._topo)
         }
         self._lagged_parent_idx = {
-            i: [[self._topo_idx[p] for p in parents_k]
-                for parents_k in self._lagged_parents[v]]
+            i: [[self._topo_idx[p] for p in parents_k] for parents_k in self._lagged_parents[v]]
             for i, v in enumerate(self._topo)
         }
         # Pre-resolved parent names paired with indices (for mechanism weight lookup)
@@ -78,12 +74,13 @@ class TemporalSCM:
             for i, v in enumerate(self._topo)
         }
         self._lagged_parent_pairs = {
-            i: [[(p, self._topo_idx[p]) for p in parents_k]
-                for parents_k in self._lagged_parents[v]]
+            i: [
+                [(p, self._topo_idx[p]) for p in parents_k] for parents_k in self._lagged_parents[v]
+            ]
             for i, v in enumerate(self._topo)
         }
 
-    def _compute_lagged_parents(self) -> Dict[str, List[List[str]]]:
+    def _compute_lagged_parents(self) -> dict[str, list[list[str]]]:
         """Compute lagged parents for each variable."""
         lagged_parents = {}
 
@@ -100,29 +97,31 @@ class TemporalSCM:
             lagged_parents[v] = parents_per_lag
 
         return lagged_parents
-    
+
     @torch.no_grad()
     def _simulate(
         self,
         total_T: int,
         burn_in: int = 50,
-        intervention: Optional[InterventionSpec] = None,
-        generator: Optional[torch.Generator] = None,
+        intervention: InterventionSpec | None = None,
+        generator: torch.Generator | None = None,
         divergence_check_interval: int = 50,
-    ) -> Optional[torch.Tensor]:
+    ) -> torch.Tensor | None:
         """Unified forward simulation, optionally with intervention.
 
         Returns buffer[burn_in:] on success, or None on early divergence.
         """
         N = len(self._topo)
-        T = total_T - burn_in
+        total_T - burn_in
         buffer = torch.zeros(total_T, N, device=self.device, dtype=self.dtype)
 
         # Pre-sample all noise (eliminates per-step tensor creation + RNG state swaps)
         all_noise = {}
         for v in self._topo:
-            all_noise[v] = self.noise[v].distribution.sample((total_T,)).to(
-                device=self.device, dtype=self.dtype
+            all_noise[v] = (
+                self.noise[v]
+                .distribution.sample((total_T,))
+                .to(device=self.device, dtype=self.dtype)
             )
 
         # Pre-compute intervention lookup set for O(1) checks
@@ -139,10 +138,12 @@ class TemporalSCM:
         # Forward simulation
         for t in range(total_T):
             # Early divergence detection
-            if (divergence_check_interval > 0
-                    and t > 0
-                    and t % divergence_check_interval == 0
-                    and buffer[t - 1].abs().max() > 500):
+            if (
+                divergence_check_interval > 0
+                and t > 0
+                and t % divergence_check_interval == 0
+                and buffer[t - 1].abs().max() > 500
+            ):
                 return None
 
             for i, v in enumerate(self._topo):
@@ -178,10 +179,12 @@ class TemporalSCM:
                 value = self.mechanisms[v](parent_values_instant, parent_values_lagged, eps)
 
                 # Soft intervention shift
-                if (intervention is not None
-                        and int_type == InterventionType.SOFT
-                        and i in int_targets
-                        and (t - burn_in) in int_times):
+                if (
+                    intervention is not None
+                    and int_type == InterventionType.SOFT
+                    and i in int_targets
+                    and (t - burn_in) in int_times
+                ):
                     value = value + int_values
 
                 buffer[t, i] = clip_values(value)
@@ -197,7 +200,7 @@ class TemporalSCM:
         self,
         T: int,
         burn_in: int = 50,
-        generator: Optional[torch.Generator] = None,
+        generator: torch.Generator | None = None,
     ) -> torch.Tensor:
         """
         Sample observational data from the temporal SCM.
@@ -219,7 +222,9 @@ class TemporalSCM:
         result = self._simulate(T + burn_in, burn_in=burn_in, generator=generator)
         if result is None:
             N = len(self._topo)
-            warnings.warn("SCM diverged during simulation; returning zeros.", RuntimeWarning, stacklevel=2)
+            warnings.warn(
+                "SCM diverged during simulation; returning zeros.", RuntimeWarning, stacklevel=2
+            )
             return torch.zeros(T, N, device=self.device, dtype=self.dtype)
         return result
 
@@ -229,7 +234,7 @@ class TemporalSCM:
         T: int,
         intervention: InterventionSpec,
         burn_in: int = 50,
-        generator: Optional[torch.Generator] = None,
+        generator: torch.Generator | None = None,
     ) -> torch.Tensor:
         """
         Sample interventional data from the temporal SCM.
@@ -251,10 +256,17 @@ class TemporalSCM:
             Time series data of shape (T, N) under intervention.
         """
         result = self._simulate(
-            T + burn_in, burn_in=burn_in, intervention=intervention, generator=generator,
+            T + burn_in,
+            burn_in=burn_in,
+            intervention=intervention,
+            generator=generator,
         )
         if result is None:
             N = len(self._topo)
-            warnings.warn("SCM diverged during interventional simulation; returning zeros.", RuntimeWarning, stacklevel=2)
+            warnings.warn(
+                "SCM diverged during interventional simulation; returning zeros.",
+                RuntimeWarning,
+                stacklevel=2,
+            )
             return torch.zeros(T, N, device=self.device, dtype=self.dtype)
         return result

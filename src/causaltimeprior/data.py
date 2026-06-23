@@ -7,21 +7,21 @@ Supports background prefetching to overlap data generation with GPU compute.
 """
 
 import random
-import torch
-from threading import Thread
+from collections.abc import Iterator
 from queue import Queue
-from typing import Dict, Iterator, List, Optional, Tuple
+from threading import Thread
+
+import torch
 
 from causaltimeprior.extended import ExtendedCausalTimePrior
 from causaltimeprior.normalization import normalize_batch
 
-
 # Per-TSCM-structure canonical query offset range (matches the per-structure
 # eval pipeline in scripts/analyze_s9ho.py and the per-structure training
 # launcher run_sanity9_hardened_oscillatory.sh).
-PER_STRUCT_OFFSET_RANGE: Dict[str, Tuple[int, int]] = {
-    "back_door":             (0, 0),
-    "front_door":            (1, 5),
+PER_STRUCT_OFFSET_RANGE: dict[str, tuple[int, int]] = {
+    "back_door": (0, 0),
+    "front_door": (1, 5),
     "instrumental_variable": (0, 5),
 }
 
@@ -47,15 +47,15 @@ class TemporalInterventionDataLoader:
         n_queries: int = 1,
         query_mode: str = "single",
         intervention_source: str = "prior",
-        tscm_structure: str = None,
-        tscm_structures: Optional[List[str]] = None,
+        tscm_structure: str | None = None,
+        tscm_structures: list[str] | None = None,
         use_lagged_edges: bool = True,
         intervention_scale: float = 2.0,
         causal_mask_mode: str = "full",
         dynamics_burn_in: int = 0,
-        sim_device: str = None,
+        sim_device: str | None = None,
         query_offset_range: tuple = (0, 0),
-        hardening: dict = None,
+        hardening: dict | None = None,
     ):
         self.num_steps = num_steps
         self.batch_size = batch_size
@@ -130,14 +130,14 @@ class TemporalInterventionDataLoader:
     def __len__(self) -> int:
         return self.num_steps
 
-    def __iter__(self) -> Iterator[Dict[str, torch.Tensor]]:
+    def __iter__(self) -> Iterator[dict[str, torch.Tensor]]:
         if self.prefetch > 0:
             yield from self._iter_prefetch()
         else:
             for _ in range(self.num_steps):
                 yield self._generate_batch()
 
-    def _iter_prefetch(self) -> Iterator[Dict[str, torch.Tensor]]:
+    def _iter_prefetch(self) -> Iterator[dict[str, torch.Tensor]]:
         """Generate batches with background prefetching."""
         queue: Queue = Queue(maxsize=self.prefetch)
         sentinel = object()
@@ -159,15 +159,14 @@ class TemporalInterventionDataLoader:
 
         thread.join(timeout=5)
 
-    def _generate_batch(self) -> Dict[str, torch.Tensor]:
+    def _generate_batch(self) -> dict[str, torch.Tensor]:
         """Generate a single batch."""
-        if self.priors is not None:
-            prior = self._rng.choice(self.priors)
-        else:
-            prior = self.prior
+        prior = self._rng.choice(self.priors) if self.priors is not None else self.prior
         batch = prior.generate_batch(
-            self.batch_size, num_workers=self.num_workers,
-            n_queries=self.n_queries, query_mode=self.query_mode,
+            self.batch_size,
+            num_workers=self.num_workers,
+            n_queries=self.n_queries,
+            query_mode=self.query_mode,
         )
 
         if self.normalize:
@@ -175,7 +174,8 @@ class TemporalInterventionDataLoader:
 
         # Move to device
         if self.device != "cpu":
-            batch = {k: v.to(self.device) if isinstance(v, torch.Tensor) else v
-                     for k, v in batch.items()}
+            batch = {
+                k: v.to(self.device) if isinstance(v, torch.Tensor) else v for k, v in batch.items()
+            }
 
         return batch

@@ -43,12 +43,8 @@ def _add_common(parser: argparse.ArgumentParser) -> None:
         default="cpu",
         help="torch device: cpu, cuda, cuda:0, ... (default: cpu).",
     )
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Verbose logging to stderr."
-    )
-    parser.add_argument(
-        "--version", action="version", version=f"causaltimeprior {__version__}"
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose logging to stderr.")
+    parser.add_argument("--version", action="version", version=f"causaltimeprior {__version__}")
 
 
 # --------------------------------------------------------------------------- #
@@ -150,9 +146,7 @@ def _write_parquet(dataset: object, out: Path, *, seed: int) -> None:
         description="Locally generated via ctp-generate.",
         n_episodes=len(episodes),
     )
-    _release_io.write_suite(
-        meta, episodes, suite_dir, package_version=__version__, seed=seed
-    )
+    _release_io.write_suite(meta, episodes, suite_dir, package_version=__version__, seed=seed)
 
 
 # --------------------------------------------------------------------------- #
@@ -165,9 +159,7 @@ def _build_benchmark_parser() -> argparse.ArgumentParser:
         prog="ctp-benchmark",
         description="Evaluate a baseline against a frozen CausalTimePrior benchmark suite.",
     )
-    p.add_argument(
-        "--list", action="store_true", help="List available benchmark suites and exit."
-    )
+    p.add_argument("--list", action="store_true", help="List available benchmark suites and exit.")
     p.add_argument(
         "--list-baselines", action="store_true", help="List available baselines and exit."
     )

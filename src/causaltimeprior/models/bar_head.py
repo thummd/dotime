@@ -6,8 +6,6 @@ following Do-PFN's classification-as-regression approach.
 
 import torch
 import torch.nn as nn
-from typing import List, Optional, Union
-
 from pfns.model.bar_distribution import FullSupportBarDistribution, get_bucket_borders
 
 from causaltimeprior.models.pinball_loss import extract_quantiles, pinball_loss
@@ -27,9 +25,9 @@ class BarDistributionHead(nn.Module):
         )
 
         # Will be set after calibration
-        self.bar_dist: Optional[FullSupportBarDistribution] = None
+        self.bar_dist: FullSupportBarDistribution | None = None
         # borders has n_buckets+1 entries
-        self.register_buffer('borders', torch.zeros(n_buckets + 1))
+        self.register_buffer("borders", torch.zeros(n_buckets + 1))
 
     def set_bar_distribution(self, bar_dist: FullSupportBarDistribution, borders: torch.Tensor):
         """Set calibrated bar distribution and bucket borders."""
@@ -62,7 +60,9 @@ class BarDistributionHead(nn.Module):
         loss : scalar
         """
         if self.bar_dist is None:
-            raise RuntimeError("Bar distribution not calibrated. Call set_bar_distribution() first.")
+            raise RuntimeError(
+                "Bar distribution not calibrated. Call set_bar_distribution() first."
+            )
         # FullSupportBarDistribution returns per-sample losses
         per_sample_loss = self.bar_dist(logits, y_true.unsqueeze(-1))  # (B,)
         return per_sample_loss.mean()
@@ -87,7 +87,7 @@ class BarDistributionHead(nn.Module):
     def predict_quantiles(
         self,
         logits: torch.Tensor,
-        tau_levels: Union[torch.Tensor, List[float]],
+        tau_levels: torch.Tensor | list[float],
         temperature: float = 200.0,
     ) -> torch.Tensor:
         """Extract quantile predictions from logits.
@@ -110,7 +110,7 @@ class BarDistributionHead(nn.Module):
         self,
         logits: torch.Tensor,
         y_true: torch.Tensor,
-        tau_levels: Union[torch.Tensor, List[float]],
+        tau_levels: torch.Tensor | list[float],
         temperature: float = 200.0,
     ) -> torch.Tensor:
         """Compute pinball loss from logits and targets.
@@ -153,7 +153,7 @@ def calibrate_bar_distribution(
     """
     all_ys = []
     for batch in dataloader:
-        all_ys.append(batch['Y_true_norm'])
+        all_ys.append(batch["Y_true_norm"])
 
     ys = torch.cat(all_ys)
     # Filter out NaN/Inf

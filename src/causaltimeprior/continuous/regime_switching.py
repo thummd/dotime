@@ -32,8 +32,6 @@ spec (hard / soft / time-varying) modifies the variable as usual.
 
 from __future__ import annotations
 
-from typing import List, Optional, Tuple
-
 import torch
 
 from .continuous_scm import (
@@ -154,8 +152,8 @@ def sample_sticky_transition_matrix(
     n_regimes: int,
     sticky_alpha: float = 9.0,
     other_alpha: float = 0.5,
-    generator: Optional[torch.Generator] = None,
-    device: Optional[torch.device] = None,
+    generator: torch.Generator | None = None,
+    device: torch.device | None = None,
     dtype: torch.dtype = torch.float32,
 ) -> torch.Tensor:
     """Draw a sticky Markov transition matrix from a Dirichlet prior.
@@ -227,9 +225,9 @@ class ContinuousRegimeSwitchingSCM:
 
     def __init__(
         self,
-        regimes: List[ContinuousSCM],
+        regimes: list[ContinuousSCM],
         transition_matrix: torch.Tensor,
-        initial_distribution: Optional[torch.Tensor] = None,
+        initial_distribution: torch.Tensor | None = None,
     ) -> None:
         if len(regimes) < 2:
             raise ValueError(f"need >= 2 regimes, got {len(regimes)}")
@@ -257,7 +255,8 @@ class ContinuousRegimeSwitchingSCM:
         self.transition_matrix = transition_matrix
         if initial_distribution is None:
             initial_distribution = torch.full(
-                (len(regimes),), 1.0 / len(regimes),
+                (len(regimes),),
+                1.0 / len(regimes),
                 dtype=transition_matrix.dtype,
             )
         if initial_distribution.shape != (len(regimes),):
@@ -286,10 +285,10 @@ class ContinuousRegimeSwitchingSCM:
         weight_scale: float = 0.5,
         sticky_alpha: float = 9.0,
         other_alpha: float = 0.5,
-        generator: Optional[torch.Generator] = None,
-        device: Optional[torch.device] = None,
+        generator: torch.Generator | None = None,
+        device: torch.device | None = None,
         dtype: torch.dtype = torch.float32,
-    ) -> "ContinuousRegimeSwitchingSCM":
+    ) -> ContinuousRegimeSwitchingSCM:
         """Sample ``n_regimes`` independent random-graph regimes and a sticky
         transition matrix."""
         regimes = [
@@ -320,7 +319,7 @@ class ContinuousRegimeSwitchingSCM:
     def _draw_regime_trajectory(
         self,
         T: int,
-        generator: Optional[torch.Generator] = None,
+        generator: torch.Generator | None = None,
     ) -> torch.Tensor:
         """Sample ``T`` regime indices via the sticky Markov chain."""
         regime_traj = torch.empty(T, dtype=torch.long, device=self.device)
@@ -339,7 +338,7 @@ class ContinuousRegimeSwitchingSCM:
     def _draw_noise(
         self,
         num_steps: int,
-        generator: Optional[torch.Generator] = None,
+        generator: torch.Generator | None = None,
     ) -> torch.Tensor:
         """Standard-normal noise table ``(num_steps, n_vars)``, shared across regimes."""
         noise = torch.empty(num_steps, self.n_vars, device=self.device, dtype=self.dtype)
@@ -352,13 +351,13 @@ class ContinuousRegimeSwitchingSCM:
         self,
         times: torch.Tensor,
         dts: torch.Tensor,
-        intervention: Optional[ContinuousIntervention] = None,
-        x0: Optional[torch.Tensor] = None,
-        noise: Optional[torch.Tensor] = None,
-        regime_trajectory: Optional[torch.Tensor] = None,
-        generator: Optional[torch.Generator] = None,
+        intervention: ContinuousIntervention | None = None,
+        x0: torch.Tensor | None = None,
+        noise: torch.Tensor | None = None,
+        regime_trajectory: torch.Tensor | None = None,
+        generator: torch.Generator | None = None,
         num_substeps: int = 1,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Run the regime-switching SCM forward on the given schedule.
 
         Returns ``(times, trajectory)`` to match the
@@ -378,13 +377,9 @@ class ContinuousRegimeSwitchingSCM:
         start (regimes switch on observation boundaries only).
         """
         if times.dim() != 1 or dts.dim() != 1 or dts.numel() != times.numel() - 1:
-            raise ValueError(
-                f"shape mismatch: times={tuple(times.shape)}, dts={tuple(dts.shape)}"
-            )
+            raise ValueError(f"shape mismatch: times={tuple(times.shape)}, dts={tuple(dts.shape)}")
         if not isinstance(num_substeps, int) or num_substeps < 1:
-            raise ValueError(
-                f"num_substeps must be a positive int, got {num_substeps}"
-            )
+            raise ValueError(f"num_substeps must be a positive int, got {num_substeps}")
         T = times.numel()
         fine_steps_total = (T - 1) * num_substeps
         if noise is None:
@@ -398,8 +393,7 @@ class ContinuousRegimeSwitchingSCM:
             regime_trajectory = self._draw_regime_trajectory(T, generator=generator)
         elif regime_trajectory.shape != (T,):
             raise ValueError(
-                f"regime_trajectory has shape {tuple(regime_trajectory.shape)}, "
-                f"expected ({T},)"
+                f"regime_trajectory has shape {tuple(regime_trajectory.shape)}, expected ({T},)"
             )
 
         if x0 is None:
@@ -441,9 +435,9 @@ class ContinuousRegimeSwitchingSCM:
         times: torch.Tensor,
         dts: torch.Tensor,
         intervention: ContinuousIntervention,
-        x0: Optional[torch.Tensor] = None,
-        generator: Optional[torch.Generator] = None,
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        x0: torch.Tensor | None = None,
+        generator: torch.Generator | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return matched ``(times, X_obs, X_cf)`` with shared noise + regimes.
 
         Matches :meth:`ContinuousSCM.sample_counterfactual_pair` for
@@ -457,12 +451,20 @@ class ContinuousRegimeSwitchingSCM:
         noise = self._draw_noise(T - 1, generator=generator)
         regime_trajectory = self._draw_regime_trajectory(T, generator=generator)
         _, x_obs = self.simulate(
-            times, dts, intervention=None,
-            x0=x0, noise=noise, regime_trajectory=regime_trajectory,
+            times,
+            dts,
+            intervention=None,
+            x0=x0,
+            noise=noise,
+            regime_trajectory=regime_trajectory,
         )
         _, x_cf = self.simulate(
-            times, dts, intervention=intervention,
-            x0=x0, noise=noise, regime_trajectory=regime_trajectory,
+            times,
+            dts,
+            intervention=intervention,
+            x0=x0,
+            noise=noise,
+            regime_trajectory=regime_trajectory,
         )
         return times, x_obs, x_cf
 
@@ -471,15 +473,23 @@ class ContinuousRegimeSwitchingSCM:
         times: torch.Tensor,
         dts: torch.Tensor,
         intervention: ContinuousIntervention,
-        x0: Optional[torch.Tensor] = None,
-        generator: Optional[torch.Generator] = None,
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        x0: torch.Tensor | None = None,
+        generator: torch.Generator | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return matched ``(times, X_obs, X_int)`` with independent noise /
         regime draws for obs vs int runs."""
         _, x_obs = self.simulate(
-            times, dts, intervention=None, x0=x0, generator=generator,
+            times,
+            dts,
+            intervention=None,
+            x0=x0,
+            generator=generator,
         )
         _, x_int = self.simulate(
-            times, dts, intervention=intervention, x0=x0, generator=generator,
+            times,
+            dts,
+            intervention=intervention,
+            x0=x0,
+            generator=generator,
         )
         return times, x_obs, x_int

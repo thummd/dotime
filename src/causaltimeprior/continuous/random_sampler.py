@@ -25,8 +25,6 @@ This module defines:
 
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 import torch
 
@@ -113,8 +111,7 @@ class RandomContinuousSCMSampler:
     ) -> None:
         if not 2 <= n_min <= n_max_prior:
             raise ValueError(
-                f"require 2 <= n_min <= n_max_prior, got n_min={n_min}, "
-                f"n_max_prior={n_max_prior}"
+                f"require 2 <= n_min <= n_max_prior, got n_min={n_min}, n_max_prior={n_max_prior}"
             )
         if not 0.0 <= edge_prob <= 1.0:
             raise ValueError(f"edge_prob must be in [0, 1], got {edge_prob}")
@@ -124,13 +121,11 @@ class RandomContinuousSCMSampler:
             raise ValueError(f"regime_prob must be in [0, 1], got {regime_prob}")
         if not (1 <= regime_count_range[0] <= regime_count_range[1]):
             raise ValueError(
-                f"regime_count_range must be (lo, hi) with 1 <= lo <= hi, "
-                f"got {regime_count_range}"
+                f"regime_count_range must be (lo, hi) with 1 <= lo <= hi, got {regime_count_range}"
             )
         if mechanism_kind not in ("linear", "neural", "mixed"):
             raise ValueError(
-                f"mechanism_kind must be 'linear', 'neural', or 'mixed'; "
-                f"got {mechanism_kind!r}"
+                f"mechanism_kind must be 'linear', 'neural', or 'mixed'; got {mechanism_kind!r}"
             )
         if not 0.0 <= p_neural <= 1.0:
             raise ValueError(f"p_neural must be in [0, 1], got {p_neural}")
@@ -161,7 +156,7 @@ class RandomContinuousSCMSampler:
 
     def sample(
         self,
-        generator: Optional[torch.Generator] = None,
+        generator: torch.Generator | None = None,
     ) -> tuple:
         """Return ``(scm, n_vars, A_topo, Y_topo, hidden_topo)``.
 
@@ -183,13 +178,14 @@ class RandomContinuousSCMSampler:
         """
         n_vars = int(self._np_rng.randint(self.n_min, self.n_max_prior + 1))
 
-        is_regime_switching = (
-            self.regime_prob > 0.0 and self._np_rng.rand() < self.regime_prob
-        )
+        is_regime_switching = self.regime_prob > 0.0 and self._np_rng.rand() < self.regime_prob
         if is_regime_switching:
-            n_regimes = int(self._np_rng.randint(
-                self.regime_count_range[0], self.regime_count_range[1] + 1,
-            ))
+            n_regimes = int(
+                self._np_rng.randint(
+                    self.regime_count_range[0],
+                    self.regime_count_range[1] + 1,
+                )
+            )
             scm = ContinuousRegimeSwitchingSCM.sample_random(
                 n_vars=n_vars,
                 n_regimes=n_regimes,
@@ -222,7 +218,7 @@ class RandomContinuousSCMSampler:
         hidden_topo: list = []
         if self.hidden_prob > 0.0:
             for v in range(n_vars):
-                if v == a_idx or v == y_idx:
+                if v in (a_idx, y_idx):
                     continue
                 if self._np_rng.rand() < self.hidden_prob:
                     hidden_topo.append(v)

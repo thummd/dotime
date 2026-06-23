@@ -30,8 +30,8 @@ diffusion computation; the integration loop lives in
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Optional, Sequence
 
 import torch
 
@@ -136,8 +136,8 @@ def sample_ou_mechanism(
     theta_range: tuple = (0.5, 2.0),
     sigma_range: tuple = (0.2, 0.8),
     weight_scale: float = 0.8,
-    generator: Optional[torch.Generator] = None,
-    device: Optional[torch.device] = None,
+    generator: torch.Generator | None = None,
+    device: torch.device | None = None,
     dtype: torch.dtype = torch.float32,
 ) -> OUMechanism:
     """Draw a random :class:`OUMechanism` from priors on its parameters.

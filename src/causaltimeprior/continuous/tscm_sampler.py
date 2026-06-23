@@ -22,8 +22,6 @@ studies, so downstream evaluation code can use the same structure names.
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 import torch
 
 from causaltimeprior.tscm_sampler import TSCMSampler, TSCMStructure
@@ -84,12 +82,12 @@ class ContinuousTSCMSampler:
             use_lagged_edges=use_lagged_edges,
         )
         self._dag = self._topology_helper._build_dag()
-        self._node_names: List[str] = list(self._dag.topo_order)
-        self._parents_per_node: List[List[int]] = self._build_parent_lists()
+        self._node_names: list[str] = list(self._dag.topo_order)
+        self._parents_per_node: list[list[int]] = self._build_parent_lists()
 
     # ------------------------------------------------------------------ topology
 
-    def _build_parent_lists(self) -> List[List[int]]:
+    def _build_parent_lists(self) -> list[list[int]]:
         """Collapse ``G_0`` and ``G_lags[0]`` into a single parent list per node.
 
         The DAG is addressed by topological-order index.  We read
@@ -101,7 +99,7 @@ class ContinuousTSCMSampler:
         """
         topo = self._node_names
         name_to_idx = {name: i for i, name in enumerate(topo)}
-        parents: List[List[int]] = [[] for _ in topo]
+        parents: list[list[int]] = [[] for _ in topo]
 
         # Instantaneous edges (from G_0): parents[v] += G_0.predecessors(v)
         for v_name in topo:
@@ -117,16 +115,15 @@ class ContinuousTSCMSampler:
             N = len(topo)
             for v in range(N):
                 for u in range(N):
-                    if u != v and G_lag[u, v] > 0:
-                        if u not in parents[v]:
-                            parents[v].append(u)
+                    if u != v and G_lag[u, v] > 0 and u not in parents[v]:
+                        parents[v].append(u)
 
         return parents
 
     # ------------------------------------------------------------------ metadata
 
     @property
-    def node_names(self) -> List[str]:
+    def node_names(self) -> list[str]:
         """Topological-order node names (e.g. ``['X', 'A', 'Y']``)."""
         return list(self._node_names)
 
@@ -134,7 +131,7 @@ class ContinuousTSCMSampler:
     def n_vars(self) -> int:
         return len(self._node_names)
 
-    def get_hidden_vars(self) -> List[int]:
+    def get_hidden_vars(self) -> list[int]:
         """Indices of unobserved variables (U), or empty list if all observed."""
         return self._topology_helper.get_hidden_vars()
 
@@ -150,8 +147,8 @@ class ContinuousTSCMSampler:
 
     def sample(
         self,
-        generator: Optional[torch.Generator] = None,
-        device: Optional[torch.device] = None,
+        generator: torch.Generator | None = None,
+        device: torch.device | None = None,
         dtype: torch.dtype = torch.float32,
     ) -> ContinuousSCM:
         """Draw a random :class:`ContinuousSCM` with the stored topology.
@@ -167,7 +164,7 @@ class ContinuousTSCMSampler:
         -------
         ContinuousSCM
         """
-        mechanisms: List[OUMechanism] = []
+        mechanisms: list[OUMechanism] = []
         for v_idx in range(self.n_vars):
             mechanisms.append(
                 sample_ou_mechanism(

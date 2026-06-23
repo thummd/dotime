@@ -12,18 +12,18 @@ Variable naming convention (consistent across all structures):
   U  - unobserved (hidden) confounder
 """
 
-import torch
-import torch.nn as nn
-import numpy as np
-import networkx as nx
-from typing import Optional, List
 from enum import Enum
 
-from causaltimeprior.temporal_graph import TemporalDAG
-from causaltimeprior.temporal_scm import TemporalSCM
-from causaltimeprior.temporal_mechanism import TemporalMechanism
-from causaltimeprior._sampling import TorchDistributionSampler
+import networkx as nx
+import numpy as np
+import torch
+import torch.nn as nn
+
 from causaltimeprior._activations import Tanh, TanhReLU
+from causaltimeprior._sampling import TorchDistributionSampler
+from causaltimeprior.temporal_graph import TemporalDAG
+from causaltimeprior.temporal_mechanism import TemporalMechanism
+from causaltimeprior.temporal_scm import TemporalSCM
 
 
 class TSCMStructure(Enum):
@@ -41,14 +41,15 @@ class TSCMStructure(Enum):
     - Non-identifiable: UNOBSERVED_CONFOUNDER
       Hidden confounder, no mediator or instrument. Tests model robustness.
     """
-    OBSERVED_CONFOUNDER = "observed_confounder"       # X -> A, X -> Y (backdoor)
-    MEDIATOR = "mediator"                              # A -> M -> Y (frontdoor, trivial)
-    CONFOUNDER_MEDIATOR = "confounder_mediator"        # X -> A -> M -> Y, X -> Y (backdoor)
-    UNOBSERVED_CONFOUNDER = "unobserved_confounder"    # U -> A, U -> Y (non-identifiable)
-    BACK_DOOR = "back_door"                            # X -> A, X -> Y, A -> Y (backdoor)
-    FRONT_DOOR = "front_door"                          # A -> M -> Y, U -> A, U -> Y (frontdoor)
-    INSTRUMENTAL_VARIABLE = "instrumental_variable"    # X -> A -> Y, U -> A, U -> Y (IV)
-    RCT_NO_CONFOUNDING = "rct_no_confounding"          # A -> Y (trivially identified)
+
+    OBSERVED_CONFOUNDER = "observed_confounder"  # X -> A, X -> Y (backdoor)
+    MEDIATOR = "mediator"  # A -> M -> Y (frontdoor, trivial)
+    CONFOUNDER_MEDIATOR = "confounder_mediator"  # X -> A -> M -> Y, X -> Y (backdoor)
+    UNOBSERVED_CONFOUNDER = "unobserved_confounder"  # U -> A, U -> Y (non-identifiable)
+    BACK_DOOR = "back_door"  # X -> A, X -> Y, A -> Y (backdoor)
+    FRONT_DOOR = "front_door"  # A -> M -> Y, U -> A, U -> Y (frontdoor)
+    INSTRUMENTAL_VARIABLE = "instrumental_variable"  # X -> A -> Y, U -> A, U -> Y (IV)
+    RCT_NO_CONFOUNDING = "rct_no_confounding"  # A -> Y (trivially identified)
 
 
 # Default activations for random mechanism sampling
@@ -78,7 +79,7 @@ class TSCMSampler:
         self,
         structure: TSCMStructure,
         max_lag: int = 1,
-        activations: Optional[List[nn.Module]] = None,
+        activations: list[nn.Module] | None = None,
         sigma_w: float = 1.0,
         sigma_b: float = 0.5,
         use_lagged_edges: bool = True,
@@ -94,7 +95,7 @@ class TSCMSampler:
         self.device = torch.device(device)
         self.use_lagged_edges = use_lagged_edges
 
-    def sample(self, generator: Optional[torch.Generator] = None) -> TemporalSCM:
+    def sample(self, generator: torch.Generator | None = None) -> TemporalSCM:
         """Sample a temporal SCM with the specified structure.
 
         Returns
@@ -107,7 +108,7 @@ class TSCMSampler:
         noise = self._sample_noise(node_names)
         return TemporalSCM(dag, mechanisms, noise, device=self.device)
 
-    def get_hidden_vars(self) -> List[int]:
+    def get_hidden_vars(self) -> list[int]:
         """Return indices of hidden (unobserved) variables, if any.
 
         U is always placed first (index 0) when present.
@@ -123,7 +124,7 @@ class TSCMSampler:
     def get_outcome_var(self) -> int:
         """Return the topological-order index of the outcome variable Y."""
         dag = self._build_dag()
-        return dag.topo_order.index('Y')
+        return dag.topo_order.index("Y")
 
     def get_intervention_target(self) -> int:
         """Return the topological-order index of the treatment variable A.
@@ -132,11 +133,11 @@ class TSCMSampler:
         the correct variable is intervened upon for each structure.
         """
         dag = self._build_dag()
-        return dag.topo_order.index('A')
+        return dag.topo_order.index("A")
 
     def _build_dag(self) -> TemporalDAG:
         """Construct a TemporalDAG for the specified structure."""
-        builder = getattr(self, f'_build_{self.structure.value}')
+        builder = getattr(self, f"_build_{self.structure.value}")
         return builder()
 
     # --- Structure builders ---
@@ -343,16 +344,15 @@ class TSCMSampler:
 
     def _sample_mechanisms(
         self,
-        node_names: List[str],
+        node_names: list[str],
         dag: TemporalDAG,
-        generator: Optional[torch.Generator],
+        generator: torch.Generator | None,
     ) -> dict:
         """Sample random mechanisms for each node."""
         mechanisms = {}
         for v in node_names:
             # Pick random activation
-            act_idx = int(torch.randint(0, len(self.activations), (1,),
-                                        generator=generator).item())
+            act_idx = int(torch.randint(0, len(self.activations), (1,), generator=generator).item())
             activation = self.activations[act_idx]
 
             mechanisms[v] = TemporalMechanism(
@@ -366,11 +366,9 @@ class TSCMSampler:
             )
         return mechanisms
 
-    def _sample_noise(self, node_names: List[str]) -> dict:
+    def _sample_noise(self, node_names: list[str]) -> dict:
         """Create noise distributions for each node."""
         noise = {}
         for v in node_names:
-            noise[v] = TorchDistributionSampler(
-                torch.distributions.Normal(0.0, self.noise_std)
-            )
+            noise[v] = TorchDistributionSampler(torch.distributions.Normal(0.0, self.noise_std))
         return noise

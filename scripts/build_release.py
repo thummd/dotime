@@ -131,7 +131,9 @@ def build_generic(cfg: dict, seed: int, scale: float):
     episodes = []
     for i in range(n):
         x_obs, x_int, intervention, _scm = prior.generate_pair(T=T)
-        episodes.append(episode_from_pair(x_obs, x_int, intervention, scm_id=i, metadata={"tier": 1}))
+        episodes.append(
+            episode_from_pair(x_obs, x_int, intervention, scm_id=i, metadata={"tier": 1})
+        )
     return episodes
 
 
@@ -172,10 +174,26 @@ def croissant_metadata(meta: SuiteMetadata, manifest: dict) -> dict:
         "cr:recordSet": {
             "@type": "cr:RecordSet",
             "field": [
-                {"@id": "x_obs", "dataType": "cr:Float", "description": "Observational trajectory (T*N row-major)."},
-                {"@id": "x_int", "dataType": "cr:Float", "description": "Interventional trajectory (T*N row-major)."},
-                {"@id": "y_true", "dataType": "cr:Float", "description": "Exact interventional outcome at the query."},
-                {"@id": "structure", "dataType": "cr:Text", "description": "Identification structure label."},
+                {
+                    "@id": "x_obs",
+                    "dataType": "cr:Float",
+                    "description": "Observational trajectory (T*N row-major).",
+                },
+                {
+                    "@id": "x_int",
+                    "dataType": "cr:Float",
+                    "description": "Interventional trajectory (T*N row-major).",
+                },
+                {
+                    "@id": "y_true",
+                    "dataType": "cr:Float",
+                    "description": "Exact interventional outcome at the query.",
+                },
+                {
+                    "@id": "structure",
+                    "dataType": "cr:Text",
+                    "description": "Identification structure label.",
+                },
                 {"@id": "tier", "dataType": "cr:Integer", "description": "Difficulty tier."},
             ],
         },
@@ -228,7 +246,9 @@ def main(argv: list[str] | None = None) -> int:
             raise SystemExit(f"unknown suite {name!r}; available: {list(suites)}")
         cfg = suites[name]
         seed = base_seed + 1000 * (offset + 1)
-        print(f"[build_release] generating {name} (scale={args.scale}, seed={seed}) ...", flush=True)
+        print(
+            f"[build_release] generating {name} (scale={args.scale}, seed={seed}) ...", flush=True
+        )
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)  # handled SCM divergence
             episodes = _GENERATORS[cfg["generator"]](cfg, seed, args.scale)
@@ -241,7 +261,11 @@ def main(argv: list[str] | None = None) -> int:
             suite_dir,
             package_version=__version__,
             seed=seed,
-            extra_manifest={"generator": cfg["generator"], "config_hash": config_hash, "scale": args.scale},
+            extra_manifest={
+                "generator": cfg["generator"],
+                "config_hash": config_hash,
+                "scale": args.scale,
+            },
         )
         manifest = json.loads((suite_dir / "manifest.json").read_text())
         (suite_dir / "croissant.json").write_text(

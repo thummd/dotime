@@ -43,7 +43,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -65,19 +64,20 @@ class _SampledSCMContext:
     n_vars: int
     intervention_target_topo: int
     outcome_var_topo: int
-    hidden_vars_topo: List[int] = field(default_factory=list)
+    hidden_vars_topo: list[int] = field(default_factory=list)
 
     @property
-    def canonical_perm(self) -> List[int]:
+    def canonical_perm(self) -> list[int]:
         """``A -> 0, Y -> N-1, others in between (topological order preserved)``."""
         middle = [
-            i for i in range(self.n_vars)
+            i
+            for i in range(self.n_vars)
             if i != self.intervention_target_topo and i != self.outcome_var_topo
         ]
-        return [self.intervention_target_topo] + middle + [self.outcome_var_topo]
+        return [self.intervention_target_topo, *middle, self.outcome_var_topo]
 
     @property
-    def topo_to_canon(self) -> List[int]:
+    def topo_to_canon(self) -> list[int]:
         """Inverse permutation: ``canon_idx[topo_idx] = canonical index of that topo index``."""
         inv = [0] * self.n_vars
         for canon_idx, topo_idx in enumerate(self.canonical_perm):
@@ -130,13 +130,11 @@ class _SineProfile:
     amplitude: float
 
     def __call__(self, t: float) -> float:
-        return self.amplitude * math.sin(
-            2.0 * math.pi * (t - self.t_start) / self.period
-        )
+        return self.amplitude * math.sin(2.0 * math.pi * (t - self.t_start) / self.period)
+
 
 from .continuous_scm import (
     ContinuousIntervention,
-    ContinuousSCM,
     InterventionKind,
 )
 from .time_schedule import (
@@ -150,7 +148,7 @@ from .tscm_sampler import ContinuousTSCMSampler
 def _pad_to_max_nodes(X: torch.Tensor, max_nodes: int) -> torch.Tensor:
     """Right-pad ``X`` of shape ``(T, N)`` to ``(T, max_nodes)`` with zeros."""
     T, N = X.shape
-    if N >= max_nodes:
+    if max_nodes <= N:
         return X[:, :max_nodes]
     padding = torch.zeros(T, max_nodes - N, dtype=X.dtype, device=X.device)
     return torch.cat([X, padding], dim=1)
@@ -162,8 +160,8 @@ def _build_schedule(
     dt: float,
     jitter: float,
     exp_rate: float,
-    generator: Optional[torch.Generator],
-) -> Tuple[torch.Tensor, torch.Tensor]:
+    generator: torch.Generator | None,
+) -> tuple[torch.Tensor, torch.Tensor]:
     """Dispatch to the requested schedule family."""
     if schedule == "regular":
         return regular_schedule(T=T, dt=dt)
@@ -266,13 +264,9 @@ class ContinuousExtendedPrior:
         if pair_mode not in ("counterfactual", "interventional"):
             raise ValueError(f"invalid pair_mode: {pair_mode!r}")
         if not isinstance(num_substeps, int) or num_substeps < 1:
-            raise ValueError(
-                f"num_substeps must be a positive int, got {num_substeps}"
-            )
+            raise ValueError(f"num_substeps must be a positive int, got {num_substeps}")
         if not 0.0 <= p_no_context <= 1.0:
-            raise ValueError(
-                f"p_no_context must be in [0, 1], got {p_no_context}"
-            )
+            raise ValueError(f"p_no_context must be in [0, 1], got {p_no_context}")
         if intervention_source not in ("prior", "positivity_aware"):
             raise ValueError(f"invalid intervention_source: {intervention_source!r}")
         if time_varying_profile not in ("step", "ramp", "sine", "random"):
@@ -340,7 +334,7 @@ class ContinuousExtendedPrior:
         return self.sampler.n_vars
 
     @property
-    def hidden_vars(self) -> List[int]:
+    def hidden_vars(self) -> list[int]:
         """Backward-compat accessor -- callers outside ``generate_sample``
         may still want the fixed-topology hidden variable list.  For
         random-graph samplers this falls back to an empty list."""
@@ -353,7 +347,7 @@ class ContinuousExtendedPrior:
         return int(self._np_rng.randint(self.t_range[0], self.t_range[1] + 1))
 
     @staticmethod
-    def _permute(X: torch.Tensor, canonical_perm: List[int]) -> torch.Tensor:
+    def _permute(X: torch.Tensor, canonical_perm: list[int]) -> torch.Tensor:
         """Apply an arbitrary canonical topological-order permutation."""
         return X[:, canonical_perm]
 
@@ -361,10 +355,10 @@ class ContinuousExtendedPrior:
 
     def generate_sample(
         self,
-        T: Optional[int] = None,
+        T: int | None = None,
         n_queries: int = 1,
         query_mode: str = "single",
-    ) -> Dict[str, torch.Tensor]:
+    ) -> dict[str, torch.Tensor]:
         """Draw one trajectory with a single or multi-query batch entry.
 
         Parameters
@@ -448,21 +442,22 @@ class ContinuousExtendedPrior:
         shared_regime_traj = None
         if hasattr(scm, "_draw_regime_trajectory"):
             shared_regime_traj = scm._draw_regime_trajectory(
-                times.numel(), generator=self._torch_gen,
+                times.numel(),
+                generator=self._torch_gen,
             )
         _, X_obs_raw = scm.simulate(
-            times, dts, intervention=None,
-            noise=shared_noise, regime_trajectory=shared_regime_traj,
+            times,
+            dts,
+            intervention=None,
+            noise=shared_noise,
+            regime_trajectory=shared_regime_traj,
             num_substeps=self.num_substeps,
         )
 
         # 5. Compute int_onset_idx and derive pre-intervention stats
         #    from X_obs_raw; these feed positivity-aware value clipping.
         onset_mask = times >= t_int_start
-        if onset_mask.any():
-            int_onset_idx = int(onset_mask.float().argmax().item())
-        else:
-            int_onset_idx = T - 1
+        int_onset_idx = int(onset_mask.float().argmax().item()) if onset_mask.any() else T - 1
         pre_int_target = X_obs_raw[:int_onset_idx, a_idx_topo]
 
         # 6. Sample intervention value (respects kind + positivity).
@@ -487,13 +482,19 @@ class ContinuousExtendedPrior:
         #    regime-switching SCMs, a fresh regime trajectory too).
         if self.pair_mode == "counterfactual":
             _, X_int_raw = scm.simulate(
-                times, dts, intervention=intervention,
-                noise=shared_noise, regime_trajectory=shared_regime_traj,
+                times,
+                dts,
+                intervention=intervention,
+                noise=shared_noise,
+                regime_trajectory=shared_regime_traj,
                 num_substeps=self.num_substeps,
             )
         else:
             _, X_int_raw = scm.simulate(
-                times, dts, intervention=intervention, generator=self._torch_gen,
+                times,
+                dts,
+                intervention=intervention,
+                generator=self._torch_gen,
                 num_substeps=self.num_substeps,
             )
         X_obs = X_obs_raw
@@ -552,7 +553,7 @@ class ContinuousExtendedPrior:
         t_int_end_norm = (t_int_end - times[0].item()) / max(span, 1e-6)
         query_time_norm = times_norm[query_time_idx]
 
-        sample: Dict[str, torch.Tensor] = {
+        sample: dict[str, torch.Tensor] = {
             # Trajectories
             "X_obs": X_obs_padded,
             "X_int": X_int_padded,
@@ -565,7 +566,8 @@ class ContinuousExtendedPrior:
             "int_onset_idx": torch.tensor(int_onset_idx, dtype=torch.long),
             "intervention_target": torch.tensor(intervention_target_canon, dtype=torch.long),
             "intervention_type": torch.tensor(
-                self._INT_KIND_ORDER.index(intervention_kind), dtype=torch.long,
+                self._INT_KIND_ORDER.index(intervention_kind),
+                dtype=torch.long,
             ),
             "intervention_value": torch.tensor(intervention_value, dtype=torch.float32),
             "intervention_time_start": torch.tensor(t_int_start_norm, dtype=torch.float32),
@@ -574,12 +576,24 @@ class ContinuousExtendedPrior:
             "t_int_start": torch.tensor(t_int_start, dtype=torch.float32),
             "t_int_end": torch.tensor(t_int_end, dtype=torch.float32),
             # Query
-            "query_target": query_target_idx.long() if n_queries > 1 else torch.tensor(int(query_target_idx.item()), dtype=torch.long),
-            "query_time": query_time_norm if n_queries > 1 else torch.tensor(float(query_time_norm.item()), dtype=torch.float32),
-            "t_query": query_time_abs if n_queries > 1 else torch.tensor(float(query_time_abs.item()), dtype=torch.float32),
-            "Y_true": y_true if n_queries > 1 else torch.tensor(float(y_true.item()), dtype=torch.float32),
-            "Y_obs": y_obs if n_queries > 1 else torch.tensor(float(y_obs.item()), dtype=torch.float32),
-            "Y_causal_effect": y_causal_effect if n_queries > 1 else torch.tensor(float(y_causal_effect.item()), dtype=torch.float32),
+            "query_target": query_target_idx.long()
+            if n_queries > 1
+            else torch.tensor(int(query_target_idx.item()), dtype=torch.long),
+            "query_time": query_time_norm
+            if n_queries > 1
+            else torch.tensor(float(query_time_norm.item()), dtype=torch.float32),
+            "t_query": query_time_abs
+            if n_queries > 1
+            else torch.tensor(float(query_time_abs.item()), dtype=torch.float32),
+            "Y_true": y_true
+            if n_queries > 1
+            else torch.tensor(float(y_true.item()), dtype=torch.float32),
+            "Y_obs": y_obs
+            if n_queries > 1
+            else torch.tensor(float(y_obs.item()), dtype=torch.float32),
+            "Y_causal_effect": y_causal_effect
+            if n_queries > 1
+            else torch.tensor(float(y_causal_effect.item()), dtype=torch.float32),
         }
         return sample
 
@@ -596,7 +610,7 @@ class ContinuousExtendedPrior:
         pre_int_target: torch.Tensor,
         t_int_start: float,
         t_int_end: float,
-    ) -> Tuple[float, object]:
+    ) -> tuple[float, object]:
         """Sample (scalar_representation, intervention_values_field).
 
         Returns a ``(scalar, values)`` pair where ``scalar`` is a
@@ -672,7 +686,7 @@ class ContinuousExtendedPrior:
         int_onset_idx: int,
         intervention_target_canon: int,
         ctx: _SampledSCMContext,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Return ``(query_target_idx, query_time_idx)`` both shape ``(n_queries,)``.
 
         Query times are sampled from the post-intervention region so the
@@ -717,8 +731,8 @@ class ContinuousExtendedPrior:
         batch_size: int,
         n_queries: int = 1,
         query_mode: str = "single",
-        T: Optional[int] = None,
-    ) -> Dict[str, torch.Tensor]:
+        T: int | None = None,
+    ) -> dict[str, torch.Tensor]:
         """Stack ``batch_size`` samples into batched tensors.
 
         All samples in a batch share the same ``T`` (sampled once at the
@@ -731,7 +745,7 @@ class ContinuousExtendedPrior:
             self.generate_sample(T=T, n_queries=n_queries, query_mode=query_mode)
             for _ in range(batch_size)
         ]
-        batch: Dict[str, torch.Tensor] = {}
+        batch: dict[str, torch.Tensor] = {}
         for key in samples[0]:
             batch[key] = torch.stack([s[key] for s in samples], dim=0)
         return batch

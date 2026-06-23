@@ -4,8 +4,8 @@ A small registry maps baseline *names* to constructors, so the CLI and the
 evaluation harness can request a baseline by string (mirroring the
 ``BASELINE_STRING_TO_CLASS`` table in the original ``tscm_identifiability.py``).
 
-Public surface
---------------
+**Public surface**
+
 - :class:`Baseline`     — the predict interface every baseline implements.
 - :func:`available`     — list registered baseline names.
 - :func:`get`           — instantiate a baseline by name.
@@ -163,15 +163,15 @@ class VAROLSBaseline:
         return torch.tensor(preds, dtype=torch.float32)
 
     def _fit(self, x: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        t, n = x.shape
+        t, _n = x.shape
         mean = x.mean(axis=0)
         xc = x - mean
         rows, targets = [], []
         for s in range(self.lag, t):
             rows.append(xc[s - self.lag : s].reshape(-1))
             targets.append(xc[s])
-        a = np.asarray(rows)            # (T-lag, lag*N)
-        b = np.asarray(targets)         # (T-lag, N)
+        a = np.asarray(rows)  # (T-lag, lag*N)
+        b = np.asarray(targets)  # (T-lag, N)
         # Ridge-stabilised least squares: coef has shape (N, lag*N).
         gram = a.T @ a + 1e-3 * np.eye(a.shape[1])
         coef = np.linalg.solve(gram, a.T @ b).T
@@ -318,11 +318,19 @@ def _episode_to_batch(episode: Episode, n_max: int, device: str) -> dict:
         ),
         "intervention_value": torch.tensor([int_value_norm], dtype=torch.float32, device=device),
         "intervention_time_start": torch.tensor(
-            [_norm_time(float(min(episode.intervention.times) if episode.intervention.times else 0))],
+            [
+                _norm_time(
+                    float(min(episode.intervention.times) if episode.intervention.times else 0)
+                )
+            ],
             device=device,
         ),
         "intervention_time_end": torch.tensor(
-            [_norm_time(float(max(episode.intervention.times) if episode.intervention.times else 0))],
+            [
+                _norm_time(
+                    float(max(episode.intervention.times) if episode.intervention.times else 0)
+                )
+            ],
             device=device,
         ),
         "query_target": torch.tensor([int(episode.query_target[0])], device=device),

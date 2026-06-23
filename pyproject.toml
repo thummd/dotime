@@ -110,6 +110,7 @@ docs = [
     "sphinx-rtd-theme>=2.0",
     "myst-parser>=2.0",
     "nbsphinx>=0.9",
+    "linkify-it-py>=2.0",
     "sphinx-copybutton>=0.5",
     "sphinx-autodoc-typehints>=1.25",
     "ipykernel>=6.25",
@@ -203,14 +204,22 @@ select = [
     "PT",  # pytest style
 ]
 ignore = [
-    "E501",  # line length: deferred to the formatter
-    "B008",  # function call in default arg — common in PyTorch idioms
+    "E501",   # line length: deferred to the formatter
+    "B008",   # function call in default arg — common in PyTorch idioms
+    "NPY002", # legacy np.random.RandomState: changing it would alter published RNG streams
+    "RUF002", # ambiguous unicode in docstrings (math symbols ×, −, … in consolidated code)
+    "RUF003", # ambiguous unicode in comments (same)
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["B011", "PT011"]
+"tests/**" = ["B011", "PT011", "E402"]  # E402: import after pytest.importorskip
 "docs/conf.py" = ["E402"]
-"**/__init__.py" = ["F401"]  # re-exports
+"**/__init__.py" = ["F401", "RUF022"]  # re-exports; grouped (not sorted) __all__
+"scripts/build_release.py" = ["E402"]  # imports after sys.path tweak / docstring
+# Consolidated research modules: keep their original idioms (math var names,
+# deferred imports, legacy Optional hints) rather than churn RNG-adjacent code.
+"src/causaltimeprior/continuous/*.py" = ["E402", "UP007", "SIM102"]
+"src/causaltimeprior/batched_tscm.py" = ["E741"]
 
 [tool.ruff.format]
 quote-style = "double"

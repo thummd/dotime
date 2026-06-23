@@ -186,9 +186,7 @@ class LogarithmicSampler(DistributionSampler):
     def __init__(self, low: float, high: float):
         self.log_low = math.log(low)
         self.log_high = math.log(high)
-        self._uniform = TorchDistributionSampler(
-            dist.Uniform(low=self.log_low, high=self.log_high)
-        )
+        self._uniform = TorchDistributionSampler(dist.Uniform(low=self.log_low, high=self.log_high))
 
     def log_prob(self, value: torch.Tensor) -> torch.Tensor:
         return -torch.log(value) - math.log(self.log_high - self.log_low)
@@ -211,7 +209,9 @@ DISTRIBUTION_FACTORIES = {
     "lognormal": lambda p: TorchDistributionSampler(dist.LogNormal(loc=p["mean"], scale=p["std"])),
     "exponential": lambda p: TorchDistributionSampler(dist.Exponential(rate=p["rate"])),
     "shifted_exponential": lambda p: ShiftedExponentialSampler(rate=p["rate"], shift=p["shift"]),
-    "gamma": lambda p: TorchDistributionSampler(dist.Gamma(concentration=p["alpha"], rate=p["beta"])),
+    "gamma": lambda p: TorchDistributionSampler(
+        dist.Gamma(concentration=p["alpha"], rate=p["beta"])
+    ),
     "beta": lambda p: TorchDistributionSampler(
         dist.Beta(concentration1=p["alpha"], concentration0=p["beta"])
     ),

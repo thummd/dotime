@@ -16,13 +16,8 @@ Usage
 """
 
 import torch
-import torch.nn as nn
-import numpy as np
-import networkx as nx
-from typing import Optional, List, Tuple
 
 from causaltimeprior.tscm_sampler import TSCMSampler, TSCMStructure
-
 
 # Activation functions that work on batched tensors
 BATCHED_ACTIVATIONS = [
@@ -50,8 +45,8 @@ class BatchedTSCMSimulator:
         noise_std: float = 0.3,
         # --- Optional hardening knobs (all default off; see docstring) ---
         unit_norm_rows: bool = False,
-        spectral_rho: Optional[float] = None,
-        bias_scale: Optional[float] = None,
+        spectral_rho: float | None = None,
+        bias_scale: float | None = None,
         add_self_memory_lags: bool = False,
         positive_ar_diag: bool = False,
     ):
@@ -113,7 +108,7 @@ class BatchedTSCMSimulator:
                     adj[i, j] = 1.0  # j is parent of i
         return adj
 
-    def _build_lag_adjs(self) -> List[torch.Tensor]:
+    def _build_lag_adjs(self) -> list[torch.Tensor]:
         """Build list of (N, N) adjacency matrices for lagged edges."""
         adjs = []
         for k in range(self.max_lag):
@@ -123,8 +118,7 @@ class BatchedTSCMSimulator:
             adjs.append(adj.T)  # transpose: adj[i,j] = j is lagged parent of i
         return adjs
 
-    def sample_mechanisms(self, B: int, device: str = "cpu",
-                           seed: Optional[int] = None) -> dict:
+    def sample_mechanisms(self, B: int, device: str = "cpu", seed: int | None = None) -> dict:
         """Sample per-sample mechanism weights, bias, activation indices.
 
         Separated from `simulate` so `generate_pairs` can use the SAME
@@ -135,10 +129,7 @@ class BatchedTSCMSimulator:
         input X_obs. See docstring of `simulate` for usage.
         """
         dev = torch.device(device)
-        if seed is not None:
-            gen = torch.Generator(device=dev).manual_seed(seed)
-        else:
-            gen = None
+        gen = torch.Generator(device=dev).manual_seed(seed) if seed is not None else None
 
         adj_inst = self.adj_instant.to(dev)
         adj_lags = [a.to(dev) for a in self.adj_lags]
@@ -156,7 +147,7 @@ class BatchedTSCMSimulator:
             W_lag.append(Wk)
 
         if self.unit_norm_rows:
-            cat = torch.cat([W_inst] + W_lag, dim=-1)       # (B, N, N*(1+L))
+            cat = torch.cat([W_inst, *W_lag], dim=-1)  # (B, N, N*(1+L))
             row_norm = cat.norm(dim=-1, keepdim=True).clamp(min=1e-8)
             W_inst = W_inst / row_norm
             W_lag = [Wk / row_norm for Wk in W_lag]
@@ -176,13 +167,14 @@ class BatchedTSCMSimulator:
                 for i in range(L - 1):
                     r0 = (i + 1) * self.N
                     c0 = i * self.N
-                    C_template[:, r0:r0 + self.N, c0:c0 + self.N] = \
-                        torch.eye(self.N, device=dev)
+                    C_template[:, r0 : r0 + self.N, c0 : c0 + self.N] = torch.eye(
+                        self.N, device=dev
+                    )
 
             def _companion_rho(Wlag_list):
                 C = C_template.clone()
                 for k, Wk in enumerate(Wlag_list):
-                    C[:, :self.N, k * self.N:(k + 1) * self.N] = M @ Wk
+                    C[:, : self.N, k * self.N : (k + 1) * self.N] = M @ Wk
                 return torch.linalg.eigvals(C).abs().max(dim=-1).values
 
             rho0 = _companion_rho(W_lag)
@@ -204,10 +196,10 @@ class BatchedTSCMSimulator:
         act_idx = torch.randint(0, n_acts, (B, self.N), device=dev, generator=gen)
 
         return {
-            'W_inst': W_inst,
-            'W_lag': W_lag,
-            'bias': bias,
-            'act_idx': act_idx,
+            "W_inst": W_inst,
+            "W_lag": W_lag,
+            "bias": bias,
+            "act_idx": act_idx,
         }
 
     def simulate(
@@ -216,13 +208,13 @@ class BatchedTSCMSimulator:
         T: int,
         burn_in: int = 50,
         device: str = "cpu",
-        int_target: Optional[int] = None,
-        int_time: Optional[int] = None,
+        int_target: int | None = None,
+        int_time: int | None = None,
         int_value=None,
         divergence_threshold: float = 10.0,
-        seed: Optional[int] = None,
-        mechanisms: Optional[dict] = None,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        seed: int | None = None,
+        mechanisms: dict | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Simulate B trajectories in parallel.
 
         Parameters
@@ -247,20 +239,17 @@ class BatchedTSCMSimulator:
         total_T = burn_in + T
         dev = torch.device(device)
 
-        if seed is not None:
-            gen = torch.Generator(device=dev).manual_seed(seed)
-        else:
-            gen = None
+        gen = torch.Generator(device=dev).manual_seed(seed) if seed is not None else None
 
         # Mechanisms: either sample fresh or use the provided ones
         if mechanisms is None:
             mech = self.sample_mechanisms(B, device=device, seed=seed)
         else:
             mech = mechanisms
-        W_inst = mech['W_inst']
-        W_lag = mech['W_lag']
-        bias = mech['bias']
-        act_idx = mech['act_idx']
+        W_inst = mech["W_inst"]
+        W_lag = mech["W_lag"]
+        bias = mech["bias"]
+        act_idx = mech["act_idx"]
 
         # Noise is always freshly sampled — represents a new realization of
         # the stochastic process. Different noise between obs and int is fine
@@ -269,7 +258,7 @@ class BatchedTSCMSimulator:
         noise = torch.randn(B, total_T, self.N, device=dev, generator=gen) * self.noise_std
 
         # Intervention setup — int_value can be None, scalar, or a (B,) tensor
-        do_intervention = (int_target is not None and int_time is not None)
+        do_intervention = int_target is not None and int_time is not None
         if do_intervention and int_value is None:
             int_value_t = torch.randn(B, device=dev, generator=gen) * self.sigma_w * 2.0
         elif do_intervention and torch.is_tensor(int_value):
@@ -314,7 +303,7 @@ class BatchedTSCMSimulator:
                 act_tanhrelu = torch.tanh(act_relu)
                 # Stack: (B, 4) then gather by act_idx[:, i]
                 stacked = torch.stack([act_id, act_tanh, act_tanhrelu, act_relu], dim=-1)
-                result = stacked.gather(-1, act_idx[:, i:i+1]).squeeze(-1)
+                result = stacked.gather(-1, act_idx[:, i : i + 1]).squeeze(-1)
 
                 buffer[:, t, i] = result
 
@@ -355,7 +344,7 @@ class BatchedTSCMSimulator:
             int_time: (B,) int — intervention time (single common value for batch)
             valid: (B,) bool — non-diverged samples
         """
-        int_target_idx = self.topo.index('A')
+        int_target_idx = self.topo.index("A")
 
         gen = torch.Generator().manual_seed(seed)
         t_lo = min(10, T - 1)
@@ -378,7 +367,11 @@ class BatchedTSCMSimulator:
 
         # 1) Observational simulation
         X_obs, valid_obs = self.simulate(
-            B, T, burn_in=burn_in, device=device, seed=seed,
+            B,
+            T,
+            burn_in=burn_in,
+            device=device,
+            seed=seed,
             mechanisms=shared_mechanisms,
         )
 
@@ -387,8 +380,8 @@ class BatchedTSCMSimulator:
         if positivity_clip:
             pre_int = X_obs[:, :common_int_time, int_target_idx].detach().cpu()  # (B, t<)
             if pre_int.shape[1] > 1:
-                mu = pre_int.mean(dim=1)                       # (B,)
-                sigma = pre_int.std(dim=1).clamp(min=1e-4)     # (B,)
+                mu = pre_int.mean(dim=1)  # (B,)
+                sigma = pre_int.std(dim=1).clamp(min=1e-4)  # (B,)
                 lo = mu - 3.0 * sigma
                 hi = mu + 3.0 * sigma
                 int_values = torch.clamp(int_values, min=lo, max=hi)
@@ -396,7 +389,10 @@ class BatchedTSCMSimulator:
         # 3) Interventional simulation: SAME mechanisms, DIFFERENT noise (fresh
         # seed+1 for noise sampling), and the intervention applied.
         X_int, valid_int = self.simulate(
-            B, T, burn_in=burn_in, device=device,
+            B,
+            T,
+            burn_in=burn_in,
+            device=device,
             int_target=int_target_idx,
             int_time=common_int_time,
             int_value=int_values,
@@ -407,13 +403,13 @@ class BatchedTSCMSimulator:
         valid = valid_obs & valid_int
 
         return {
-            'X_obs': X_obs,
-            'X_int': X_int,
-            'int_target': torch.full((B,), int_target_idx, dtype=torch.long),
-            'int_value': int_values,
-            'int_time': torch.full((B,), common_int_time, dtype=torch.long),
-            'valid': valid,
-            'N': self.N,
-            'topo': self.topo,
-            'hidden_vars': self.hidden_vars,
+            "X_obs": X_obs,
+            "X_int": X_int,
+            "int_target": torch.full((B,), int_target_idx, dtype=torch.long),
+            "int_value": int_values,
+            "int_time": torch.full((B,), common_int_time, dtype=torch.long),
+            "valid": valid,
+            "N": self.N,
+            "topo": self.topo,
+            "hidden_vars": self.hidden_vars,
         }

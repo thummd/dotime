@@ -29,9 +29,10 @@ Key responsibilities this class implements:
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, List, Optional, Sequence, Tuple, Union
+from typing import Union
 
 import torch
 
@@ -75,7 +76,7 @@ class ContinuousIntervention:
     t_start: float
     t_end: float
     kind: InterventionKind
-    value: Union[float, Callable[[float], float]]
+    value: float | Callable[[float], float]
 
     def is_active(self, t: float) -> bool:
         return self.t_start <= t < self.t_end
@@ -112,7 +113,7 @@ class ContinuousSCM:
     def __init__(
         self,
         mechanisms: Sequence[MechanismLike],
-        device: Optional[torch.device] = None,
+        device: torch.device | None = None,
         dtype: torch.dtype = torch.float32,
     ) -> None:
         if len(mechanisms) == 0:
@@ -143,10 +144,10 @@ class ContinuousSCM:
         p_neural: float = 0.0,
         neural_hidden_dim: int = 8,
         neural_out_scale_range: tuple = (0.5, 2.0),
-        generator: Optional[torch.Generator] = None,
-        device: Optional[torch.device] = None,
+        generator: torch.Generator | None = None,
+        device: torch.device | None = None,
         dtype: torch.dtype = torch.float32,
-    ) -> "ContinuousSCM":
+    ) -> ContinuousSCM:
         """Sample a random continuous-time SCM.
 
         A variable ``v`` can have any earlier variable ``u < v`` as a
@@ -167,15 +168,14 @@ class ContinuousSCM:
             raise ValueError(f"edge_prob must be in [0, 1], got {edge_prob}")
         if mechanism_kind not in ("linear", "neural", "mixed"):
             raise ValueError(
-                f"mechanism_kind must be 'linear', 'neural', or 'mixed'; "
-                f"got {mechanism_kind!r}"
+                f"mechanism_kind must be 'linear', 'neural', or 'mixed'; got {mechanism_kind!r}"
             )
         if not 0.0 <= p_neural <= 1.0:
             raise ValueError(f"p_neural must be in [0, 1], got {p_neural}")
 
-        mechs: List[MechanismLike] = []
+        mechs: list[MechanismLike] = []
         for v in range(n_vars):
-            parents: List[int] = []
+            parents: list[int] = []
             if v > 0:
                 mask = torch.empty(v, device=device, dtype=dtype)
                 mask.uniform_(0.0, 1.0, generator=generator)
@@ -220,7 +220,7 @@ class ContinuousSCM:
     def _draw_noise(
         self,
         num_steps: int,
-        generator: Optional[torch.Generator],
+        generator: torch.Generator | None,
     ) -> torch.Tensor:
         """Pre-sample all standard-normal increments for an entire trajectory.
 
@@ -239,7 +239,7 @@ class ContinuousSCM:
         x: torch.Tensor,
         dt: torch.Tensor,
         noise_row: torch.Tensor,
-        intervention: Optional[ContinuousIntervention],
+        intervention: ContinuousIntervention | None,
         t_next: float,
     ) -> torch.Tensor:
         """Advance the state vector ``x`` by one Euler-Maruyama step.
@@ -266,14 +266,15 @@ class ContinuousSCM:
 
             x_new[v] = x[v] + drift * dt + mech.sigma * torch.sqrt(dt) * noise_row[v]
 
-            if intervention is not None and intervention.target == v and intervention.is_active(t_next):
-                if intervention.kind is InterventionKind.HARD:
-                    x_new[v] = torch.tensor(
-                        intervention.eval_value(t_next),
-                        device=x.device,
-                        dtype=x.dtype,
-                    )
-                elif intervention.kind is InterventionKind.TIME_VARYING:
+            if (
+                intervention is not None
+                and intervention.target == v
+                and intervention.is_active(t_next)
+            ):
+                if (
+                    intervention.kind is InterventionKind.HARD
+                    or intervention.kind is InterventionKind.TIME_VARYING
+                ):
                     x_new[v] = torch.tensor(
                         intervention.eval_value(t_next),
                         device=x.device,
@@ -288,13 +289,13 @@ class ContinuousSCM:
         self,
         times: torch.Tensor,
         dts: torch.Tensor,
-        intervention: Optional[ContinuousIntervention] = None,
-        x0: Optional[torch.Tensor] = None,
-        noise: Optional[torch.Tensor] = None,
-        generator: Optional[torch.Generator] = None,
-        regime_trajectory: Optional[torch.Tensor] = None,
+        intervention: ContinuousIntervention | None = None,
+        x0: torch.Tensor | None = None,
+        noise: torch.Tensor | None = None,
+        generator: torch.Generator | None = None,
+        regime_trajectory: torch.Tensor | None = None,
         num_substeps: int = 1,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Run the SCM forward on a given observation schedule.
 
         ``regime_trajectory`` is accepted but ignored by this base class;
@@ -401,10 +402,10 @@ class ContinuousSCM:
         times: torch.Tensor,
         dts: torch.Tensor,
         intervention: ContinuousIntervention,
-        x0: Optional[torch.Tensor] = None,
-        generator: Optional[torch.Generator] = None,
+        x0: torch.Tensor | None = None,
+        generator: torch.Generator | None = None,
         num_substeps: int = 1,
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return matched ``(times, X_obs, X_cf)`` with shared noise.
 
         ``X_obs`` is the observational trajectory (no intervention);
@@ -426,11 +427,19 @@ class ContinuousSCM:
         fine_steps = (times.numel() - 1) * num_substeps
         noise = self._draw_noise(fine_steps, generator=generator)
         _, x_obs = self.simulate(
-            times, dts, intervention=None, x0=x0, noise=noise,
+            times,
+            dts,
+            intervention=None,
+            x0=x0,
+            noise=noise,
             num_substeps=num_substeps,
         )
         _, x_cf = self.simulate(
-            times, dts, intervention=intervention, x0=x0, noise=noise,
+            times,
+            dts,
+            intervention=intervention,
+            x0=x0,
+            noise=noise,
             num_substeps=num_substeps,
         )
         return times, x_obs, x_cf
@@ -440,10 +449,10 @@ class ContinuousSCM:
         times: torch.Tensor,
         dts: torch.Tensor,
         intervention: ContinuousIntervention,
-        x0: Optional[torch.Tensor] = None,
-        generator: Optional[torch.Generator] = None,
+        x0: torch.Tensor | None = None,
+        generator: torch.Generator | None = None,
         num_substeps: int = 1,
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Return matched ``(times, X_obs, X_int)`` with independent noise.
 
         This reproduces the discrete-time pipeline's ``generate_pair``
@@ -455,11 +464,19 @@ class ContinuousSCM:
         counterfactual training.
         """
         _, x_obs = self.simulate(
-            times, dts, intervention=None, x0=x0, generator=generator,
+            times,
+            dts,
+            intervention=None,
+            x0=x0,
+            generator=generator,
             num_substeps=num_substeps,
         )
         _, x_int = self.simulate(
-            times, dts, intervention=intervention, x0=x0,
-            generator=generator, num_substeps=num_substeps,
+            times,
+            dts,
+            intervention=intervention,
+            x0=x0,
+            generator=generator,
+            num_substeps=num_substeps,
         )
         return times, x_obs, x_int

@@ -29,9 +29,5 @@ from causaltimeprior.evaluation import evaluate
 results = evaluate(model, suite)
 ```
 
-## API
-
-```{eval-rst}
-.. automodule:: causaltimeprior.benchmarks
-   :members:
-```
+See the {doc}`api` reference for the full `benchmarks`, `baselines`, and
+`evaluation` module documentation.

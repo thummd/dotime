@@ -53,19 +53,13 @@ class SimpleMechanism(nn.Module):
 
     def __str__(self) -> str:
         weights = {v: value.item() for v, value in self.weights.items()}
-        return (
-            f"Activation: {self.activation}\n"
-            f"Bias: {self.bias.item()}\n"
-            f"Weights: {weights}"
-        )
+        return f"Activation: {self.activation}\nBias: {self.bias.item()}\nWeights: {weights}"
 
     def forward(self, parent_values: dict[Any, Tensor], eps: Tensor) -> Tensor:
         if len(parent_values) == 0:
             return eps
         weighted_inputs = [
-            parent_values[v] * weight
-            for v, weight in self.weights.items()
-            if v in parent_values
+            parent_values[v] * weight for v, weight in self.weights.items() if v in parent_values
         ]
         combined = torch.sum(torch.stack(weighted_inputs), dim=0)
         return self.activation(combined + self.bias) + eps

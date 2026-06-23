@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import torch
-
 import pytest
+import torch
 
 from causaltimeprior import CausalTimePrior, baselines, evaluation
 from causaltimeprior.interventions import (
@@ -15,8 +14,8 @@ from causaltimeprior.interventions import (
 
 pytest.importorskip("pyarrow", reason="frozen-suite IO needs the evaluation extra")
 
-from causaltimeprior import _release_io  # noqa: E402
-from causaltimeprior.benchmarks import (  # noqa: E402
+from causaltimeprior import _release_io
+from causaltimeprior.benchmarks import (
     SuiteMetadata,
     episode_from_pair,
 )

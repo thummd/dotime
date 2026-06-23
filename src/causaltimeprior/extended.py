@@ -7,15 +7,15 @@ Wraps CausalTimePrior.generate_pair() to produce model-ready dicts with:
 - Query target/time sampling with downstream probability
 """
 
-import torch
+import contextlib
+
 import numpy as np
-from typing import Dict, Optional
+import torch
 
-from causaltimeprior.prior import CausalTimePrior
-from causaltimeprior.interventions import InterventionType, InterventionSpec
-from causaltimeprior.tscm_sampler import TSCMSampler, TSCMStructure
 from causaltimeprior.batched_tscm import BatchedTSCMSimulator
-
+from causaltimeprior.interventions import InterventionSpec, InterventionType
+from causaltimeprior.prior import CausalTimePrior
+from causaltimeprior.tscm_sampler import TSCMSampler, TSCMStructure
 
 # Map intervention types to integers
 INTERVENTION_TYPE_MAP = {
@@ -28,7 +28,7 @@ INTERVENTION_TYPE_MAP = {
 def pad_to_max_nodes(X: torch.Tensor, max_nodes: int) -> torch.Tensor:
     """Pad time series to have max_nodes variables."""
     T, N = X.shape
-    if N < max_nodes:
+    if max_nodes > N:
         padding = torch.zeros(T, max_nodes - N, dtype=X.dtype, device=X.device)
         return torch.cat([X, padding], dim=1)
     return X[:, :max_nodes]
@@ -74,16 +74,27 @@ class TSCMPrior:
     can swap it in transparently.
     """
 
-    def __init__(self, structure: TSCMStructure, burn_in: int = 50, seed: int = 42,
-                 use_lagged_edges: bool = True, intervention_scale: float = 2.0,
-                 sigma_w: float = 0.5):
-        self.sampler = TSCMSampler(structure, max_lag=1, use_lagged_edges=use_lagged_edges,
-                                   sigma_w=sigma_w, sigma_b=sigma_w * 0.5)
+    def __init__(
+        self,
+        structure: TSCMStructure,
+        burn_in: int = 50,
+        seed: int = 42,
+        use_lagged_edges: bool = True,
+        intervention_scale: float = 2.0,
+        sigma_w: float = 0.5,
+    ):
+        self.sampler = TSCMSampler(
+            structure,
+            max_lag=1,
+            use_lagged_edges=use_lagged_edges,
+            sigma_w=sigma_w,
+            sigma_b=sigma_w * 0.5,
+        )
         self.hidden_vars = self.sampler.get_hidden_vars()
         self.burn_in = burn_in
         self.intervention_scale = intervention_scale
         self.gen = torch.Generator().manual_seed(seed)
-        self.config = {'burn_in': burn_in}
+        self.config = {"burn_in": burn_in}
 
         # Canonical permutation: A at index 0, Y at index N-1, others in between.
         # The permutation maps topo-order indices -> canonical-order indices.
@@ -92,9 +103,8 @@ class TSCMPrior:
         self._y_idx_topo = self.sampler.get_outcome_var()
         dag = self.sampler._build_dag()
         N = len(dag.topo_order)
-        middle = [i for i in range(N)
-                  if i != self._a_idx_topo and i != self._y_idx_topo]
-        self.canonical_perm = [self._a_idx_topo] + middle + [self._y_idx_topo]
+        middle = [i for i in range(N) if i != self._a_idx_topo and i != self._y_idx_topo]
+        self.canonical_perm = [self._a_idx_topo, *middle, self._y_idx_topo]
         self.canonical_inv_perm = [0] * N
         for canon_idx, topo_idx in enumerate(self.canonical_perm):
             self.canonical_inv_perm[topo_idx] = canon_idx
@@ -119,7 +129,7 @@ class TSCMPrior:
         at the ExtendedCausalTimePrior level after all re-simulation logic.
         """
         scm = self.sampler.sample(generator=self.gen)
-        N = len(scm._topo)
+        len(scm._topo)
 
         X_obs = scm.sample_observational(T=T, burn_in=self.burn_in, generator=self.gen)
 
@@ -142,7 +152,10 @@ class TSCMPrior:
         )
 
         X_int = scm.sample_interventional(
-            T=T, intervention=intervention, burn_in=self.burn_in, generator=self.gen,
+            T=T,
+            intervention=intervention,
+            burn_in=self.burn_in,
+            generator=self.gen,
         )
         return X_obs, X_int, intervention, scm
 
@@ -162,14 +175,14 @@ class ExtendedCausalTimePrior:
         chain_prob: float = 0.15,
         regime_switching_prob: float = 0.15,
         intervention_source: str = "prior",
-        tscm_structure: Optional[str] = None,
+        tscm_structure: str | None = None,
         use_lagged_edges: bool = True,
         intervention_scale: float = 2.0,
         causal_mask_mode: str = "full",
         dynamics_burn_in: int = 0,
         sim_device: str = "cpu",
         query_offset_range: tuple = (0, 0),
-        hardening: Optional[Dict] = None,
+        hardening: dict | None = None,
     ):
         self.n_max = n_max
         self.t_range = t_range
@@ -190,7 +203,9 @@ class ExtendedCausalTimePrior:
         if tscm_structure is not None:
             structure_enum = TSCMStructure(tscm_structure)
             self.prior = TSCMPrior(
-                structure_enum, burn_in=burn_in + dynamics_burn_in, seed=seed,
+                structure_enum,
+                burn_in=burn_in + dynamics_burn_in,
+                seed=seed,
                 use_lagged_edges=use_lagged_edges,
                 intervention_scale=intervention_scale,
             )
@@ -215,8 +230,8 @@ class ExtendedCausalTimePrior:
                 raise ValueError(f"Unknown hardening keys: {list(h.keys())}")
         else:
             config = {
-                'N_max': n_max_prior,
-                'burn_in': burn_in + dynamics_burn_in,
+                "N_max": n_max_prior,
+                "burn_in": burn_in + dynamics_burn_in,
             }
             self.prior = CausalTimePrior(
                 config=config,
@@ -231,9 +246,11 @@ class ExtendedCausalTimePrior:
         return self.rng.randint(self.t_range[0], self.t_range[1] + 1)
 
     def generate_sample(
-        self, T: Optional[int] = None, n_queries: int = 1,
+        self,
+        T: int | None = None,
+        n_queries: int = 1,
         query_mode: str = "single",
-    ) -> Dict[str, torch.Tensor]:
+    ) -> dict[str, torch.Tensor]:
         """Generate a single model-ready sample with one or more query points.
 
         Parameters
@@ -266,8 +283,12 @@ class ExtendedCausalTimePrior:
         # Generate with divergence retry (up to 20 attempts for long trajectories)
         for _ in range(20):
             X_obs, X_int, intervention, scm = self.prior.generate_pair(T=T)
-            if (not torch.isnan(X_obs).any() and not torch.isnan(X_int).any()
-                    and X_obs.abs().max() < 10 and X_int.abs().max() < 10):
+            if (
+                not torch.isnan(X_obs).any()
+                and not torch.isnan(X_int).any()
+                and X_obs.abs().max() < 10
+                and X_int.abs().max() < 10
+            ):
                 break
 
         N = X_obs.shape[1]
@@ -339,10 +360,11 @@ class ExtendedCausalTimePrior:
                         values=clipped,
                     )
                     X_int_new = scm.sample_interventional(
-                        T=T, intervention=new_intervention,
-                        burn_in=self.prior.config.get('burn_in', 50),
+                        T=T,
+                        intervention=new_intervention,
+                        burn_in=self.prior.config.get("burn_in", 50),
                     )
-                    if (not torch.isnan(X_int_new).any() and X_int_new.abs().max() < 10):
+                    if not torch.isnan(X_int_new).any() and X_int_new.abs().max() < 10:
                         X_int = X_int_new
                         X_int_padded = pad_to_max_nodes(X_int, self.n_max)
                         intervention = new_intervention
@@ -361,10 +383,7 @@ class ExtendedCausalTimePrior:
                 else:  # observed_uniform
                     lo = float(pre_np.min())
                     hi = float(pre_np.max())
-                    if hi > lo:
-                        obs_value = float(self.rng.uniform(lo, hi))
-                    else:
-                        obs_value = lo
+                    obs_value = float(self.rng.uniform(lo, hi)) if hi > lo else lo
 
                 new_intervention = InterventionSpec(
                     targets=intervention.targets,
@@ -373,10 +392,11 @@ class ExtendedCausalTimePrior:
                     values=obs_value,
                 )
                 X_int_new = scm.sample_interventional(
-                    T=T, intervention=new_intervention,
-                    burn_in=self.prior.config.get('burn_in', 50),
+                    T=T,
+                    intervention=new_intervention,
+                    burn_in=self.prior.config.get("burn_in", 50),
                 )
-                if (not torch.isnan(X_int_new).any() and X_int_new.abs().max() < 10):
+                if not torch.isnan(X_int_new).any() and X_int_new.abs().max() < 10:
                     X_int = X_int_new
                     X_int_padded = pad_to_max_nodes(X_int, self.n_max)
                     intervention = new_intervention
@@ -404,7 +424,7 @@ class ExtendedCausalTimePrior:
         # Fix 2c: canonical column reordering (TSCMPrior only). Put treatment A at
         # column 0, outcome Y at column N-1, remaining (covariates/hidden) in between.
         # Remap intervention_target and the padded tensors.
-        canonical_inv_perm = getattr(self.prior, 'canonical_inv_perm', None)
+        canonical_inv_perm = getattr(self.prior, "canonical_inv_perm", None)
         if canonical_inv_perm is not None:
             perm = self.prior.canonical_perm  # canonical_idx -> topo_idx
             full_perm = list(perm) + list(range(N, self.n_max))
@@ -412,10 +432,10 @@ class ExtendedCausalTimePrior:
             X_obs_padded = X_obs_padded.index_select(dim=1, index=perm_t)
             X_int_padded = X_int_padded.index_select(dim=1, index=perm_t)
             intervention_target = canonical_inv_perm[intervention_target]
-            hidden_vars_topo = getattr(self.prior, 'hidden_vars', [])
+            hidden_vars_topo = getattr(self.prior, "hidden_vars", [])
             hidden_canonical = [canonical_inv_perm[h] for h in hidden_vars_topo]
         else:
-            hidden_canonical = list(getattr(self.prior, 'hidden_vars', []))
+            hidden_canonical = list(getattr(self.prior, "hidden_vars", []))
 
         # Hide unobserved variables from the model (variable_mask + X_obs/X_int
         # zeroing). Must happen AFTER canonical permutation so hidden_canonical
@@ -433,8 +453,9 @@ class ExtendedCausalTimePrior:
         # If the prior exposes a canonical outcome (TSCMPrior), restrict queries
         # to that variable so we evaluate p(Y | do(A)) — not confounders/mediators.
         # For full CTP prior (no fixed structure), fall back to all non-intervention.
-        fixed_outcome = (self.prior.get_outcome_var()
-                         if hasattr(self.prior, 'get_outcome_var') else None)
+        fixed_outcome = (
+            self.prior.get_outcome_var() if hasattr(self.prior, "get_outcome_var") else None
+        )
 
         def _sample_qtime():
             if offset_hi <= offset_lo:
@@ -464,11 +485,15 @@ class ExtendedCausalTimePrior:
                 query_time_idxs.append(_sample_qtime())
 
         # Ground truth: raw interventional value and causal effect
-        y_trues = [float(X_int_padded[qti, qt].item())
-                   for qt, qti in zip(query_targets, query_time_idxs)]
-        y_obs_vals = [float(X_obs_padded[qti, qt].item())
-                      for qt, qti in zip(query_targets, query_time_idxs)]
-        y_effects = [yi - yo for yi, yo in zip(y_trues, y_obs_vals)]
+        y_trues = [
+            float(X_int_padded[qti, qt].item())
+            for qt, qti in zip(query_targets, query_time_idxs, strict=False)
+        ]
+        y_obs_vals = [
+            float(X_obs_padded[qti, qt].item())
+            for qt, qti in zip(query_targets, query_time_idxs, strict=False)
+        ]
+        y_effects = [yi - yo for yi, yo in zip(y_trues, y_obs_vals, strict=False)]
 
         # Flatten to scalars if single query (backwards compatible)
         actual_n_queries = len(query_targets)
@@ -486,30 +511,34 @@ class ExtendedCausalTimePrior:
             y_effect_t = torch.tensor(y_effects, dtype=torch.float32)
 
         return {
-            'X_obs': X_obs_padded,                                    # (T, N_max)
-            'X_int': X_int_padded,                                    # (T, N_max)
-            'variable_mask': variable_mask,                           # (N_max,)
-            'int_onset_idx': torch.tensor(int_onset, dtype=torch.long),
-            'intervention_target': torch.tensor(intervention_target, dtype=torch.long),
-            'intervention_type': torch.tensor(intervention_type, dtype=torch.long),
-            'intervention_value': torch.tensor(intervention_value_norm, dtype=torch.float32),
-            'intervention_value_raw': torch.tensor(intervention_value_raw, dtype=torch.float32),
-            'intervention_time_start': torch.tensor(time_start / T, dtype=torch.float32),
-            'intervention_time_end': torch.tensor(time_end / T, dtype=torch.float32),
-            'positivity_score': torch.tensor(positivity_score, dtype=torch.float32),
-            'query_target': query_target_t,
-            'query_time': query_time_t,
-            'Y_true': y_true_t,
-            'Y_obs': y_obs_t,
-            'Y_causal_effect': y_effect_t,
-            'num_vars': torch.tensor(N, dtype=torch.long),
+            "X_obs": X_obs_padded,  # (T, N_max)
+            "X_int": X_int_padded,  # (T, N_max)
+            "variable_mask": variable_mask,  # (N_max,)
+            "int_onset_idx": torch.tensor(int_onset, dtype=torch.long),
+            "intervention_target": torch.tensor(intervention_target, dtype=torch.long),
+            "intervention_type": torch.tensor(intervention_type, dtype=torch.long),
+            "intervention_value": torch.tensor(intervention_value_norm, dtype=torch.float32),
+            "intervention_value_raw": torch.tensor(intervention_value_raw, dtype=torch.float32),
+            "intervention_time_start": torch.tensor(time_start / T, dtype=torch.float32),
+            "intervention_time_end": torch.tensor(time_end / T, dtype=torch.float32),
+            "positivity_score": torch.tensor(positivity_score, dtype=torch.float32),
+            "query_target": query_target_t,
+            "query_time": query_time_t,
+            "Y_true": y_true_t,
+            "Y_obs": y_obs_t,
+            "Y_causal_effect": y_effect_t,
+            "num_vars": torch.tensor(N, dtype=torch.long),
         }
 
     def generate_batch(
-        self, batch_size: int, T: Optional[int] = None,
-        n_queries: int = 1, num_workers: int = 0,
-        query_mode: str = "single", **kwargs,
-    ) -> Dict[str, torch.Tensor]:
+        self,
+        batch_size: int,
+        T: int | None = None,
+        n_queries: int = 1,
+        num_workers: int = 0,
+        query_mode: str = "single",
+        **kwargs,
+    ) -> dict[str, torch.Tensor]:
         """Generate a batch of model-ready samples.
 
         All samples in a batch share the same T (sampled once if not provided).
@@ -529,14 +558,16 @@ class ExtendedCausalTimePrior:
             T = self.sample_T()
 
         # Use batched vectorized simulation for TSCM structures (much faster)
-        if self.tscm_structure is not None and hasattr(self, 'batched_sim'):
+        if self.tscm_structure is not None and hasattr(self, "batched_sim"):
             return self._generate_batch_vectorized(batch_size, T, n_queries, query_mode)
 
         if num_workers > 0:
             samples = self._generate_parallel(batch_size, T, n_queries, num_workers, query_mode)
         else:
-            samples = [self.generate_sample(T=T, n_queries=n_queries, query_mode=query_mode)
-                       for _ in range(batch_size)]
+            samples = [
+                self.generate_sample(T=T, n_queries=n_queries, query_mode=query_mode)
+                for _ in range(batch_size)
+            ]
 
         return self._collate_batch(samples)
 
@@ -550,25 +581,28 @@ class ExtendedCausalTimePrior:
         seed = int(self.rng.randint(0, 2**31))
 
         # Fix 1: positivity_aware in batched path = per-sample 3σ clip
-        positivity_clip = (self.intervention_source == "positivity_aware")
+        positivity_clip = self.intervention_source == "positivity_aware"
 
         pairs = sim.generate_pairs(
-            B=batch_size, T=T, burn_in=self._burn_in_total,
+            B=batch_size,
+            T=T,
+            burn_in=self._burn_in_total,
             device=self._sim_device,
-            intervention_scale=self.intervention_scale, seed=seed,
+            intervention_scale=self.intervention_scale,
+            seed=seed,
             positivity_clip=positivity_clip,
         )
 
         # Move bulk simulation results to CPU once for the per-sample dict
         # construction below (Python loops + .item() calls are CPU-bound).
-        X_obs_all = pairs['X_obs'].cpu()      # (B, T, N_raw)
-        X_int_all = pairs['X_int'].cpu()      # (B, T, N_raw)
-        valid = pairs['valid'].cpu()           # (B,)
-        int_target = int(pairs['int_target'][0].item())
-        int_time_idx = int(pairs['int_time'][0].item())
-        int_values_per_sample = pairs['int_value'].cpu()  # (B,) per-sample
-        N = pairs['N']
-        hidden_vars = pairs['hidden_vars']
+        X_obs_all = pairs["X_obs"].cpu()  # (B, T, N_raw)
+        X_int_all = pairs["X_int"].cpu()  # (B, T, N_raw)
+        valid = pairs["valid"].cpu()  # (B,)
+        int_target = int(pairs["int_target"][0].item())
+        int_time_idx = int(pairs["int_time"][0].item())
+        int_values_per_sample = pairs["int_value"].cpu()  # (B,) per-sample
+        N = pairs["N"]
+        hidden_vars = pairs["hidden_vars"]
 
         # Build per-sample dicts and use the existing _collate_batch
         samples = []
@@ -605,14 +639,16 @@ class ExtendedCausalTimePrior:
             if pre_int.numel() > 1 and float(pre_int.std().item()) > 1e-4:
                 obs_mu = float(pre_int.mean().item())
                 obs_sigma = float(pre_int.std().item())
-                positivity_score = max(0.0, abs(int_value_raw - obs_mu) / max(obs_sigma, 1e-4) - 3.0)
+                positivity_score = max(
+                    0.0, abs(int_value_raw - obs_mu) / max(obs_sigma, 1e-4) - 3.0
+                )
                 int_value_norm = int_value_raw / max(obs_sigma, 1e-4)
             else:
                 positivity_score = 0.0
                 int_value_norm = int_value_raw
 
             # Fix 2c: canonical column reordering on padded tensors (topo -> canonical)
-            canonical_inv_perm = getattr(self.prior, 'canonical_inv_perm', None)
+            canonical_inv_perm = getattr(self.prior, "canonical_inv_perm", None)
             int_target_out = int_target
             if canonical_inv_perm is not None:
                 perm = self.prior.canonical_perm  # canonical_idx -> topo_idx
@@ -630,15 +666,18 @@ class ExtendedCausalTimePrior:
             # Must happen AFTER canonical permutation so hidden_canonical
             # refers to the same columns as the permuted trajectory tensors.
             _apply_hidden_mask(
-                X_obs_padded, X_int_padded, variable_mask, hidden_canonical,
+                X_obs_padded,
+                X_int_padded,
+                variable_mask,
+                hidden_canonical,
             )
 
             # Query targets. If the prior has a canonical outcome (TSCMPrior), pin
             # queries to Y. Otherwise fall back to all non-hidden non-intervention.
-            fixed_outcome = (self.prior.get_outcome_var()
-                             if hasattr(self.prior, 'get_outcome_var') else None)
-            other_vars = [v for v in range(N)
-                          if v != int_target_out and v not in hidden_canonical]
+            fixed_outcome = (
+                self.prior.get_outcome_var() if hasattr(self.prior, "get_outcome_var") else None
+            )
+            other_vars = [v for v in range(N) if v != int_target_out and v not in hidden_canonical]
             if query_mode == "all_pairs" and other_vars:
                 candidates = [fixed_outcome] if fixed_outcome is not None else other_vars
                 query_targets = list(candidates)
@@ -661,11 +700,15 @@ class ExtendedCausalTimePrior:
                 ]
 
             # Ground truth (canonical-indexed padded tensors, per-query time)
-            y_trues = [float(X_int_padded[qti, qt].item())
-                       for qt, qti in zip(query_targets, query_time_idxs)]
-            y_obs_vals = [float(X_obs_padded[qti, qt].item())
-                          for qt, qti in zip(query_targets, query_time_idxs)]
-            y_effects = [yi - yo for yi, yo in zip(y_trues, y_obs_vals)]
+            y_trues = [
+                float(X_int_padded[qti, qt].item())
+                for qt, qti in zip(query_targets, query_time_idxs, strict=False)
+            ]
+            y_obs_vals = [
+                float(X_obs_padded[qti, qt].item())
+                for qt, qti in zip(query_targets, query_time_idxs, strict=False)
+            ]
+            y_effects = [yi - yo for yi, yo in zip(y_trues, y_obs_vals, strict=False)]
 
             actual_nq = len(query_targets)
             if actual_nq == 1:
@@ -681,25 +724,27 @@ class ExtendedCausalTimePrior:
                 yo_t = torch.tensor(y_obs_vals, dtype=torch.float32)
                 ye_t = torch.tensor(y_effects, dtype=torch.float32)
 
-            samples.append({
-                'X_obs': X_obs_padded,
-                'X_int': X_int_padded,
-                'variable_mask': variable_mask,
-                'intervention_target': torch.tensor(int_target_out, dtype=torch.long),
-                'intervention_type': torch.tensor(0, dtype=torch.long),  # HARD
-                'intervention_value': torch.tensor(int_value_norm, dtype=torch.float32),
-                'intervention_value_raw': torch.tensor(int_value_raw, dtype=torch.float32),
-                'intervention_time_start': torch.tensor(int_time_idx / T, dtype=torch.float32),
-                'intervention_time_end': torch.tensor(int_time_idx / T, dtype=torch.float32),
-                'query_target': qt_t,
-                'query_time': qtime_t,
-                'Y_true': yt_t,
-                'Y_obs': yo_t,
-                'Y_causal_effect': ye_t,
-                'num_vars': torch.tensor(N, dtype=torch.long),
-                'int_onset_idx': torch.tensor(int_time_idx, dtype=torch.long),
-                'positivity_score': torch.tensor(positivity_score, dtype=torch.float32),
-            })
+            samples.append(
+                {
+                    "X_obs": X_obs_padded,
+                    "X_int": X_int_padded,
+                    "variable_mask": variable_mask,
+                    "intervention_target": torch.tensor(int_target_out, dtype=torch.long),
+                    "intervention_type": torch.tensor(0, dtype=torch.long),  # HARD
+                    "intervention_value": torch.tensor(int_value_norm, dtype=torch.float32),
+                    "intervention_value_raw": torch.tensor(int_value_raw, dtype=torch.float32),
+                    "intervention_time_start": torch.tensor(int_time_idx / T, dtype=torch.float32),
+                    "intervention_time_end": torch.tensor(int_time_idx / T, dtype=torch.float32),
+                    "query_target": qt_t,
+                    "query_time": qtime_t,
+                    "Y_true": yt_t,
+                    "Y_obs": yo_t,
+                    "Y_causal_effect": ye_t,
+                    "num_vars": torch.tensor(N, dtype=torch.long),
+                    "int_onset_idx": torch.tensor(int_time_idx, dtype=torch.long),
+                    "positivity_score": torch.tensor(positivity_score, dtype=torch.float32),
+                }
+            )
 
         return self._collate_batch(samples)
 
@@ -710,18 +755,16 @@ class ExtendedCausalTimePrior:
         keeping one around across calls lets workers amortise that cost. We
         rebuild only when the requested worker count changes.
         """
-        from concurrent.futures import ProcessPoolExecutor
         import multiprocessing as mp
+        from concurrent.futures import ProcessPoolExecutor
 
         pool = getattr(self, "_worker_pool", None)
         pool_size = getattr(self, "_worker_pool_size", 0)
         if pool is not None and pool_size == n_procs:
             return pool
         if pool is not None:
-            try:
+            with contextlib.suppress(Exception):
                 pool.shutdown(wait=False, cancel_futures=True)
-            except Exception:
-                pass
         ctx = mp.get_context("fork")
         self._worker_pool = ProcessPoolExecutor(
             max_workers=n_procs,
@@ -736,10 +779,8 @@ class ExtendedCausalTimePrior:
         """Shut down the persistent pool (called on GC or explicitly)."""
         pool = getattr(self, "_worker_pool", None)
         if pool is not None:
-            try:
+            with contextlib.suppress(Exception):
                 pool.shutdown(wait=False, cancel_futures=True)
-            except Exception:
-                pass
             self._worker_pool = None
             self._worker_pool_size = 0
 
@@ -751,8 +792,7 @@ class ExtendedCausalTimePrior:
         n_procs = min(num_workers, batch_size)
         pool = self._get_worker_pool(n_procs)
         base_seed = int(self.rng.randint(0, 2**31))
-        args = [(T, n_queries, query_mode, base_seed + i)
-                for i in range(batch_size)]
+        args = [(T, n_queries, query_mode, base_seed + i) for i in range(batch_size)]
         # map() returns an iterator; materialise to a list before the caller
         # iterates so any worker exception surfaces here, not downstream.
         samples = list(pool.map(_generate_sample_worker_persistent, args))
@@ -766,34 +806,35 @@ class ExtendedCausalTimePrior:
         Query-level fields are concatenated to (B_total,) with _traj_idx mapping
         each query back to its trajectory.
         """
-        query_keys = {'query_target', 'query_time', 'Y_true', 'Y_obs', 'Y_causal_effect'}
+        query_keys = {"query_target", "query_time", "Y_true", "Y_obs", "Y_causal_effect"}
         # Check if any sample has multi-query (tensor with dim > 0 for query fields)
-        is_multi = any(s['query_target'].dim() > 0 for s in samples)
+        is_multi = any(s["query_target"].dim() > 0 for s in samples)
 
         if not is_multi:
             # All scalar queries — simple stack, no _traj_idx needed
-            return {
-                key: torch.stack([s[key] for s in samples])
-                for key in samples[0].keys()
-            }
+            return {key: torch.stack([s[key] for s in samples]) for key in samples[0]}
 
         # Multi-query: build _traj_idx and separate trajectory vs query fields
         batch = {}
         traj_indices = []
-        intervention_keys = {'intervention_target', 'intervention_type',
-                             'intervention_value', 'intervention_time_start',
-                             'intervention_time_end'}
+        intervention_keys = {
+            "intervention_target",
+            "intervention_type",
+            "intervention_value",
+            "intervention_time_start",
+            "intervention_time_end",
+        }
 
         # Stack trajectory-level fields (unique per trajectory)
-        traj_keys = {k for k in samples[0].keys() if k not in query_keys and k not in intervention_keys}
+        traj_keys = {k for k in samples[0] if k not in query_keys and k not in intervention_keys}
         for key in traj_keys:
             batch[key] = torch.stack([s[key] for s in samples])
 
         # Build _traj_idx and concatenate query + intervention fields
         for i, s in enumerate(samples):
-            nq = s['query_target'].numel()
+            nq = s["query_target"].numel()
             traj_indices.append(torch.full((nq,), i, dtype=torch.long))
-        batch['_traj_idx'] = torch.cat(traj_indices)
+        batch["_traj_idx"] = torch.cat(traj_indices)
 
         for key in query_keys:
             parts = []
@@ -806,7 +847,7 @@ class ExtendedCausalTimePrior:
         for key in intervention_keys:
             parts = []
             for s in samples:
-                nq = s['query_target'].numel()
+                nq = s["query_target"].numel()
                 v = s[key]
                 parts.append(v.unsqueeze(0).expand(nq) if v.dim() == 0 else v)
             batch[key] = torch.cat(parts)
@@ -822,7 +863,7 @@ def _generate_sample_worker(args):
     prior, T, n_queries, query_mode, worker_seed = args
     # Reseed per-worker to avoid sharing RNG state across forked processes
     prior.rng = np.random.RandomState(worker_seed)
-    if hasattr(prior.prior, 'gen'):
+    if hasattr(prior.prior, "gen"):
         prior.prior.gen = torch.Generator().manual_seed(worker_seed)
     return prior.generate_sample(T=T, n_queries=n_queries, query_mode=query_mode)
 
@@ -842,7 +883,8 @@ def _worker_pool_init(prior):
     _WORKER_PRIOR = prior
     try:
         import torch.multiprocessing as tmp
-        tmp.set_sharing_strategy('file_system')
+
+        tmp.set_sharing_strategy("file_system")
     except Exception:
         pass
 
@@ -852,6 +894,6 @@ def _generate_sample_worker_persistent(args):
     T, n_queries, query_mode, worker_seed = args
     prior = _WORKER_PRIOR
     prior.rng = np.random.RandomState(worker_seed)
-    if hasattr(prior.prior, 'gen'):
+    if hasattr(prior.prior, "gen"):
         prior.prior.gen = torch.Generator().manual_seed(worker_seed)
     return prior.generate_sample(T=T, n_queries=n_queries, query_mode=query_mode)

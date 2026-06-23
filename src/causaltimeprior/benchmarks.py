@@ -4,8 +4,8 @@ This module exposes the *consumer* side of the released benchmarks: loading a
 versioned, immutable suite (downloading + caching it from Zenodo on first use)
 and iterating over its episodes for evaluation.
 
-Public surface
---------------
+**Public surface**
+
 - :class:`Episode`        — one trajectory: obs/int data, intervention, ground truth.
 - :class:`BenchmarkSuite` — a named, versioned collection of episodes.
 - :func:`load_benchmark`  — fetch a suite by name (cached under ``~/.cache``).
@@ -188,10 +188,7 @@ class BenchmarkSuite:
 
     def __repr__(self) -> str:
         structs = f", {len(self.meta.structures)} structures" if self.meta.structures else ""
-        return (
-            f"{self.meta.name} (v{self.meta.version}): "
-            f"{len(self._episodes)} episodes{structs}"
-        )
+        return f"{self.meta.name} (v{self.meta.version}): {len(self._episodes)} episodes{structs}"
 
     # --- convenience views ------------------------------------------------- #
 
@@ -258,14 +255,10 @@ def load_benchmark(
     BenchmarkSuite
     """
     if name not in _SUITE_REGISTRY:
-        raise KeyError(
-            f"unknown benchmark suite {name!r}; available: {available_suites()}"
-        )
+        raise KeyError(f"unknown benchmark suite {name!r}; available: {available_suites()}")
     meta = _SUITE_REGISTRY[name]
     if version not in ("latest", meta.version):
-        raise ValueError(
-            f"suite {name!r} has version {meta.version!r}, requested {version!r}"
-        )
+        raise ValueError(f"suite {name!r} has version {meta.version!r}, requested {version!r}")
 
     suite_dir = _cache_root(cache_dir) / f"{name}-{meta.version}"
 
@@ -306,7 +299,9 @@ def _download_from_zenodo(meta: SuiteMetadata, dest: Path, *, force: bool) -> No
                 h.update(chunk)
         checksum = entry.get("checksum", "")
         if checksum.startswith("md5:") and h.hexdigest() != checksum[4:]:
-            raise ValueError(f"checksum mismatch for {name} from Zenodo record {meta.zenodo_record_id}")
+            raise ValueError(
+                f"checksum mismatch for {name} from Zenodo record {meta.zenodo_record_id}"
+            )
 
     (dest / "download.json").write_text(
         json.dumps({"record_id": meta.zenodo_record_id, "doi": meta.doi})

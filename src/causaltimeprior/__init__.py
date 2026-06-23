@@ -35,18 +35,18 @@ __version__ = "0.1.0"
 # Eager core (core runtime deps only)
 # --------------------------------------------------------------------------- #
 
-from causaltimeprior.prior import CausalTimePrior
-from causaltimeprior.temporal_scm import TemporalSCM
-from causaltimeprior.temporal_graph import TemporalDAG, TemporalGraphBuilder
-from causaltimeprior.temporal_mechanism import TemporalMechanism
-from causaltimeprior.temporal_scm_builder import TemporalSCMBuilder
 from causaltimeprior.interventions import (
     InterventionSampler,
     InterventionSpec,
     InterventionType,
 )
+from causaltimeprior.prior import CausalTimePrior
 from causaltimeprior.regime_switching import RegimeSwitchingTemporalSCM
 from causaltimeprior.regime_switching_builder import RegimeSwitchingSCMBuilder
+from causaltimeprior.temporal_graph import TemporalDAG, TemporalGraphBuilder
+from causaltimeprior.temporal_mechanism import TemporalMechanism
+from causaltimeprior.temporal_scm import TemporalSCM
+from causaltimeprior.temporal_scm_builder import TemporalSCMBuilder
 from causaltimeprior.utils import DEFAULT_CONFIG
 
 # --------------------------------------------------------------------------- #
@@ -74,7 +74,7 @@ _LAZY_SUBMODULES = frozenset(
 )
 
 
-def __getattr__(name: str):  # noqa: D401  (PEP 562 module-level __getattr__)
+def __getattr__(name: str):
     """Resolve lazy submodules on first attribute access."""
     if name in _LAZY_SUBMODULES:
         module = importlib.import_module(f"{__name__}.{name}")
@@ -90,14 +90,14 @@ def __dir__() -> list[str]:
 # Make the lazy submodules visible to type checkers and IDEs without importing
 # them at runtime.
 if TYPE_CHECKING:
-    from causaltimeprior import (  # noqa: F401
+    from causaltimeprior import (
         baselines,
         benchmarks,
         continuous,
-        models,
         data,
         evaluation,
         extended,
+        models,
         visualization,
     )
 

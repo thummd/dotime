@@ -46,21 +46,23 @@ class CrossVariableMixer(nn.Module):
         )
 
         # Cross-attention layers (stacked for iterative causal reasoning)
-        self.cross_attn_layers = nn.ModuleList([
-            nn.MultiheadAttention(
-                embed_dim=embed_size, num_heads=n_heads, batch_first=True,
-            )
-            for _ in range(n_mixer_layers)
-        ])
-        self.attn_norms = nn.ModuleList([
-            nn.LayerNorm(embed_size) for _ in range(n_mixer_layers)
-        ])
+        self.cross_attn_layers = nn.ModuleList(
+            [
+                nn.MultiheadAttention(
+                    embed_dim=embed_size,
+                    num_heads=n_heads,
+                    batch_first=True,
+                )
+                for _ in range(n_mixer_layers)
+            ]
+        )
+        self.attn_norms = nn.ModuleList([nn.LayerNorm(embed_size) for _ in range(n_mixer_layers)])
         # Fix 2b: per-layer gated residual. Learns how much attention output
         # (which depends on intervention spec) replaces vs. adds to context.
         # Init bias=0 so sigmoid(0)=0.5 — equal mixing at init.
-        self.gate_projs = nn.ModuleList([
-            nn.Linear(embed_size, embed_size) for _ in range(n_mixer_layers)
-        ])
+        self.gate_projs = nn.ModuleList(
+            [nn.Linear(embed_size, embed_size) for _ in range(n_mixer_layers)]
+        )
         for g in self.gate_projs:
             nn.init.zeros_(g.bias)
 
@@ -111,13 +113,16 @@ class CrossVariableMixer(nn.Module):
         int_type_onehot = torch.zeros(B, 3, device=device)
         int_type_onehot.scatter_(1, intervention_type.unsqueeze(1), 1.0)
 
-        int_features = torch.cat([
-            int_target_onehot,
-            int_type_onehot,
-            intervention_value.unsqueeze(1),
-            intervention_time_start.unsqueeze(1),
-            intervention_time_end.unsqueeze(1),
-        ], dim=1)  # (B, N_max + 6)
+        int_features = torch.cat(
+            [
+                int_target_onehot,
+                int_type_onehot,
+                intervention_value.unsqueeze(1),
+                intervention_time_start.unsqueeze(1),
+                intervention_time_end.unsqueeze(1),
+            ],
+            dim=1,
+        )  # (B, N_max + 6)
 
         h_int = self.intervention_encoder(int_features)  # (B, E)
 
@@ -125,10 +130,13 @@ class CrossVariableMixer(nn.Module):
         query_target_onehot = torch.zeros(B, self.n_max, device=device)
         query_target_onehot.scatter_(1, query_target.unsqueeze(1), 1.0)
 
-        query_features = torch.cat([
-            query_target_onehot,
-            query_time.unsqueeze(1),
-        ], dim=1)  # (B, N_max + 1)
+        query_features = torch.cat(
+            [
+                query_target_onehot,
+                query_time.unsqueeze(1),
+            ],
+            dim=1,
+        )  # (B, N_max + 1)
 
         h_query = self.query_encoder(query_features)  # (B, E)
 
@@ -136,10 +144,10 @@ class CrossVariableMixer(nn.Module):
         context = (h_int + h_query).unsqueeze(1)  # (B, 1, E)
 
         # Cross-attention over variable representations (stacked layers)
-        key_padding_mask = (variable_mask == 0)  # (B, N_max)
+        key_padding_mask = variable_mask == 0  # (B, N_max)
 
         for attn, norm, gate_proj in zip(
-            self.cross_attn_layers, self.attn_norms, self.gate_projs
+            self.cross_attn_layers, self.attn_norms, self.gate_projs, strict=False
         ):
             h_out, _ = attn(
                 query=context,

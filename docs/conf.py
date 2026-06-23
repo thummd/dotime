@@ -108,6 +108,9 @@ napoleon_google_docstring = False
 napoleon_numpy_docstring = True
 napoleon_include_init_with_doc = False
 napoleon_use_rtype = False
+# Document dataclass/class attributes inline (:ivar:) rather than as separate
+# object descriptions, avoiding duplicate-object-description warnings under -W.
+napoleon_use_ivar = True
 
 
 # -- Intersphinx -------------------------------------------------------------

@@ -12,11 +12,10 @@ to compute the encoder ONCE per trajectory and reuse for many queries.
 
 import torch
 import torch.nn as nn
-from typing import Dict, List, Optional
 
-from causaltimeprior.models.encoder import TemporalEncoder
-from causaltimeprior.models.cross_variable_mixer import CrossVariableMixer
 from causaltimeprior.models.bar_head import BarDistributionHead
+from causaltimeprior.models.cross_variable_mixer import CrossVariableMixer
+from causaltimeprior.models.encoder import TemporalEncoder
 from causaltimeprior.models.quantile_head import QuantileHead
 from causaltimeprior.models.value_bypass import make_value_bypass
 
@@ -37,9 +36,9 @@ class DoOverTimePFN(nn.Module):
         n_cross_attn_heads: int = 4,
         n_buckets: int = 1000,
         encoder_backend: str = "transformer",
-        encoder_config: dict = None,
+        encoder_config: dict | None = None,
         head_type: str = "bar",
-        tau_levels: Optional[List[float]] = None,
+        tau_levels: list[float] | None = None,
         n_mixer_layers: int = 1,
         context_window: int = 200,
         value_bypass: str = "none",
@@ -85,7 +84,7 @@ class DoOverTimePFN(nn.Module):
         """Return the active output head."""
         return self.quantile_head if self.head_type == "quantile" else self.bar_head
 
-    def encode(self, batch: Dict[str, torch.Tensor]) -> torch.Tensor:
+    def encode(self, batch: dict[str, torch.Tensor]) -> torch.Tensor:
         """Stage 1: Encode trajectory (expensive, compute once per trajectory).
 
         Parameters
@@ -97,12 +96,12 @@ class DoOverTimePFN(nn.Module):
         h_vars : (B, N_max, E) per-variable temporal representations
         """
         return self.temporal_encoder(
-            batch['X_obs_norm'],
-            batch['variable_mask'],
-            int_onset_idx=batch.get('int_onset_idx'),
+            batch["X_obs_norm"],
+            batch["variable_mask"],
+            int_onset_idx=batch.get("int_onset_idx"),
         )
 
-    def query(self, h_vars: torch.Tensor, batch: Dict[str, torch.Tensor]) -> torch.Tensor:
+    def query(self, h_vars: torch.Tensor, batch: dict[str, torch.Tensor]) -> torch.Tensor:
         """Stage 2+3: Query with intervention/outcome spec (cheap, run many times).
 
         Parameters
@@ -116,20 +115,20 @@ class DoOverTimePFN(nn.Module):
         """
         h_causal = self.cross_variable_mixer(
             h_vars=h_vars,
-            intervention_target=batch['intervention_target'],
-            intervention_type=batch['intervention_type'],
-            intervention_value=batch['intervention_value'],
-            intervention_time_start=batch['intervention_time_start'],
-            intervention_time_end=batch['intervention_time_end'],
-            query_target=batch['query_target'],
-            query_time=batch['query_time'],
-            variable_mask=batch['variable_mask'],
+            intervention_target=batch["intervention_target"],
+            intervention_type=batch["intervention_type"],
+            intervention_value=batch["intervention_value"],
+            intervention_time_start=batch["intervention_time_start"],
+            intervention_time_end=batch["intervention_time_end"],
+            query_target=batch["query_target"],
+            query_time=batch["query_time"],
+            variable_mask=batch["variable_mask"],
         )
         if self.value_bypass is not None:
-            h_causal = self.value_bypass(h_causal, batch['intervention_value'])
+            h_causal = self.value_bypass(h_causal, batch["intervention_value"])
         return self.head(h_causal)
 
-    def forward(self, batch: Dict[str, torch.Tensor]) -> torch.Tensor:
+    def forward(self, batch: dict[str, torch.Tensor]) -> torch.Tensor:
         """Full forward pass (encode + query). Use encode()+query() for caching.
 
         Parameters
@@ -143,12 +142,12 @@ class DoOverTimePFN(nn.Module):
         h_vars = self.encode(batch)
         return self.query(h_vars, batch)
 
-    def loss(self, batch: Dict[str, torch.Tensor]) -> torch.Tensor:
+    def loss(self, batch: dict[str, torch.Tensor]) -> torch.Tensor:
         """Compute loss for a batch."""
         output = self.forward(batch)
-        return self.head.loss(output, batch['Y_true_norm'])
+        return self.head.loss(output, batch["Y_true_norm"])
 
-    def predict(self, batch: Dict[str, torch.Tensor]) -> torch.Tensor:
+    def predict(self, batch: dict[str, torch.Tensor]) -> torch.Tensor:
         """Predict mean values for a batch."""
         output = self.forward(batch)
         return self.head.predict_mean(output)
