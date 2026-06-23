@@ -14,7 +14,7 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-__all__ = ["Tanh", "TanhX2", "TanhReLU"]
+__all__ = ["Tanh", "TanhReLU", "TanhX2"]
 
 
 class Tanh(nn.Module):

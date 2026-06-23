@@ -33,13 +33,13 @@ if TYPE_CHECKING:
 
 __all__ = [
     "DIR_ACC_EPS",
-    "compute_rmse",
+    "Results",
+    "bootstrap_ci",
     "compute_mae",
     "compute_nmse",
     "compute_r2",
+    "compute_rmse",
     "direction_accuracy",
-    "bootstrap_ci",
-    "Results",
     "evaluate",
 ]
 

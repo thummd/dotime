@@ -260,6 +260,10 @@ filterwarnings = [
     "error",
     "ignore::DeprecationWarning:torch.*",
     "ignore::UserWarning:networkx.*",
+    # Divergence is an expected, gracefully-handled runtime condition of the
+    # diverse prior (trajectories are zeroed and flagged), not a test failure.
+    "ignore:SCM diverged:RuntimeWarning",
+    "ignore:Regime-switching SCM diverged:RuntimeWarning",
 ]
 
 [tool.coverage.run]

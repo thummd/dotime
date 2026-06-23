@@ -26,13 +26,13 @@ import torch
 import torch.distributions as dist
 
 __all__ = [
+    "DISTRIBUTION_FACTORIES",
+    "DiscreteUniformSampler",
     "DistributionSampler",
     "FixedSampler",
-    "TorchDistributionSampler",
-    "ShiftedExponentialSampler",
-    "DiscreteUniformSampler",
     "LogarithmicSampler",
-    "DISTRIBUTION_FACTORIES",
+    "ShiftedExponentialSampler",
+    "TorchDistributionSampler",
     "build_samplers",
     "sample_parameters",
 ]
@@ -253,7 +253,7 @@ def build_samplers(
 
         try:
             samplers[param_name] = DISTRIBUTION_FACTORIES[dist_type](dist_params)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             raise ValueError(
                 f"Error creating sampler for {config_name}.{param_name}: {exc}"
             ) from exc
