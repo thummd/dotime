@@ -11,17 +11,18 @@ evaluation harness can request a baseline by string (mirroring the
 - :func:`get`           — instantiate a baseline by name.
 - :func:`register`      — decorator to add a baseline to the registry.
 
-Implementers: the bodies of the model-backed baselines (PFN / Chronos / PCMCI /
-Bayesian ITS) are stubbed with ``TODO(consolidate)`` where they must call the
-real classes living in ``dotime`` and the existing ``baselines.py``. The
-trivial baselines (Zero, Mean, VAR-OLS) are implemented so the harness runs
-end-to-end immediately.
+Implemented: the trivial baselines (``Zero``, ``Mean``/TrajMean, ``AR1``,
+``VAR-OLS``), the classical structural baselines (``BackDoorOLS``, ``IV2SLS``),
+``Oracle`` (stored ground truth), and ``DoOverTimePFN`` (checkpoint-backed, the
+``[models]`` extra). ``PCMCI+`` / ``BayesianITS`` / ``Chronos`` require the
+``[baselines]`` extra and raise an actionable error until that dependency and
+their wiring are present.
 """
 
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, ClassVar, Protocol, runtime_checkable
 
 import numpy as np
 import torch
@@ -176,6 +177,119 @@ class VAROLSBaseline:
         gram = a.T @ a + 1e-3 * np.eye(a.shape[1])
         coef = np.linalg.solve(gram, a.T @ b).T
         return coef, mean
+
+
+# --------------------------------------------------------------------------- #
+# Classical structural baselines (correct adjustment per graph)
+# --------------------------------------------------------------------------- #
+
+
+def _ols_fit(design: np.ndarray, target: np.ndarray) -> np.ndarray:
+    """Ridge-stabilised OLS coefficients for ``target ~ [1, design]``."""
+    x = np.column_stack([np.ones(len(design)), design])
+    gram = x.T @ x + 1e-6 * np.eye(x.shape[1])
+    return np.linalg.solve(gram, x.T @ target)
+
+
+@register("BackDoorOLS")
+class BackDoorOLSBaseline:
+    """Linear back-door adjustment: E[Y_t | do(A=v)] = E_X[ E[Y_t | A=v, X, Y_{t-1}] ].
+
+    Fits an OLS outcome model ``Y_t ~ A_t + X_t + Y_{t-1}`` on the pre-intervention
+    observational data (X = the adjustment set, i.e. all variables other than the
+    treatment A and outcome Y), then plugs the intervention value for A and
+    averages over the observed confounder distribution. Applicable to the
+    back-door family; on other structures it falls back to the pre-intervention
+    outcome mean.
+    """
+
+    name = "BackDoorOLS"
+    _BACK_DOOR: ClassVar[set[str]] = {"back_door", "observed_confounder", "confounder_mediator"}
+
+    def predict(self, episode: Episode) -> torch.Tensor:
+        x = episode.x_obs.detach().cpu().numpy()
+        t_len, n = x.shape
+        a = episode.intervention.targets[0] if episode.intervention.targets else 0
+        onset = min(episode.intervention.times) if episode.intervention.times else t_len
+        preds = []
+        for q in range(episode.query_target.numel()):
+            y = int(episode.query_target[q])
+            adj = [v for v in range(n) if v not in (a, y)]
+            fit_end = max(2, min(onset, t_len))
+            if episode.structure not in self._BACK_DOOR or fit_end < 4:
+                preds.append(float(x[:fit_end, y].mean()))
+                continue
+            # Design over t in [1, fit_end): [A_t, X_t..., Y_{t-1}] -> Y_t
+            a_t = x[1:fit_end, a]
+            x_t = x[1:fit_end, adj] if adj else np.empty((fit_end - 1, 0))
+            y_prev = x[0 : fit_end - 1, y]
+            design = np.column_stack([a_t, x_t, y_prev])
+            coef = _ols_fit(design, x[1:fit_end, y])
+            # Predict at do(A = intervention value), averaging over observed X rows.
+            a_val = (
+                float(episode.intervention.values)
+                if isinstance(episode.intervention.values, (int, float))
+                else float(a_t.mean())
+            )
+            x_rows = x[1:fit_end, adj] if adj else np.empty((fit_end - 1, 0))
+            yhat = (
+                coef[0]
+                + coef[1] * a_val
+                + (x_rows @ coef[2 : 2 + len(adj)] if adj else 0.0)
+                + coef[2 + len(adj)] * y_prev
+            )
+            preds.append(float(np.mean(yhat)))
+        return torch.tensor(preds, dtype=torch.float32)
+
+
+@register("IV2SLS")
+class IV2SLSBaseline:
+    """Two-stage least squares for the instrumental-variable structure.
+
+    Stage 1 regresses the treatment on the instrument(s) ``Z``; stage 2 regresses
+    the outcome on the fitted treatment. The intervention effect is the stage-2
+    treatment coefficient: ``E[Y | do(A=v)] = beta_0 + beta_A * v``. On non-IV
+    structures it falls back to the pre-intervention outcome mean.
+    """
+
+    name = "IV2SLS"
+
+    def predict(self, episode: Episode) -> torch.Tensor:
+        x = episode.x_obs.detach().cpu().numpy()
+        t_len, n = x.shape
+        a = episode.intervention.targets[0] if episode.intervention.targets else 0
+        onset = min(episode.intervention.times) if episode.intervention.times else t_len
+        fit_end = max(2, min(onset, t_len))
+        preds = []
+        for q in range(episode.query_target.numel()):
+            y = int(episode.query_target[q])
+            instruments = [v for v in range(n) if v not in (a, y)]
+            if episode.structure != "instrumental_variable" or fit_end < 4 or not instruments:
+                preds.append(float(x[:fit_end, y].mean()))
+                continue
+            z = x[:fit_end, instruments]
+            a_obs = x[:fit_end, a]
+            y_obs = x[:fit_end, y]
+            # Stage 1: A ~ Z ; Stage 2: Y ~ Ahat -> slope is the IV effect estimate.
+            s1 = _ols_fit(z, a_obs)
+            a_hat = s1[0] + z @ s1[1:]
+            # Weak-instrument guard: 2SLS is unreliable when Z explains little of A.
+            denom = float(np.var(a_obs))
+            stage1_r2 = float(np.var(a_hat)) / denom if denom > 1e-8 else 0.0
+            if stage1_r2 < 0.1:
+                preds.append(float(y_obs.mean()))
+                continue
+            s2 = _ols_fit(a_hat.reshape(-1, 1), y_obs)
+            beta_a = s2[1]
+            a_val = (
+                float(episode.intervention.values)
+                if isinstance(episode.intervention.values, (int, float))
+                else float(a_obs.mean())
+            )
+            # Centered prediction: baseline outcome + effect of moving A from its
+            # observed mean to the intervention value (robust to extrapolation).
+            preds.append(float(y_obs.mean() + beta_a * (a_val - a_obs.mean())))
+        return torch.tensor(preds, dtype=torch.float32)
 
 
 # --------------------------------------------------------------------------- #
