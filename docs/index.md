@@ -14,6 +14,7 @@ KDD 2027 Datasets & Benchmarks paper.
 
 quickstart
 benchmarks
+leaderboard
 ```
 
 ```{toctree}
