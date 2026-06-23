@@ -114,7 +114,7 @@ def generate_main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def _write_parquet(dataset: object, out: Path, *, seed: int) -> None:
+def _write_parquet(dataset: list, out: Path, *, seed: int) -> None:
     """Serialize a generated dataset to the frozen-suite parquet schema.
 
     Each ``(X_obs, X_int, intervention)`` tuple becomes one Episode (with a query
@@ -186,8 +186,8 @@ def benchmark_main(argv: list[str] | None = None) -> int:
 
     if args.list:
         print("Available benchmark suites:")
-        for suite in _AVAILABLE_SUITES:
-            print(f"  {suite}")
+        for suite_name in _AVAILABLE_SUITES:
+            print(f"  {suite_name}")
         return 0
 
     # Imported lazily so `ctp-benchmark --list` works without the baselines extra.

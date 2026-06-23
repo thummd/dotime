@@ -375,6 +375,8 @@ class DoOverTimePFNBaseline:
         batch = _episode_to_batch(episode, self.n_max, self.device)
         out = self.model(batch)
         head = getattr(self.model, "quantile_head", None) or getattr(self.model, "bar_head", None)
+        if head is None:
+            raise RuntimeError("model has neither a quantile_head nor a bar_head")
         pred_norm = head.predict_mean(out).reshape(-1)
         # Map back to the raw scale with the query variable's stats.
         q = int(episode.query_target[0])

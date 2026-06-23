@@ -3,6 +3,7 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 import numpy as np
 import torch
@@ -92,10 +93,12 @@ class InterventionSpec:
         from dataclasses import asdict, is_dataclass
 
         v = self.values
+        values: dict[str, Any]
         if isinstance(v, torch.Tensor):
             values = {"kind": "tensor", "data": v.detach().cpu().tolist()}
-        elif is_dataclass(v) and type(v).__name__ in _PROFILE_REGISTRY:
-            values = {"kind": "profile", "name": type(v).__name__, "params": asdict(v)}
+        elif not isinstance(v, type) and is_dataclass(v) and type(v).__name__ in _PROFILE_REGISTRY:
+            # v is a dataclass instance here; mypy's is_dataclass TypeGuard can't narrow it.
+            values = {"kind": "profile", "name": type(v).__name__, "params": asdict(v)}  # type: ignore[call-overload]
         elif callable(v):
             raise TypeError(
                 f"cannot serialize intervention value of type {type(v).__name__!r}; "
@@ -223,6 +226,7 @@ class InterventionSampler:
         times = list(range(start_time, start_time + intervention_length))
 
         # Sample intervention values based on type
+        values: float | torch.Tensor | Callable
         if intervention_type == InterventionType.HARD:
             # Hard intervention: constant value
             value = torch.randn(1, generator=self.generator).item() * 2.0

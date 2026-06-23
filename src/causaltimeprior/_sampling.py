@@ -295,5 +295,5 @@ def sample_parameters(
 
     total_log_prob = 0.0
     for name, sampler in samplers.items():
-        total_log_prob += sampler.log_prob(torch.tensor([sampled[name]]))
+        total_log_prob += float(sampler.log_prob(torch.tensor([sampled[name]])).sum().item())
     return sampled, total_log_prob
