@@ -99,17 +99,41 @@ class ZeroBaseline:
         return torch.zeros(episode.query_target.numel())
 
 
+def _pre_onset_index(episode: Episode) -> int:
+    """First post-intervention step (onset); falls back to the full length."""
+    times = episode.intervention.times
+    return min(times) if times else episode.x_obs.shape[0]
+
+
 @register("Mean")
 class MeanBaseline:
-    """Predicts the pre-intervention mean of the queried variable."""
+    """Predicts the pre-intervention mean of the queried variable (a.k.a. TrajMean)."""
 
     name = "Mean"
 
     def predict(self, episode: Episode) -> torch.Tensor:
+        onset = _pre_onset_index(episode)
         preds = []
         for q in range(episode.query_target.numel()):
             var = int(episode.query_target[q])
-            preds.append(episode.x_obs[:, var].mean())
+            pre = episode.x_obs[:onset, var]
+            preds.append(pre.mean() if pre.numel() else episode.x_obs[:, var].mean())
+        return torch.stack(preds)
+
+
+@register("AR1")
+class AR1Baseline:
+    """Predicts the last pre-intervention value of the queried variable."""
+
+    name = "AR1"
+
+    def predict(self, episode: Episode) -> torch.Tensor:
+        onset = _pre_onset_index(episode)
+        preds = []
+        for q in range(episode.query_target.numel()):
+            var = int(episode.query_target[q])
+            last = max(0, min(onset, episode.x_obs.shape[0]) - 1)
+            preds.append(episode.x_obs[last, var])
         return torch.stack(preds)
 
 
@@ -247,21 +271,105 @@ class ChronosObservationalBaseline:
         raise NotImplementedError("adapt Chronos2Observational into this interface")
 
 
+_INT_TYPE_CODE = {"hard": 0, "soft": 1, "time_varying": 2}
+
+
+def _episode_to_batch(episode: Episode, n_max: int, device: str) -> dict:
+    """Convert a released Episode into the model's normalized, padded batch.
+
+    Mirrors ``ExtendedCausalTimePrior.generate_sample``: causal masking (zero
+    ``x_obs`` from the intervention onset), per-variable normalization over the
+    pre-intervention window, and the intervention/query field encoding. Returns a
+    batch of size 1 with the normalization stats so predictions can be mapped back
+    to the raw scale.
+    """
+    from causaltimeprior.normalization import normalize_batch
+
+    x_obs = episode.x_obs
+    t_len, n = x_obs.shape
+    onset = min(episode.intervention.times) if episode.intervention.times else t_len
+    int_target = episode.intervention.targets[0] if episode.intervention.targets else 0
+
+    # Causal masking (idempotent if the episode is already masked).
+    masked = x_obs.clone()
+    masked[onset:] = 0.0
+
+    x_padded = torch.zeros(t_len, n_max)
+    x_padded[:, :n] = masked
+    var_mask = torch.zeros(n_max)
+    var_mask[:n] = 1.0
+
+    raw_value = episode.intervention.values
+    raw_value = float(raw_value) if isinstance(raw_value, (int, float)) else 0.0
+    pre = x_obs[:onset, int_target] if onset > 0 else x_obs[:, int_target]
+    int_value_norm = raw_value / max(float(pre.std().item()) if pre.numel() > 1 else 1.0, 1e-4)
+
+    def _norm_time(v: float) -> float:
+        return v if v <= 1.0 else v / t_len
+
+    q_time = float(episode.query_time[0]) if episode.query_time.numel() else float(t_len - 1)
+    batch = {
+        "X_obs": x_padded.unsqueeze(0).to(device),
+        "variable_mask": var_mask.unsqueeze(0).to(device),
+        "int_onset_idx": torch.tensor([onset], device=device),
+        "intervention_target": torch.tensor([int_target], device=device),
+        "intervention_type": torch.tensor(
+            [_INT_TYPE_CODE.get(episode.intervention.intervention_type.value, 0)], device=device
+        ),
+        "intervention_value": torch.tensor([int_value_norm], dtype=torch.float32, device=device),
+        "intervention_time_start": torch.tensor(
+            [_norm_time(float(min(episode.intervention.times) if episode.intervention.times else 0))],
+            device=device,
+        ),
+        "intervention_time_end": torch.tensor(
+            [_norm_time(float(max(episode.intervention.times) if episode.intervention.times else 0))],
+            device=device,
+        ),
+        "query_target": torch.tensor([int(episode.query_target[0])], device=device),
+        "query_time": torch.tensor([_norm_time(q_time)], dtype=torch.float32, device=device),
+        "Y_true": episode.y_true[:1].to(device),
+    }
+    normalize_batch(batch)
+    return batch
+
+
 @register("DoOverTimePFN")
 class DoOverTimePFNBaseline:
-    """The Do-Over-Time-PFN model (interventional).
+    """The Do-Over-Time-PFN causal foundation model (the headline method).
 
-    TODO(consolidate): load a trained DoOverTimePFN checkpoint and adapt the
-    existing `BackDoorDoTPFNCausalEffect` call path into `predict`. Accept a
-    `checkpoint` path/handle in __init__ so the harness can point at a specific
-    model. This is the headline method, not a baseline — keep its wiring honest.
+    Loads a trained checkpoint (``[models]`` extra) and predicts the raw
+    interventional outcome at the query: it builds the model's normalized batch
+    from the Episode, runs the model in normalized space, then maps the predicted
+    mean back to the raw scale with the query variable's normalization stats.
+
+    Pass a ``checkpoint`` path. NOTE: reproducing the paper's reference numbers
+    requires the checkpoint trained for the corresponding suite/structure and a
+    matched evaluation protocol (Phase 8 verification); this wiring is the
+    inference path, validated to run and produce finite predictions.
     """
 
     name = "DoOverTimePFN"
 
     def __init__(self, checkpoint: str | None = None, device: str = "cpu"):
-        self.checkpoint = checkpoint
-        self.device = device
+        if checkpoint is None:
+            raise ValueError(
+                "DoOverTimePFN baseline needs a trained checkpoint: "
+                "baselines.get('DoOverTimePFN', checkpoint='/path/to/best.pt')"
+            )
+        from causaltimeprior.models.loader import load_dotpfn
 
+        self.device = device
+        self.model = load_dotpfn(checkpoint, device=device)
+        self.n_max = int(getattr(self.model, "n_max", 41))
+
+    @torch.no_grad()
     def predict(self, episode: Episode) -> torch.Tensor:
-        raise NotImplementedError("load checkpoint and adapt BackDoorDoTPFNCausalEffect")
+        batch = _episode_to_batch(episode, self.n_max, self.device)
+        out = self.model(batch)
+        head = getattr(self.model, "quantile_head", None) or getattr(self.model, "bar_head", None)
+        pred_norm = head.predict_mean(out).reshape(-1)
+        # Map back to the raw scale with the query variable's stats.
+        q = int(episode.query_target[0])
+        mean = batch["_norm_means"][0, q]
+        std = batch["_norm_stds"][0, q]
+        return (pred_norm * std + mean).cpu()

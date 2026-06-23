@@ -64,6 +64,7 @@ _LAZY_SUBMODULES = frozenset(
     {
         "extended",
         "continuous",
+        "models",
         "data",
         "benchmarks",
         "baselines",
@@ -93,6 +94,7 @@ if TYPE_CHECKING:
         baselines,
         benchmarks,
         continuous,
+        models,
         data,
         evaluation,
         extended,
@@ -118,6 +120,7 @@ __all__ = [
     # --- lazy submodules ---
     "extended",
     "continuous",
+    "models",
     "data",
     "benchmarks",
     "baselines",
