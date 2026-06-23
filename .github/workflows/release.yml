@@ -1,0 +1,86 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"          # e.g. v0.1.0, v0.2.0rc1
+  workflow_dispatch:   # allow manual dry-runs (build only)
+
+jobs:
+  build:
+    name: Build sdist + wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build
+        run: |
+          python -m pip install --upgrade pip build twine
+          python -m build
+      - name: Check artifacts
+        run: twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish-testpypi:
+    name: Publish to TestPyPI
+    # Only on a real tag push, not on manual dry-runs.
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/causaltimeprior
+    permissions:
+      id-token: write   # OIDC for PyPI trusted publishing (no API token needed)
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          # TestPyPI sometimes already has a file from a prior dry-run; don't fail on it.
+          skip-existing: true
+
+  publish-pypi:
+    name: Publish to PyPI
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: publish-testpypi
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/causaltimeprior
+    permissions:
+      id-token: write   # OIDC for PyPI trusted publishing
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  github-release:
+    name: Create GitHub Release
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: publish-pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # to create the release and upload assets
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: dist/*

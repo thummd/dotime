@@ -1,0 +1,279 @@
+# pyproject.toml for the `causaltimeprior` package.
+# Build backend: hatchling. Layout: src/.
+
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+
+# ---------------------------------------------------------------------------
+# Project metadata (PEP 621)
+# ---------------------------------------------------------------------------
+
+[project]
+name = "causaltimeprior"
+version = "0.1.0"
+description = "Synthetic temporal structural causal models with interventions for causal foundation models"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "Dennis Thumm" },
+    { name = "Ying Chen" },
+]
+maintainers = [
+    { name = "Dennis Thumm" },
+]
+keywords = [
+    "causal-inference",
+    "time-series",
+    "structural-causal-models",
+    "foundation-models",
+    "prior-fitted-networks",
+    "synthetic-data",
+    "benchmarks",
+    "interventional-data",
+    "counterfactuals",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Typing :: Typed",
+]
+
+# Core runtime dependencies. Keep this list minimal — anything that is only
+# needed for specific baselines, datasets, or evaluation backends belongs in
+# `[project.optional-dependencies]` below so a `pip install causaltimeprior`
+# stays small enough for reviewers to install in a few seconds.
+dependencies = [
+    "torch>=2.0",
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "networkx>=3.0",
+    "matplotlib>=3.7",
+    "pyyaml>=6.0",
+    "tqdm>=4.65",
+    "typing-extensions>=4.5; python_version < '3.12'",
+]
+
+# Optional extras. Install with `pip install causaltimeprior[chamber,baselines]`.
+[project.optional-dependencies]
+
+# Real-world transfer task using the CausalChamber physical-system datasets.
+chamber = [
+    "causalchamber>=0.5",
+]
+
+# Classical and Bayesian baselines used in the KDD D&B reference results.
+baselines = [
+    "statsmodels>=0.14",
+    "causalpy>=0.4",       # Bayesian piecewise ITS reference
+    "tigramite>=5.2",      # PCMCI / PCMCI+ baselines
+    "scikit-learn>=1.3",
+]
+
+# The Do-Over-Time-PFN model + training stack (heavier; not needed to use the
+# generator or load benchmark suites).
+models = [
+    "pfns>=0.1",
+]
+
+# Optional GPU-only GatedDeltaProduct encoder backend (from TempoPFN). The core
+# package runs the CPU-friendly transformer backend without any of this; only
+# install if you explicitly want `--backend gdp`.
+gdp = [
+    "fla>=0.1",            # flash-linear-attention
+    # tempopfn: add here once a distribution is published, or pin a source/VCS
+    # requirement. Kept out of core so a plain install never needs a GPU.
+]
+
+# Pretty plots and analysis helpers used by the evaluation scripts.
+evaluation = [
+    "pandas>=2.0",
+    "seaborn>=0.12",
+    "pyarrow>=14.0",       # parquet I/O for frozen benchmark suites
+]
+
+# Documentation build chain (Sphinx + Read the Docs theme + myst + nbsphinx).
+docs = [
+    "sphinx>=7.0",
+    "sphinx-rtd-theme>=2.0",
+    "myst-parser>=2.0",
+    "nbsphinx>=0.9",
+    "sphinx-copybutton>=0.5",
+    "sphinx-autodoc-typehints>=1.25",
+    "ipykernel>=6.25",
+]
+
+# Development chain: tests, linting, typing, hooks.
+dev = [
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+    "pytest-xdist>=3.5",
+    "hypothesis>=6.90",    # property-based tests for SCM invariants
+    "ruff>=0.4",
+    "mypy>=1.8",
+    "pre-commit>=3.5",
+    "build>=1.0",          # for sdist/wheel verification
+    "twine>=4.0",
+]
+
+# Convenience union for "give me everything except dev tooling".
+all = [
+    "causaltimeprior[chamber,baselines,evaluation]",
+]
+
+
+[project.urls]
+Homepage      = "https://github.com/thummd/CausalTimePrior"
+Documentation = "https://causaltimeprior.readthedocs.io"
+Repository    = "https://github.com/thummd/CausalTimePrior"
+Issues        = "https://github.com/thummd/CausalTimePrior/issues"
+Changelog     = "https://github.com/thummd/CausalTimePrior/blob/main/CHANGELOG.md"
+
+
+# Command-line entry points exposed after `pip install`.
+[project.scripts]
+ctp-generate  = "causaltimeprior.cli:generate_main"
+ctp-benchmark = "causaltimeprior.cli:benchmark_main"
+
+
+# ---------------------------------------------------------------------------
+# Build configuration
+# ---------------------------------------------------------------------------
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/causaltimeprior"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/docs",
+    "/README.md",
+    "/LICENSE",
+    "/CHANGELOG.md",
+    "/CITATION.cff",
+    "/pyproject.toml",
+]
+exclude = [
+    "**/__pycache__",
+    "**/*.pyc",
+    "**/.pytest_cache",
+    "**/.mypy_cache",
+    "/docs/_build",
+    # Frozen benchmark snapshots ship from Zenodo, not the wheel:
+    "/data",
+    "**/*.pt",
+    "**/*.parquet",
+]
+
+
+# ---------------------------------------------------------------------------
+# Lint / format (ruff replaces black + isort + flake8)
+# ---------------------------------------------------------------------------
+
+[tool.ruff]
+line-length    = 100
+target-version = "py310"
+src            = ["src", "tests"]
+extend-exclude = ["docs/_build", "src/causaltimeprior/_vendor"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+    "SIM", # flake8-simplify
+    "RUF", # ruff-specific
+    "NPY", # NumPy-specific
+    "PT",  # pytest style
+]
+ignore = [
+    "E501",  # line length: deferred to the formatter
+    "B008",  # function call in default arg — common in PyTorch idioms
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["B011", "PT011"]
+"docs/conf.py" = ["E402"]
+"**/__init__.py" = ["F401"]  # re-exports
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+
+# ---------------------------------------------------------------------------
+# Type checking
+# ---------------------------------------------------------------------------
+
+[tool.mypy]
+python_version          = "3.10"
+strict                  = true
+ignore_missing_imports  = true
+warn_return_any         = false
+warn_unused_configs     = true
+namespace_packages      = true
+explicit_package_bases  = true
+files                   = ["src/causaltimeprior"]
+
+[[tool.mypy.overrides]]
+module = ["tests.*", "causaltimeprior._vendor.*"]
+ignore_errors = true
+
+
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=causaltimeprior",
+    "--cov-report=term-missing",
+    "--cov-report=xml",
+]
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "gpu: marks tests that require a CUDA device",
+    "snapshot: marks tests that materialize frozen benchmark snapshots",
+]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning:torch.*",
+    "ignore::UserWarning:networkx.*",
+]
+
+[tool.coverage.run]
+source = ["src/causaltimeprior"]
+branch = true
+omit = [
+    "src/causaltimeprior/_vendor/*",
+    "src/causaltimeprior/cli.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]

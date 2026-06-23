@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Docs build
+docs/_build/
+
+# Generated / heavy artifacts (shipped via Zenodo, not git)
+data/
+output/
+*.pt
+*.parquet
+*.hdf5
+*.h5
+
+# Secrets
+.env
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

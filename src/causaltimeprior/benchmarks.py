@@ -1,0 +1,353 @@
+"""Frozen benchmark suites for CausalTimePrior.
+
+This module exposes the *consumer* side of the released benchmarks: loading a
+versioned, immutable suite (downloading + caching it from Zenodo on first use)
+and iterating over its episodes for evaluation.
+
+Public surface
+--------------
+- :class:`Episode`        — one trajectory: obs/int data, intervention, ground truth.
+- :class:`BenchmarkSuite` — a named, versioned collection of episodes.
+- :func:`load_benchmark`  — fetch a suite by name (cached under ``~/.cache``).
+- :func:`available_suites`— list the registered suite names.
+
+Notes for implementers
+-----------------------
+The download + parse path is stubbed where it touches real artifacts (marked
+``TODO(release)``). The frozen on-disk format is a per-suite directory with a
+``manifest.json`` plus one or more parquet shards in the tidy schema produced by
+``scripts/build_release.py``. Wire :func:`_parse_suite_dir` to that schema.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+from collections.abc import Iterator
+from dataclasses import dataclass, field
+from pathlib import Path
+
+import torch
+
+from causaltimeprior.interventions import InterventionSpec
+
+__all__ = [
+    "Episode",
+    "BenchmarkSuite",
+    "SuiteMetadata",
+    "load_benchmark",
+    "available_suites",
+]
+
+
+# --------------------------------------------------------------------------- #
+# Registry of released suites
+# --------------------------------------------------------------------------- #
+
+
+@dataclass(frozen=True)
+class SuiteMetadata:
+    """Static metadata for a released benchmark suite."""
+
+    name: str
+    version: str
+    zenodo_record_id: str  # numeric Zenodo record id, e.g. "10567890"
+    doi: str
+    description: str
+    n_episodes: int
+    structures: tuple[str, ...] = ()
+    license: str = "CC-BY-4.0"
+
+    @property
+    def zenodo_files_url(self) -> str:
+        return f"https://zenodo.org/api/records/{self.zenodo_record_id}"
+
+
+# TODO(release): fill in Zenodo record ids + DOIs once the suites are minted.
+# Until then, loading falls back to local generation (see `load_benchmark`).
+_SUITE_REGISTRY: dict[str, SuiteMetadata] = {
+    "CTP-Identifiability-v1": SuiteMetadata(
+        name="CTP-Identifiability-v1",
+        version="1.0.0",
+        zenodo_record_id="TODO",
+        doi="TODO",
+        description="Named identification structures with exact counterfactuals.",
+        n_episodes=10_800,
+        structures=(
+            "back_door",
+            "observed_confounder",
+            "confounder_mediator",
+            "front_door",
+            "mediator",
+            "instrumental_variable",
+            "rct_no_confounding",
+            "unobserved_confounder",
+        ),
+    ),
+    "CTP-RegimeSwitch-v1": SuiteMetadata(
+        name="CTP-RegimeSwitch-v1",
+        version="1.0.0",
+        zenodo_record_id="TODO",
+        doi="TODO",
+        description="Regime-switching SCMs (ITS generalization), break density in {2,3,5}.",
+        n_episodes=10_000,
+    ),
+    "CTP-Continuous-v1": SuiteMetadata(
+        name="CTP-Continuous-v1",
+        version="1.0.0",
+        zenodo_record_id="TODO",
+        doi="TODO",
+        description="Continuous-time intervention windows, query offsets {1,2,3,5,10}.",
+        n_episodes=10_000,
+    ),
+    "CTP-Generic-100k": SuiteMetadata(
+        name="CTP-Generic-100k",
+        version="1.0.0",
+        zenodo_record_id="TODO",
+        doi="TODO",
+        description="100k trajectories from the full diverse prior (training scale).",
+        n_episodes=100_000,
+    ),
+}
+
+
+def available_suites() -> list[str]:
+    """Return the names of all registered benchmark suites."""
+    return sorted(_SUITE_REGISTRY)
+
+
+# --------------------------------------------------------------------------- #
+# Episode + suite containers
+# --------------------------------------------------------------------------- #
+
+
+@dataclass
+class Episode:
+    """A single benchmark trajectory and its associated queries.
+
+    Attributes
+    ----------
+    x_obs:
+        Observational trajectory, shape ``(T, N)``.
+    x_int:
+        Interventional trajectory under ``intervention``, shape ``(T, N)``.
+    intervention:
+        The applied intervention specification.
+    y_true:
+        Ground-truth interventional outcome(s) for the query/queries,
+        shape ``(n_queries,)``.
+    query_target:
+        Index of the queried variable per query, shape ``(n_queries,)``.
+    query_time:
+        Query time (float in ``[0, 1]`` for continuous suites, or int step),
+        shape ``(n_queries,)``.
+    structure:
+        Identification structure label (``"back_door"``, ...), if applicable.
+    scm_id:
+        Stable id of the generating SCM within the suite.
+    metadata:
+        Free-form per-episode metadata (effect magnitude, regime count, ...).
+    """
+
+    x_obs: torch.Tensor
+    x_int: torch.Tensor
+    intervention: InterventionSpec
+    y_true: torch.Tensor
+    query_target: torch.Tensor
+    query_time: torch.Tensor
+    structure: str | None = None
+    scm_id: int | None = None
+    metadata: dict = field(default_factory=dict)
+
+    @property
+    def n_vars(self) -> int:
+        return int(self.x_obs.shape[-1])
+
+    @property
+    def length(self) -> int:
+        return int(self.x_obs.shape[0])
+
+
+class BenchmarkSuite:
+    """A named, versioned, immutable collection of :class:`Episode` objects."""
+
+    def __init__(self, meta: SuiteMetadata, episodes: list[Episode]):
+        self.meta = meta
+        self._episodes = episodes
+
+    # --- container protocol ------------------------------------------------ #
+
+    def __len__(self) -> int:
+        return len(self._episodes)
+
+    def __iter__(self) -> Iterator[Episode]:
+        return iter(self._episodes)
+
+    def __getitem__(self, idx: int) -> Episode:
+        return self._episodes[idx]
+
+    def __repr__(self) -> str:
+        structs = f", {len(self.meta.structures)} structures" if self.meta.structures else ""
+        return (
+            f"{self.meta.name} (v{self.meta.version}): "
+            f"{len(self._episodes)} episodes{structs}"
+        )
+
+    # --- convenience views ------------------------------------------------- #
+
+    def by_structure(self) -> Iterator[tuple[str, list[Episode]]]:
+        """Yield ``(structure_name, episodes)`` groups.
+
+        Episodes with ``structure is None`` are grouped under ``"_all"``.
+        """
+        groups: dict[str, list[Episode]] = {}
+        for ep in self._episodes:
+            groups.setdefault(ep.structure or "_all", []).append(ep)
+        for name in sorted(groups):
+            yield name, groups[name]
+
+    def filter(self, structure: str) -> BenchmarkSuite:
+        """Return a sub-suite containing only episodes of ``structure``."""
+        eps = [e for e in self._episodes if e.structure == structure]
+        return BenchmarkSuite(self.meta, eps)
+
+
+# --------------------------------------------------------------------------- #
+# Loading: cache -> download -> parse  (with local-generation fallback)
+# --------------------------------------------------------------------------- #
+
+
+def _cache_root(cache_dir: str | os.PathLike[str] | None) -> Path:
+    if cache_dir is not None:
+        root = Path(cache_dir)
+    else:
+        env = os.environ.get("CAUSALTIMEPRIOR_CACHE")
+        root = Path(env) if env else Path.home() / ".cache" / "causaltimeprior"
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
+def load_benchmark(
+    name: str,
+    version: str = "latest",
+    *,
+    force_download: bool = False,
+    cache_dir: str | os.PathLike[str] | None = None,
+) -> BenchmarkSuite:
+    """Load a frozen benchmark suite by name.
+
+    On first use the suite is downloaded from Zenodo into the cache directory
+    (``~/.cache/causaltimeprior`` by default, override with
+    ``$CAUSALTIMEPRIOR_CACHE`` or the ``cache_dir`` argument). Subsequent calls
+    read from the cache.
+
+    Parameters
+    ----------
+    name:
+        Suite name, e.g. ``"CTP-Identifiability-v1"``. See
+        :func:`available_suites`.
+    version:
+        Suite version. ``"latest"`` resolves to the registered version.
+    force_download:
+        Re-download even if a cached copy exists.
+    cache_dir:
+        Override the cache root.
+
+    Returns
+    -------
+    BenchmarkSuite
+    """
+    if name not in _SUITE_REGISTRY:
+        raise KeyError(
+            f"unknown benchmark suite {name!r}; available: {available_suites()}"
+        )
+    meta = _SUITE_REGISTRY[name]
+    if version not in ("latest", meta.version):
+        raise ValueError(
+            f"suite {name!r} has version {meta.version!r}, requested {version!r}"
+        )
+
+    suite_dir = _cache_root(cache_dir) / f"{name}-{meta.version}"
+
+    if force_download or not suite_dir.exists():
+        if meta.zenodo_record_id == "TODO":
+            # TODO(release): remove this fallback once suites are minted on Zenodo.
+            # For now, regenerate a small suite locally so downstream code is testable.
+            return _generate_fallback(meta)
+        _download_from_zenodo(meta, suite_dir, force=force_download)
+
+    return _parse_suite_dir(meta, suite_dir)
+
+
+def _download_from_zenodo(meta: SuiteMetadata, dest: Path, *, force: bool) -> None:
+    """Download all files for a suite's Zenodo record into ``dest``.
+
+    TODO(release): implement with `requests`/`urllib`:
+      1. GET meta.zenodo_files_url -> json, read `files[].links.self` + checksum.
+      2. Stream each file to dest, verify md5.
+      3. Write a manifest.json with version + checksums for cache validation.
+    Keep this dependency-light (stdlib urllib) so it stays in the core package.
+    """
+    raise NotImplementedError(
+        f"Zenodo download not yet wired for {meta.name}; "
+        "set zenodo_record_id in _SUITE_REGISTRY and implement _download_from_zenodo()."
+    )
+
+
+def _parse_suite_dir(meta: SuiteMetadata, suite_dir: Path) -> BenchmarkSuite:
+    """Parse a cached suite directory into a :class:`BenchmarkSuite`.
+
+    Expected layout::
+
+        <suite_dir>/
+            manifest.json          # {version, n_episodes, schema, shards: [...]}
+            shard-0000.parquet      # tidy rows keyed by (scm_id, t, variable)
+            shard-0001.parquet
+            ...
+
+    TODO(release): read the manifest, load shards (pyarrow), and reconstruct
+    Episode objects. Reuse the InterventionSpec (de)serialization from
+    `causaltimeprior.interventions` rather than re-inventing it here.
+    """
+    manifest_path = suite_dir / "manifest.json"
+    if not manifest_path.exists():
+        raise FileNotFoundError(
+            f"cached suite at {suite_dir} is missing manifest.json; "
+            "delete it and reload with force_download=True"
+        )
+    _manifest = json.loads(manifest_path.read_text())  # noqa: F841  (used once wired)
+    raise NotImplementedError(
+        "suite parsing not yet implemented; wire _parse_suite_dir() to the "
+        "release schema produced by scripts/build_release.py"
+    )
+
+
+def _generate_fallback(meta: SuiteMetadata, n: int = 64) -> BenchmarkSuite:
+    """Generate a tiny in-memory suite so code/tests run before Zenodo minting.
+
+    This is NOT the released artifact — it is a development convenience that
+    produces ``n`` episodes from the live prior. Remove once suites are hosted.
+    """
+    from causaltimeprior import CausalTimePrior
+
+    prior = CausalTimePrior(seed=0)
+    episodes: list[Episode] = []
+    structures = meta.structures or (None,)
+    for i in range(n):
+        x_obs, x_int, intervention, _scm = prior.generate_pair(T=200)
+        # TODO(release): pull true counterfactual targets from the SCM instead
+        # of this placeholder; the live prior already exposes them.
+        episodes.append(
+            Episode(
+                x_obs=x_obs,
+                x_int=x_int,
+                intervention=intervention,
+                y_true=torch.zeros(1),
+                query_target=torch.tensor([0]),
+                query_time=torch.tensor([1.0]),
+                structure=structures[i % len(structures)],
+                scm_id=i,
+                metadata={"fallback": True},
+            )
+        )
+    return BenchmarkSuite(meta, episodes)
