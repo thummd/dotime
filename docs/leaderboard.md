@@ -41,11 +41,11 @@ by the reproducible evaluator:
 
 ```bash
 # a registered baseline
-python scripts/eval_submission.py --suite CTP-Identifiability-v1 \
+python scripts/eval_submission.py --suite dot-Identifiability-v1 \
     --baseline VAR-OLS --out submission.json
 
 # your own model (anything with predict(episode) -> Tensor)
-python scripts/eval_submission.py --suite CTP-Identifiability-v1 \
+python scripts/eval_submission.py --suite dot-Identifiability-v1 \
     --model mypkg.models:MyModel --name MyModel --out submission.json
 ```
 
@@ -54,7 +54,7 @@ python scripts/eval_submission.py --suite CTP-Identifiability-v1 \
 ```json
 {
   "schema": "ctp-submission/1",
-  "suite": "CTP-Identifiability-v1",
+  "suite": "dot-Identifiability-v1",
   "model": "MyModel",
   "package_version": "0.1.0",
   "n_episodes": 10800,

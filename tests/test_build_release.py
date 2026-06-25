@@ -34,16 +34,16 @@ def test_build_release_micro_all_suites(tmp_path):
     run_dir = tmp_path / "T"
     build_manifest = json.loads((run_dir / "build_manifest.json").read_text())
     assert {s["name"] for s in build_manifest["suites"]} == {
-        "CTP-Identifiability-v1",
-        "CTP-RegimeSwitch-v1",
-        "CTP-Continuous-v1",
-        "CTP-Generic-100k",
+        "dot-Identifiability-v1",
+        "dot-RegimeSwitch-v1",
+        "dot-Continuous-v1",
+        "dot-Generic-100k",
     }
     assert "torch" in build_manifest
     assert "config_hash" in build_manifest
 
     # Every suite round-trips through the loader and Oracle is exact.
-    for suite_dir in sorted(run_dir.glob("CTP-*")):
+    for suite_dir in sorted(run_dir.glob("dot-*")):
         manifest = json.loads((suite_dir / "manifest.json").read_text())
         assert (suite_dir / "croissant.json").exists()
         meta = SuiteMetadata(
@@ -67,7 +67,7 @@ def test_identifiability_covers_all_eight_structures(tmp_path):
     rc = br.main(
         [
             "--suite",
-            "CTP-Identifiability-v1",
+            "dot-Identifiability-v1",
             "--scale",
             "0.001",
             "--output-dir",
@@ -77,6 +77,6 @@ def test_identifiability_covers_all_eight_structures(tmp_path):
         ]
     )
     assert rc == 0
-    suite_dir = next((tmp_path / "T").glob("CTP-Identifiability-v1*"))
+    suite_dir = next((tmp_path / "T").glob("dot-Identifiability-v1*"))
     manifest = json.loads((suite_dir / "manifest.json").read_text())
     assert len(manifest["structures"]) == 8

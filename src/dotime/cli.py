@@ -22,10 +22,10 @@ from pathlib import Path
 from dotime import __version__
 
 _AVAILABLE_SUITES = (
-    "CTP-Identifiability-v1",
-    "CTP-RegimeSwitch-v1",
-    "CTP-Continuous-v1",
-    "CTP-Generic-100k",
+    "dot-Identifiability-v1",
+    "dot-RegimeSwitch-v1",
+    "dot-Continuous-v1",
+    "dot-Generic-100k",
 )
 
 _INTERVENTION_SOURCES = (
@@ -166,7 +166,7 @@ def _build_benchmark_parser() -> argparse.ArgumentParser:
     p.add_argument(
         "--suite",
         default=None,
-        help="Suite name to evaluate against, e.g. CTP-Identifiability-v1.",
+        help="Suite name to evaluate against, e.g. dot-Identifiability-v1.",
     )
     p.add_argument(
         "--baseline",

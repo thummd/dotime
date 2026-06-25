@@ -87,7 +87,7 @@ def test_unknown_baseline_raises():
 
 
 def test_suite_roundtrip_shapes():
-    suite = ctp.benchmarks.load_benchmark("CTP-Identifiability-v1")
+    suite = ctp.benchmarks.load_benchmark("dot-Identifiability-v1")
     assert len(suite) > 0
     seen_structures = set()
     for ep in suite:
@@ -113,7 +113,7 @@ def test_released_episodes_store_full_unmasked_xobs():
 
 
 def test_oracle_is_exact_on_fallback():
-    suite = ctp.benchmarks.load_benchmark("CTP-Generic-100k")
+    suite = ctp.benchmarks.load_benchmark("dot-Generic-100k")
     results = ctp.evaluation.evaluate(ctp.baselines.get("Oracle"), suite)
     assert results.pooled["rmse"] == pytest.approx(0.0, abs=1e-5)
     assert results.pooled["mae"] == pytest.approx(0.0, abs=1e-5)

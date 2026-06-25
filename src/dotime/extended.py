@@ -333,7 +333,7 @@ class ExtendedDoTime:
         # (intervention_value, X_int) stays consistent.
         #
         # Modes:
-        #   "prior"             — keep the CTP-sampled value (no re-simulation).
+        #   "prior"             — keep the prior-sampled value (no re-simulation).
         #   "positivity_aware"  — clip prior value to [obs_mean - 3σ, obs_mean + 3σ]
         #                         and re-simulate. Preserves prior shape, enforces
         #                         positivity (intervention within observed support).

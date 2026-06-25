@@ -104,7 +104,7 @@ def main(argv: list[str] | None = None) -> int:
     api = _api(args.token)
     repos = []
     if args.run_dir:
-        for suite_dir in sorted(args.run_dir.glob("CTP-*")):
+        for suite_dir in sorted(args.run_dir.glob("dot-*")):
             if (suite_dir / "manifest.json").exists():
                 repos.append(upload_suite(api, suite_dir, args.namespace, args.private))
     if args.suite_dir:

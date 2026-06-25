@@ -9,10 +9,10 @@ factory), or by a registered baseline name.
 Usage
 -----
     # a registered baseline
-    python scripts/eval_submission.py --suite CTP-Identifiability-v1 --baseline VAR-OLS \\
+    python scripts/eval_submission.py --suite dot-Identifiability-v1 --baseline VAR-OLS \\
         --out submission.json
     # a custom model class
-    python scripts/eval_submission.py --suite CTP-Continuous-v1 \\
+    python scripts/eval_submission.py --suite dot-Continuous-v1 \\
         --model mypkg.models:MyModel --name MyModel --out submission.json
 
 The output JSON conforms to the schema in ``docs/leaderboard.md`` (suite, model,

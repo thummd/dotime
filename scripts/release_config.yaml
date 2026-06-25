@@ -15,7 +15,7 @@ T: 200                  # default trajectory length
 
 suites:
 
-  CTP-Identifiability-v1:
+  dot-Identifiability-v1:
     version: "1.0.0"
     generator: identifiability
     T: 200
@@ -31,7 +31,7 @@ suites:
       instrumental_variable:   3
       unobserved_confounder:   3
 
-  CTP-RegimeSwitch-v1:
+  dot-RegimeSwitch-v1:
     version: "1.0.0"
     generator: regime
     T: 200
@@ -39,7 +39,7 @@ suites:
     densities: {2: 1, 3: 2, 5: 3}
     n_episodes: 10000
 
-  CTP-Continuous-v1:
+  dot-Continuous-v1:
     version: "1.0.0"
     generator: continuous
     T: 200
@@ -47,7 +47,7 @@ suites:
     structures: [back_door, front_door, instrumental_variable]
     n_episodes: 10000
 
-  CTP-Generic-100k:
+  dot-Generic-100k:
     version: "1.0.0"
     generator: generic
     T: 200

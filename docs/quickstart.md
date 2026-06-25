@@ -43,11 +43,11 @@ for batch in loader:
 ```python
 from dotime.benchmarks import load_benchmark
 
-suite = load_benchmark("CTP-Identifiability-v1")
+suite = load_benchmark("dot-Identifiability-v1")
 print(suite)
 
-# CTP-Identifiability-v1
-# CTP-Identifiability-v1
+# dot-Identifiability-v1
+# dot-Identifiability-v1
 #   8 structures (back_door, observed_confounder, confounder_mediator,
 #                 front_door, mediator, instrumental_variable,
 #                 rct_no_confounding, unobserved_confounder)
@@ -69,7 +69,7 @@ results.to_dict()               # JSON-serializable
 Or from the command line:
 
 ```bash
-dotime-benchmark --suite CTP-Identifiability-v1 --baseline VAR-OLS
+dotime-benchmark --suite dot-Identifiability-v1 --baseline VAR-OLS
 ```
 
 ## Where to go next

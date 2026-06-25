@@ -106,7 +106,7 @@ def main(argv: list[str] | None = None) -> int:
     base = _base(args.sandbox)
 
     results = {}
-    for suite_dir in sorted(args.run_dir.glob("CTP-*")):
+    for suite_dir in sorted(args.run_dir.glob("dot-*")):
         if (suite_dir / "manifest.json").exists():
             dep_id, doi = upload_suite(suite_dir, token, base)
             results[suite_dir.name] = {"deposition": dep_id, "doi": doi}

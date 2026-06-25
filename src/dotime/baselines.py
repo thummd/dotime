@@ -348,7 +348,7 @@ class PCMCIBaseline:
 class BayesianPiecewiseITSBaseline:
     """Bayesian piecewise interrupted-time-series reference (CausalPy).
 
-    Intended for CTP-RegimeSwitch-v1, where a 2-regime episode reduces to a
+    Intended for dot-RegimeSwitch-v1, where a 2-regime episode reduces to a
     classic ABA ITS design.
     Requires the ``baselines`` extra.
     TODO(consolidate): fit a CausalPy InterruptedTimeSeries on the pre/post

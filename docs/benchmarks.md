@@ -4,17 +4,17 @@ DoTime ships four versioned, immutable suites for reproducible evaluation. Each 
 
 ## Suites
 
-- **`CTP-Identifiability-v1`** — ~10.8k trajectories across **eight** named structures: `back_door`, `observed_confounder`, `confounder_mediator` (back-door family); `front_door`, `mediator` (front-door family); `instrumental_variable` (IV); `rct_no_confounding` (trivially identified); `unobserved_confounder` (non-identifiable, robustness check). Counterfactuals are exact.
-- **`CTP-RegimeSwitch-v1`** — regime-switching trajectories with controllable break density.
-- **`CTP-Continuous-v1`** — continuous-time intervention windows, multiple query offsets.
-- **`CTP-Generic-100k`** — 100 000 trajectories from the full diverse prior. Training-scale.
+- **`dot-Identifiability-v1`** — ~10.8k trajectories across **eight** named structures: `back_door`, `observed_confounder`, `confounder_mediator` (back-door family); `front_door`, `mediator` (front-door family); `instrumental_variable` (IV); `rct_no_confounding` (trivially identified); `unobserved_confounder` (non-identifiable, robustness check). Counterfactuals are exact.
+- **`dot-RegimeSwitch-v1`** — regime-switching trajectories with controllable break density.
+- **`dot-Continuous-v1`** — continuous-time intervention windows, multiple query offsets.
+- **`dot-Generic-100k`** — 100 000 trajectories from the full diverse prior. Training-scale.
 
 ## Loader
 
 ```python
 from dotime.benchmarks import load_benchmark
 
-suite = load_benchmark("CTP-Identifiability-v1", version="1.0.0")
+suite = load_benchmark("dot-Identifiability-v1", version="1.0.0")
 ```
 
 On first access, the suite is downloaded from Zenodo into `~/.cache/dotime/`. Pass `force_download=True` to redownload.

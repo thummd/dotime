@@ -9,7 +9,7 @@ directory.
 Usage
 -----
     python scripts/build_release.py                       # all suites, full scale
-    python scripts/build_release.py --suite CTP-Generic-100k
+    python scripts/build_release.py --suite dot-Generic-100k
     python scripts/build_release.py --scale 0.001         # tiny smoke build
     python scripts/build_release.py --output-dir output
 

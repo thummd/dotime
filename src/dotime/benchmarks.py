@@ -57,7 +57,7 @@ class SuiteMetadata:
     n_episodes: int
     structures: tuple[str, ...] = ()
     license: str = "CC-BY-4.0"
-    hf_repo_id: str = ""  # Hugging Face dataset repo, e.g. "thummd/CTP-Identifiability-v1"
+    hf_repo_id: str = ""  # Hugging Face dataset repo, e.g. "thummd/dot-Identifiability-v1"
 
     @property
     def zenodo_files_url(self) -> str:
@@ -67,8 +67,8 @@ class SuiteMetadata:
 # TODO(release): fill in Zenodo record ids + DOIs once the suites are minted.
 # Until then, loading falls back to local generation (see `load_benchmark`).
 _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
-    "CTP-Identifiability-v1": SuiteMetadata(
-        name="CTP-Identifiability-v1",
+    "dot-Identifiability-v1": SuiteMetadata(
+        name="dot-Identifiability-v1",
         version="1.0.0",
         zenodo_record_id="TODO",
         doi="TODO",
@@ -85,24 +85,24 @@ _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
             "unobserved_confounder",
         ),
     ),
-    "CTP-RegimeSwitch-v1": SuiteMetadata(
-        name="CTP-RegimeSwitch-v1",
+    "dot-RegimeSwitch-v1": SuiteMetadata(
+        name="dot-RegimeSwitch-v1",
         version="1.0.0",
         zenodo_record_id="TODO",
         doi="TODO",
         description="Regime-switching SCMs (ITS generalization), break density in {2,3,5}.",
         n_episodes=10_000,
     ),
-    "CTP-Continuous-v1": SuiteMetadata(
-        name="CTP-Continuous-v1",
+    "dot-Continuous-v1": SuiteMetadata(
+        name="dot-Continuous-v1",
         version="1.0.0",
         zenodo_record_id="TODO",
         doi="TODO",
         description="Continuous-time intervention windows, query offsets {1,2,3,5,10}.",
         n_episodes=10_000,
     ),
-    "CTP-Generic-100k": SuiteMetadata(
-        name="CTP-Generic-100k",
+    "dot-Generic-100k": SuiteMetadata(
+        name="dot-Generic-100k",
         version="1.0.0",
         zenodo_record_id="TODO",
         doi="TODO",
@@ -242,7 +242,7 @@ def load_benchmark(
     Parameters
     ----------
     name:
-        Suite name, e.g. ``"CTP-Identifiability-v1"``. See
+        Suite name, e.g. ``"dot-Identifiability-v1"``. See
         :func:`available_suites`.
     version:
         Suite version. ``"latest"`` resolves to the registered version.
