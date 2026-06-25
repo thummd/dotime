@@ -17,7 +17,11 @@ from dotime.benchmarks import load_benchmark
 suite = load_benchmark("dot-Identifiability-v1", version="1.0.0")
 ```
 
-On first access, the suite is downloaded from Zenodo into `~/.cache/dotime/`. Pass `force_download=True` to redownload.
+On first access the suite is fetched into `~/.cache/dotime/` — from the Hugging Face
+mirror ([`thummd/dot-*`](https://huggingface.co/thummd)) by default, falling back to the
+Zenodo archive of record (DOIs `10.5281/zenodo.20846064`, `.20846074`, `.20845981`,
+`.20845983`) — and md5-verified against the manifest. Pass `force_download=True` to
+re-fetch. Override the cache with `$DOTIME_CACHE` or `cache_dir=`.
 
 ## Evaluation protocol
 

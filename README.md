@@ -1,7 +1,10 @@
-<!-- Badges (wired in Phase 6: arXiv, docs, HF dataset, license, CI) -->
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![PyPI](https://img.shields.io/pypi/v/dotime.svg)](https://pypi.org/project/dotime/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Docs](https://img.shields.io/badge/docs-readthedocs-blue.svg)](https://dotime.readthedocs.io)
+[![HF datasets](https://img.shields.io/badge/%F0%9F%A4%97%20datasets-thummd%2Fdot--*-yellow)](https://huggingface.co/thummd)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.20846064-blue)](https://doi.org/10.5281/zenodo.20846064)
+[![CI](https://github.com/thummd/dotime/actions/workflows/ci.yml/badge.svg)](https://github.com/thummd/dotime/actions/workflows/ci.yml)
 
 # DoTime
 
@@ -55,6 +58,20 @@ Command-line:
 dotime-generate -n 1000 -T 200 -o data/sample.pt   # sample paired trajectories
 dotime-benchmark --list                            # list frozen benchmark suites
 ```
+
+## Hosted artifacts
+
+Four frozen suites, on the Hugging Face Hub (discovery) and Zenodo (citable
+archive). `load_benchmark("dot-Identifiability-v1")` pulls and md5-verifies them.
+
+| Suite | Episodes | Hugging Face | Zenodo DOI |
+|---|---|---|---|
+| `dot-Identifiability-v1` | 10,800 | [thummd/dot-Identifiability-v1](https://huggingface.co/datasets/thummd/dot-Identifiability-v1) | [10.5281/zenodo.20846064](https://doi.org/10.5281/zenodo.20846064) |
+| `dot-RegimeSwitch-v1` | 9,999 | [thummd/dot-RegimeSwitch-v1](https://huggingface.co/datasets/thummd/dot-RegimeSwitch-v1) | [10.5281/zenodo.20846074](https://doi.org/10.5281/zenodo.20846074) |
+| `dot-Continuous-v1` | 9,999 | [thummd/dot-Continuous-v1](https://huggingface.co/datasets/thummd/dot-Continuous-v1) | [10.5281/zenodo.20845981](https://doi.org/10.5281/zenodo.20845981) |
+| `dot-Generic-100k` | 100,000 | [thummd/dot-Generic-100k](https://huggingface.co/datasets/thummd/dot-Generic-100k) | [10.5281/zenodo.20845983](https://doi.org/10.5281/zenodo.20845983) |
+
+Trained Do-Over-Time-PFN checkpoints: [thummd/do-over-time-pfn](https://huggingface.co/thummd/do-over-time-pfn).
 
 ## Documentation
 

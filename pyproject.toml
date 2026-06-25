@@ -142,11 +142,11 @@ all = [
 
 
 [project.urls]
-Homepage      = "https://github.com/thummd/DoTime"
+Homepage      = "https://github.com/thummd/dotime"
 Documentation = "https://dotime.readthedocs.io"
-Repository    = "https://github.com/thummd/DoTime"
-Issues        = "https://github.com/thummd/DoTime/issues"
-Changelog     = "https://github.com/thummd/DoTime/blob/main/CHANGELOG.md"
+Repository    = "https://github.com/thummd/dotime"
+Issues        = "https://github.com/thummd/dotime/issues"
+Changelog     = "https://github.com/thummd/dotime/blob/main/CHANGELOG.md"
 
 
 # Command-line entry points exposed after `pip install`.

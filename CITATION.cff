@@ -12,7 +12,7 @@ authors:
   - given-names: Ying
     family-names: Chen
     affiliation: National University of Singapore
-repository-code: "https://github.com/thummd/DoTime"
+repository-code: "https://github.com/thummd/dotime"
 url: "https://dotime.readthedocs.io"
 license: Apache-2.0
 version: 0.1.0
