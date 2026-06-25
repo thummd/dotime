@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "CausalTime: A Synthetic Benchmark Generator for Interventional and Counterfactual Time Series"
+title: "DoTime: A Synthetic Benchmark Generator for Interventional and Counterfactual Time Series"
 message: "If you use this software, please cite both the software itself and the accompanying paper (see preferred-citation)."
 type: software
 authors:
@@ -12,8 +12,8 @@ authors:
   - given-names: Ying
     family-names: Chen
     affiliation: National University of Singapore
-repository-code: "https://github.com/thummd/CausalTime"
-url: "https://causaltime.readthedocs.io"
+repository-code: "https://github.com/thummd/DoTime"
+url: "https://dotime.readthedocs.io"
 license: Apache-2.0
 version: 0.1.0
 # NOTE: update date-released to the actual tag date at each release.

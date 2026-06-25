@@ -1,7 +1,7 @@
 # Leaderboard
 
 A public, versioned leaderboard for interventional / counterfactual time-series
-estimation on the CausalTimePrior suites. Anyone can submit via a reproducible
+estimation on the DoTime suites. Anyone can submit via a reproducible
 path; entries are seeded with the reference baselines below.
 
 ## Metrics

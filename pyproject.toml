@@ -1,4 +1,4 @@
-# pyproject.toml for the `causaltime` package.
+# pyproject.toml for the `dotime` package.
 # Build backend: hatchling. Layout: src/.
 
 [build-system]
@@ -11,7 +11,7 @@ build-backend = "hatchling.build"
 # ---------------------------------------------------------------------------
 
 [project]
-name = "causaltime"
+name = "dotime"
 version = "0.1.0"
 description = "Synthetic temporal structural causal models with interventions for causal foundation models"
 readme = "README.md"
@@ -53,7 +53,7 @@ classifiers = [
 
 # Core runtime dependencies. Keep this list minimal — anything that is only
 # needed for specific baselines, datasets, or evaluation backends belongs in
-# `[project.optional-dependencies]` below so a `pip install causaltime`
+# `[project.optional-dependencies]` below so a `pip install dotime`
 # stays small enough for reviewers to install in a few seconds.
 dependencies = [
     "torch>=2.0",
@@ -66,7 +66,7 @@ dependencies = [
     "typing-extensions>=4.5; python_version < '3.12'",
 ]
 
-# Optional extras. Install with `pip install causaltime[chamber,baselines]`.
+# Optional extras. Install with `pip install dotime[chamber,baselines]`.
 [project.optional-dependencies]
 
 # Real-world transfer task using the CausalChamber physical-system datasets.
@@ -137,22 +137,22 @@ dev = [
 
 # Convenience union for "give me everything except dev tooling".
 all = [
-    "causaltime[chamber,baselines,evaluation]",
+    "dotime[chamber,baselines,evaluation]",
 ]
 
 
 [project.urls]
-Homepage      = "https://github.com/thummd/CausalTime"
-Documentation = "https://causaltime.readthedocs.io"
-Repository    = "https://github.com/thummd/CausalTime"
-Issues        = "https://github.com/thummd/CausalTime/issues"
-Changelog     = "https://github.com/thummd/CausalTime/blob/main/CHANGELOG.md"
+Homepage      = "https://github.com/thummd/DoTime"
+Documentation = "https://dotime.readthedocs.io"
+Repository    = "https://github.com/thummd/DoTime"
+Issues        = "https://github.com/thummd/DoTime/issues"
+Changelog     = "https://github.com/thummd/DoTime/blob/main/CHANGELOG.md"
 
 
 # Command-line entry points exposed after `pip install`.
 [project.scripts]
-ct-generate  = "causaltime.cli:generate_main"
-ct-benchmark = "causaltime.cli:benchmark_main"
+dotime-generate  = "dotime.cli:generate_main"
+dotime-benchmark = "dotime.cli:benchmark_main"
 
 
 # ---------------------------------------------------------------------------
@@ -160,7 +160,7 @@ ct-benchmark = "causaltime.cli:benchmark_main"
 # ---------------------------------------------------------------------------
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/causaltime"]
+packages = ["src/dotime"]
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -194,7 +194,7 @@ exclude = [
 line-length    = 100
 target-version = "py310"
 src            = ["src", "tests"]
-extend-exclude = ["docs/_build", "src/causaltime/_vendor"]
+extend-exclude = ["docs/_build", "src/dotime/_vendor"]
 
 [tool.ruff.lint]
 select = [
@@ -224,8 +224,8 @@ ignore = [
 "scripts/build_release.py" = ["E402"]  # imports after sys.path tweak / docstring
 # Consolidated research modules: keep their original idioms (math var names,
 # deferred imports, legacy Optional hints) rather than churn RNG-adjacent code.
-"src/causaltime/continuous/*.py" = ["E402", "UP007", "SIM102"]
-"src/causaltime/batched_tscm.py" = ["E741"]
+"src/dotime/continuous/*.py" = ["E402", "UP007", "SIM102"]
+"src/dotime/batched_tscm.py" = ["E741"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -250,7 +250,7 @@ namespace_packages      = true
 explicit_package_bases  = true
 mypy_path               = "src"
 follow_imports          = "silent"  # follow imports but don't report 3rd-party errors
-files                   = ["src/causaltime"]
+files                   = ["src/dotime"]
 
 # Strict typing is enforced on the authored package surface (the modules below
 # are excluded). The consolidated research modules carry their original loose
@@ -264,24 +264,24 @@ follow_imports = "skip"
 [[tool.mypy.overrides]]
 module = [
     "tests.*",
-    "causaltime._vendor.*",
-    "causaltime.prior",
-    "causaltime.temporal_scm",
-    "causaltime.temporal_graph",
-    "causaltime.temporal_mechanism",
-    "causaltime.temporal_scm_builder",
-    "causaltime.chain_scm",
-    "causaltime.regime_switching",
-    "causaltime.regime_switching_builder",
-    "causaltime.utils",
-    "causaltime.visualization",
-    "causaltime.extended",
-    "causaltime.data",
-    "causaltime.tscm_sampler",
-    "causaltime.batched_tscm",
-    "causaltime.normalization",
-    "causaltime.continuous.*",
-    "causaltime.models.*",
+    "dotime._vendor.*",
+    "dotime.prior",
+    "dotime.temporal_scm",
+    "dotime.temporal_graph",
+    "dotime.temporal_mechanism",
+    "dotime.temporal_scm_builder",
+    "dotime.chain_scm",
+    "dotime.regime_switching",
+    "dotime.regime_switching_builder",
+    "dotime.utils",
+    "dotime.visualization",
+    "dotime.extended",
+    "dotime.data",
+    "dotime.tscm_sampler",
+    "dotime.batched_tscm",
+    "dotime.normalization",
+    "dotime.continuous.*",
+    "dotime.models.*",
 ]
 ignore_errors = true
 
@@ -296,7 +296,7 @@ addopts = [
     "-ra",
     "--strict-markers",
     "--strict-config",
-    "--cov=causaltime",
+    "--cov=dotime",
     "--cov-report=term-missing",
     "--cov-report=xml",
 ]
@@ -317,11 +317,11 @@ filterwarnings = [
 ]
 
 [tool.coverage.run]
-source = ["src/causaltime"]
+source = ["src/dotime"]
 branch = true
 omit = [
-    "src/causaltime/_vendor/*",
-    "src/causaltime/cli.py",
+    "src/dotime/_vendor/*",
+    "src/dotime/cli.py",
 ]
 
 [tool.coverage.report]

@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 import torch
 
-import causaltime as ctp
+import dotime as ctp
 
 # --------------------------------------------------------------------------- #
 # Package surface
@@ -15,7 +15,7 @@ import causaltime as ctp
 def test_version_and_eager_core():
     assert ctp.__version__ == "0.1.0"
     for name in [
-        "CausalTime",
+        "DoTime",
         "TemporalSCM",
         "TemporalDAG",
         "TemporalGraphBuilder",
@@ -42,7 +42,7 @@ def test_lazy_submodules_resolve():
 
 
 def test_generate_pair_shapes_and_finiteness():
-    prior = ctp.CausalTime(seed=0)
+    prior = ctp.DoTime(seed=0)
     x_obs, x_int, intervention, _scm = prior.generate_pair(T=64)
     assert x_obs.shape == x_int.shape
     assert x_obs.shape[0] == 64
@@ -54,7 +54,7 @@ def test_generate_pair_shapes_and_finiteness():
 
 
 def test_intervention_targets_within_range():
-    prior = ctp.CausalTime(seed=1)
+    prior = ctp.DoTime(seed=1)
     x_obs, _x_int, intervention, _scm = prior.generate_pair(T=32)
     n = x_obs.shape[-1]
     for t in intervention.targets:
@@ -102,10 +102,10 @@ def test_suite_roundtrip_shapes():
 def test_released_episodes_store_full_unmasked_xobs():
     # Identifiability episodes must store the FULL observational trajectory
     # (causal masking is a model-input transform, not part of the released data).
-    from causaltime.benchmarks import episode_from_sample
-    from causaltime.extended import ExtendedCausalTime
+    from dotime.benchmarks import episode_from_sample
+    from dotime.extended import ExtendedDoTime
 
-    prior = ExtendedCausalTime(tscm_structure="back_door", n_max=41, seed=0)
+    prior = ExtendedDoTime(tscm_structure="back_door", n_max=41, seed=0)
     ep = episode_from_sample(prior.generate_sample(T=80), structure="back_door")
     onset = min(ep.intervention.times)
     # At least some post-onset observational values are non-zero (i.e. not masked).

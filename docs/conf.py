@@ -1,4 +1,4 @@
-# Sphinx configuration for CausalTime documentation.
+# Sphinx configuration for DoTime documentation.
 #
 # Build locally:
 #     pip install -e ".[docs]"
@@ -21,15 +21,15 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 
-import causaltime  # noqa: E402  (must come after sys.path tweak)
+import dotime  # noqa: E402  (must come after sys.path tweak)
 
 
 # -- Project information -----------------------------------------------------
 
-project = "CausalTime"
+project = "DoTime"
 author = "Dennis Thumm and contributors"
 copyright = f"{datetime.now().year}, {author}"  # noqa: A001
-release = causaltime.__version__
+release = dotime.__version__
 version = ".".join(release.split(".")[:2])
 
 

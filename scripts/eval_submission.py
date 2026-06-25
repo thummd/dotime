@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Evaluate a model against a CausalTime suite and emit a submission JSON.
+"""Evaluate a model against a DoTime suite and emit a submission JSON.
 
 This is the reproducible submission path for the public leaderboard. A model is
 any object exposing ``predict(episode) -> Tensor`` (the :class:`Baseline`
@@ -26,8 +26,8 @@ import importlib
 import json
 from pathlib import Path
 
-from causaltime import __version__, baselines, evaluation
-from causaltime.benchmarks import load_benchmark
+from dotime import __version__, baselines, evaluation
+from dotime.benchmarks import load_benchmark
 
 
 def _load_model(model_path: str | None, baseline: str | None, name: str | None):

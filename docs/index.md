@@ -1,8 +1,8 @@
-# CausalTime
+# DoTime
 
 **A synthetic benchmark generator for interventional and counterfactual time series.**
 
-`causaltime` samples multivariate temporal structural causal models (SCMs),
+`dotime` samples multivariate temporal structural causal models (SCMs),
 applies interventions, and produces paired observational / interventional
 trajectories with exact counterfactual targets. It ships four frozen evaluation
 suites, reference baselines, and an evaluation harness — the artifact behind the
@@ -28,18 +28,18 @@ troubleshoot
 ## Install
 
 ```bash
-pip install causaltime              # core generator + suite loaders (CPU)
-pip install 'causaltime[baselines]' # classical / Bayesian baselines
-pip install 'causaltime[models]'    # the Do-Over-Time-PFN model
-pip install 'causaltime[all]'       # everything except dev tooling
+pip install dotime              # core generator + suite loaders (CPU)
+pip install 'dotime[baselines]' # classical / Bayesian baselines
+pip install 'dotime[models]'    # the Do-Over-Time-PFN model
+pip install 'dotime[all]'       # everything except dev tooling
 ```
 
 ## Quickstart
 
 ```python
-from causaltime import CausalTime
+from dotime import DoTime
 
-prior = CausalTime(seed=42)
+prior = DoTime(seed=42)
 X_obs, X_int, intervention, scm = prior.generate_pair(T=100)
 ```
 

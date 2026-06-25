@@ -11,8 +11,8 @@ import pytest
 pytest.importorskip("pyarrow", reason="build_release writes parquet (evaluation extra)")
 pytest.importorskip("yaml")
 
-from causaltime import _release_io, baselines, evaluation
-from causaltime.benchmarks import SuiteMetadata
+from dotime import _release_io, baselines, evaluation
+from dotime.benchmarks import SuiteMetadata
 
 _SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "build_release.py"
 

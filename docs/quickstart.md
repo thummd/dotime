@@ -1,13 +1,13 @@
 # Quick Start
 
-A five-minute tour through the three things you'll most often do with CausalTime: **generate paired data**, **load a frozen benchmark**, and **evaluate a baseline**.
+A five-minute tour through the three things you'll most often do with DoTime: **generate paired data**, **load a frozen benchmark**, and **evaluate a baseline**.
 
 ## 1. Generate paired observational / interventional data
 
 ```python
-from causaltime import CausalTime
+from dotime import DoTime
 
-prior = CausalTime(seed=42)
+prior = DoTime(seed=42)
 
 X_obs, X_int, intervention, scm = prior.generate_pair(T=100)
 
@@ -26,7 +26,7 @@ dataset = prior.generate_dataset(n_scms=1000, T=200)
 Returns a list of `(X_obs, X_int, intervention)` tuples — useful for amortized training or quick sanity checks. For large runs, prefer the on-the-fly streaming loader:
 
 ```python
-from causaltime.data import TemporalInterventionDataLoader
+from dotime.data import TemporalInterventionDataLoader
 
 loader = TemporalInterventionDataLoader(
     num_steps=10_000,
@@ -41,7 +41,7 @@ for batch in loader:
 ## 3. Load a frozen benchmark
 
 ```python
-from causaltime.benchmarks import load_benchmark
+from dotime.benchmarks import load_benchmark
 
 suite = load_benchmark("CTP-Identifiability-v1")
 print(suite)
@@ -58,7 +58,7 @@ print(suite)
 ## 4. Evaluate a baseline
 
 ```python
-from causaltime import baselines, evaluation
+from dotime import baselines, evaluation
 
 baseline = baselines.get("VAR-OLS", lag=3)
 results = evaluation.evaluate(baseline, suite)
@@ -69,7 +69,7 @@ results.to_dict()               # JSON-serializable
 Or from the command line:
 
 ```bash
-ct-benchmark --suite CTP-Identifiability-v1 --baseline VAR-OLS
+dotime-benchmark --suite CTP-Identifiability-v1 --baseline VAR-OLS
 ```
 
 ## Where to go next

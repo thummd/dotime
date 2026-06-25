@@ -412,14 +412,30 @@ reserving on PyPI, because a later rename touches every drafted file.
   name with the clean *import* name where possible; do **not** fall back to a `-py`
   suffix.
 
-**Candidate names (decision pending — see chat for the trade-off discussion):**
-A catchier, `pandas`-style name (a real word hiding the domain) may fit a benchmark +
-generator better than `causaltimeprior`, which over-emphasizes "prior" and undersells the
-benchmark/generator framing. Leading candidates to check for availability, in priority
-order: `cats` (CAusal Time Series — best domain-encoding + memorability), then
-`causaltime` / `ctprior` / the descriptive `causaltimeprior` (safe, citation-matching).
-Whatever is chosen, the **paper title can remain "CausalTimePrior"** even if the package
-ships under a shorter name.
+**Candidate names (decision pending — `dotime` is the current front-runner):**
+A catchier name that fits the research-program brand likely beats `causaltimeprior`, which
+over-emphasizes "prior". **Leading choice: `dotime`** — encodes do-calculus (intervention)
++ time series, and unifies the brand with Do-Over-Time-PFN across the TSALM/FMSD/KDD/ICAIF
+line. Two conditions before committing:
+  1. **Existing-repo collision (critical).** `dotime` is *already one of the three source
+     repos* (the model hub). Consolidate **into that repo**, cut the Phase 0.5 tags FIRST
+     (so `paper/tsalm-iclr2026` still resolves to the old `dotime` module), then let the
+     new unified package supersede the old module. Archive the other two repos
+     (`causal_time_prior`, `continuous-time-causal-pfn`) after tagging each for its paper.
+  2. **PyPI availability.** "dotime" may be taken (time-tracking vibe) — verify locally
+     (`pip index versions dotime`). Brand-preserving fallbacks if taken: `dotime-pfn` or
+     `do-time` (distribution) with `dotime` (import).
+  Note: `dotime` encodes *interventional* but not *counterfactual* — acceptable, since
+  counterfactuals are computed via interventions. CLI would become `dotime-generate` /
+  `dotime-benchmark` (replacing the `ctp-` prefix).
+
+**Avoid known collisions:** `causaltime` (competing ICLR observational causal-*discovery*
+benchmark, causaltime.cc), `dice` (DiCE counterfactual-explanation lib), anything near
+`dowhy`, `alibi` (Seldon), `causica` (Microsoft), `cate` (the estimand — narrow scope).
+Other candidates if `dotime` is unavailable/undesired: `interfact` (INTERventional +
+counterFACTual — states the novelty), `cactus` (memorable real word), `scena` (scenario
+metaphor), or the descriptive `causaltimeprior` (safe fallback). Whatever is chosen, the
+**paper title can remain "CausalTimePrior"** even if the package ships under a shorter name.
 
 **Rename mechanics (once decided):** the new name must be applied consistently across
 `pyproject.toml` (`name`, `[project.scripts]`, `[tool.*]` paths), the entire `src/<name>/`

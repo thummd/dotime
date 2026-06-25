@@ -1,4 +1,4 @@
-# Config-driven generation for the frozen CausalTimePrior benchmark suites.
+# Config-driven generation for the frozen DoTime benchmark suites.
 #
 # scripts/build_release.py reads this file and regenerates every suite with the
 # recorded seeds, writing each to a timestamped, manifested output directory.

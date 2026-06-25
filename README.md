@@ -1,19 +1,19 @@
 <!-- Badges (wired in Phase 6: arXiv, docs, HF dataset, license, CI) -->
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
-[![Docs](https://img.shields.io/badge/docs-readthedocs-blue.svg)](https://causaltime.readthedocs.io)
+[![Docs](https://img.shields.io/badge/docs-readthedocs-blue.svg)](https://dotime.readthedocs.io)
 
-# CausalTime
+# DoTime
 
 **A synthetic benchmark generator for interventional and counterfactual time series.**
 
-`causaltime` samples multivariate temporal structural causal models (SCMs),
+`dotime` samples multivariate temporal structural causal models (SCMs),
 applies interventions to them, and produces paired observational / interventional
 trajectories together with exact counterfactual targets. It is the data engine and
 evaluation harness behind the KDD 2027 Datasets & Benchmarks paper of the same name.
 
 Where most time-series causal benchmarks are *observational* (recover a graph from
-passive dynamics), CausalTime is *interventional / counterfactual*: it answers
+passive dynamics), DoTime is *interventional / counterfactual*: it answers
 `do(...)` queries over time and ships frozen suites to measure how well a model
 estimates interventional effects.
 
@@ -32,9 +32,9 @@ estimates interventional effects.
 ## Install
 
 ```bash
-pip install causaltime            # core generator + suite loaders (CPU, no GPU needed)
-pip install 'causaltime[baselines]'   # classical / Bayesian baselines
-pip install 'causaltime[all]'         # everything except dev tooling
+pip install dotime            # core generator + suite loaders (CPU, no GPU needed)
+pip install 'dotime[baselines]'   # classical / Bayesian baselines
+pip install 'dotime[all]'         # everything except dev tooling
 ```
 
 Requires Python ≥ 3.10. The core install runs on CPU with no GPU dependency.
@@ -42,9 +42,9 @@ Requires Python ≥ 3.10. The core install runs on CPU with no GPU dependency.
 ## Quickstart
 
 ```python
-from causaltime import CausalTime
+from dotime import DoTime
 
-prior = CausalTime(seed=42)
+prior = DoTime(seed=42)
 X_obs, X_int, intervention, scm = prior.generate_pair(T=100)
 # X_obs, X_int: (T, N) tensors;  intervention: InterventionSpec;  scm: TemporalSCM
 ```
@@ -52,18 +52,18 @@ X_obs, X_int, intervention, scm = prior.generate_pair(T=100)
 Command-line:
 
 ```bash
-ct-generate -n 1000 -T 200 -o data/sample.pt   # sample paired trajectories
-ct-benchmark --list                            # list frozen benchmark suites
+dotime-generate -n 1000 -T 200 -o data/sample.pt   # sample paired trajectories
+dotime-benchmark --list                            # list frozen benchmark suites
 ```
 
 ## Documentation
 
-Full docs at <https://causaltime.readthedocs.io>. See `docs/quickstart.md` and
+Full docs at <https://dotime.readthedocs.io>. See `docs/quickstart.md` and
 `docs/benchmarks.md` to get started locally.
 
 ## Citation
 
-If you use CausalTime, please cite the paper and the software (see
+If you use DoTime, please cite the paper and the software (see
 [`CITATION.cff`](CITATION.cff)).
 
 ## License

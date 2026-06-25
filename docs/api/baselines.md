@@ -1,6 +1,6 @@
 # baselines
 
 ```{eval-rst}
-.. automodule:: causaltime.baselines
+.. automodule:: dotime.baselines
    :members: available, get, register, Baseline
 ```

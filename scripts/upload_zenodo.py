@@ -5,7 +5,7 @@ Hugging Face is the discovery mirror; Zenodo is the archive of record whose DOI
 goes in the paper and `_SUITE_REGISTRY`. This uploads each suite directory from a
 ``build_release.py`` run as a Zenodo deposition (real author block — the D&B track
 is single-blind) and prints the reserved DOI; review and publish in the Zenodo UI,
-then backfill `zenodo_record_id`/`doi` into `causaltime.benchmarks`.
+then backfill `zenodo_record_id`/`doi` into `dotime.benchmarks`.
 
 Usage
 -----
@@ -43,10 +43,10 @@ def _req(
 def _metadata(manifest: dict) -> dict:
     return {
         "metadata": {
-            "title": f"CausalTime — {manifest['name']} (v{manifest['version']})",
+            "title": f"DoTime — {manifest['name']} (v{manifest['version']})",
             "upload_type": "dataset",
             "description": (
-                f"Frozen evaluation suite '{manifest['name']}' from CausalTime "
+                f"Frozen evaluation suite '{manifest['name']}' from DoTime "
                 f"(KDD 2027 Datasets & Benchmarks). {manifest['n_episodes']} episodes; "
                 "parquet shards + manifest + Croissant metadata. Generated reproducibly "
                 "by scripts/build_release.py."

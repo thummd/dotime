@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 import torch
 
-from causaltime import CausalTime, baselines, evaluation
-from causaltime.interventions import (
+from dotime import DoTime, baselines, evaluation
+from dotime.interventions import (
     InterventionSpec,
     InterventionType,
     StepIntervention,
@@ -14,8 +14,8 @@ from causaltime.interventions import (
 
 pytest.importorskip("pyarrow", reason="frozen-suite IO needs the evaluation extra")
 
-from causaltime import _release_io
-from causaltime.benchmarks import (
+from dotime import _release_io
+from dotime.benchmarks import (
     SuiteMetadata,
     episode_from_pair,
 )
@@ -54,7 +54,7 @@ def test_intervention_spec_tensor_roundtrip():
 
 
 def _make_suite(tmp_path, n=10):
-    prior = CausalTime(seed=3)
+    prior = DoTime(seed=3)
     eps = []
     for i in range(n):
         x_obs, x_int, iv, _scm = prior.generate_pair(T=60)

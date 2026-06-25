@@ -1,13 +1,13 @@
 # Changelog
 
-All notable changes to `causaltime` are documented here. The format follows
+All notable changes to `dotime` are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
 ### Added
-- Initial `src/` package layout consolidating the CausalTime base prior
+- Initial `src/` package layout consolidating the DoTime base prior
   (from the TSALM workshop code), the Do-Over-Time-PFN extended prior and
   dataloaders, and the continuous-time / fine-grid generation.
 - Reimplemented the small `Do-PFN-prior` sampling/graph/mechanism surface as
