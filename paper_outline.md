@@ -16,6 +16,31 @@ Appendix** so the main body stays self-contained and tight. Reviewing is **singl
 
 ---
 
+## Positioning: which CFP category, and how we satisfy it
+
+The CFP lists distinct submission categories with *different evidentiary bars*. This paper
+spans two — **"Benchmarks and Benchmarking Tools"** and **"Data Generators and
+Environments"** — and we position deliberately rather than evenly:
+
+- **Primary: Benchmark.** Lead as a benchmark (frozen suites + evaluation protocol +
+  baselines + leaderboard). This is where the evidence is strongest (the obs-vs-int gap,
+  §6) and matches the successful CausalDynamics framing (titled "a benchmark", generator
+  as engine). Under this category, representativeness is a *supporting* argument.
+- **Secondary: Data Generator.** The generator is the mechanism producing the benchmark.
+  But the CFP attaches a *specific, stricter* clause to this category: synthetic data
+  "**must be accompanied with a quantification and a discussion of its representativeness**,
+  in addition to proving its utility." We must satisfy this even though it is secondary,
+  because a reviewer can invoke it. Utility is covered by §6; **representativeness is the
+  load-bearing addition — see §7.1**, grounded in the FMSD workshop transfer tasks
+  (CausalChamber + pharmacokinetic).
+
+**Implication for framing:** title and abstract lead "benchmark"; the generator is the
+engine; §7.1 explicitly discharges the data-generator representativeness requirement.
+Do not make representativeness the *central* claim (the evidence is an honest
+proof-of-concept, not a strong real-world guarantee) — make it a satisfied requirement.
+
+---
+
 ## Abstract — *~200 words*
 
 State the gap (existing time-series causal benchmarks are predominantly observational, small, or domain-specific). Name the artifact (`causaltimeprior` PyPI package + four frozen suites). List the four extensions vs. the workshop version: continuous-time intervention windows, counterfactual sampling modes, regime-switching SCMs as a strict generalization of ITS, and a Causal Foundation Model reference implementation. State two headline numbers: scale of the generic suite (100 k trajectories) and number of named identification structures covered (8). End with the falsifiable claim that on `CTP-Identifiability-v1` the average direction-accuracy gap between an interventional PFN and an observational-only baseline of equal capacity is positive and significant.
@@ -142,16 +167,43 @@ upper bound on synthetic suites.
 
 ---
 
-## 7. Validation and Sanity Checks — *~600 words*
+## 7. Representativeness and Validation — *~850 words*
 
-Short, technical, defensive. Reviewers will look for problems here.
+Short, technical, defensive. Reviewers will look for problems here — and a
+data-generator-category reviewer will look *specifically* for representativeness (§7.1).
+
+**7.1 Representativeness: zero-shot transfer to real systems** (~300 words).
+*This subsection discharges the CFP's data-generator requirement that synthetic data come
+with a quantification and discussion of representativeness.* The argument is external
+validity by transfer: models trained purely on the synthetic prior transfer **zero-shot**
+to two distinct real domains, evidence from the FMSD workshop paper ("Towards
+Continuous-time Causal Foundation Models"):
+  - **Physical — CausalChamber light tunnel.** A PFN trained only on synthetic TSCMs
+    generalizes zero-shot to the real optical/electronic system. Report the honest result:
+    the trained PFNs are the **only baseline family with positive Pearson correlation with
+    ground truth**, with **+19–26% RMSE lift over the naive (last-value) baseline** —
+    while being candid that adjustment baselines match that lift. The point is
+    *representativeness* (synthetic-trained models behave sensibly on real dynamics), not
+    dominance.
+  - **Biological — pharmacokinetic data.** Drug-concentration dynamics (compartmental,
+    continuous-time, dosing = intervention) are a natural fit for the continuous-time/
+    fine-grid generator and a second, disjoint domain. **TODO(Claude Code): pull the exact
+    pharmacokinetic transfer numbers (metric, lift, correlation) from the FMSD paper /
+    `continuous-time-causal-pfn` repo** — they are not in this outline's source and must be
+    quoted accurately, not approximated.
+Frame both honestly: two real domains (physical + biological) is *representativeness
+evidence*, not a transportability guarantee. Tie back to §8's explicit statement of what
+the benchmark does **not** establish. **Figure 7a**: synthetic-trained prediction vs.
+real outcome scatter (Pearson r) for each domain.
+
+**7.2 Internal validation and sanity checks** (~550 words).
 
 - **Acyclicity and stability** (~100 words). Empirical divergence rate < 1 % on Generic-100k.
 - **Identifiability sanity** (~150 words). Oracle achieves RMSE ≈ 0 on synthetic suites; chance-level direction accuracy on shuffled-treatment ablation.
 - **Distributional shift between suites** (~150 words). Show that `CTP-RegimeSwitch-v1` and `CTP-Generic-100k` have non-trivial KL distance via a 2-sample test on summary statistics, justifying separate evaluation.
 - **Counterfactual mode comparison** (~200 words). Show that `observed_normal` produces strictly smaller mean prediction errors than `prior` mode for observational baselines, confirming the positivity advantage.
 
-**Figure 7 (half-column).** A "divergence dashboard": four small panels.
+**Figure 7b (half-column).** A "divergence dashboard": four small panels.
 
 ---
 
@@ -159,7 +211,7 @@ Short, technical, defensive. Reviewers will look for problems here.
 
 Two paragraphs.
 
-1. *Limitations.* $N \le 10$, $K \le 3$, regular time grid, additive Markovian noise, no measurement model, no missingness, no real-world covariate shift (real-world transfer is delegated to the CausalChamber bridge, not a CTP suite). State explicitly what claims the benchmark *does not* support — e.g. CTP cannot validate real-world transportability.
+1. *Limitations.* $N \le 10$, $K \le 3$, regular time grid, additive Markovian noise, no measurement model, no missingness. On representativeness: §7.1 shows zero-shot transfer to two real domains (physical + biological) as *evidence*, but the frozen suites themselves are synthetic and the transfer lift is modest — so state plainly that CTP demonstrates representativeness, not a real-world transportability *guarantee*, and that broad real-world covariate shift is out of scope (the CausalChamber/PK bridges are transfer probes, not CTP suites).
 2. *Responsible release.* OSI license, no PII (purely synthetic), reproducible from seeds, frozen DOI per suite, Croissant metadata, energy footprint estimate for generating the 100 k suite.
 
 ---

@@ -14,7 +14,7 @@ import torch
 
 pytest.importorskip("pfns", reason="model package needs the [models] extra")
 
-from causaltimeprior.extended import ExtendedCausalTimePrior
+from causaltime.extended import ExtendedCausalTime
 
 _CKPTS = sorted(
     glob.glob(
@@ -26,14 +26,14 @@ _needs_ckpt = pytest.mark.skipif(not _CKPTS, reason="no local DoOverTimePFN chec
 
 
 def test_model_constructs_from_config():
-    from causaltimeprior.models.do_over_time_pfn import DoOverTimePFN
+    from causaltime.models.do_over_time_pfn import DoOverTimePFN
 
     model = DoOverTimePFN(n_max=12, embed_size=64, n_encoder_layers=2, n_buckets=100)
     assert model.temporal_encoder.n_max == 12
 
 
 def test_gdp_backend_raises_actionable_error():
-    from causaltimeprior.models.encoder import TemporalEncoder
+    from causaltime.models.encoder import TemporalEncoder
 
     with pytest.raises(ImportError, match=r"\[gdp\] extra"):
         TemporalEncoder(backend="gdp", embed_size=32, n_layers=1)
@@ -41,14 +41,14 @@ def test_gdp_backend_raises_actionable_error():
 
 @_needs_ckpt
 def test_load_dotpfn_and_predict_runs():
-    from causaltimeprior import baselines, evaluation
-    from causaltimeprior.benchmarks import (
+    from causaltime import baselines, evaluation
+    from causaltime.benchmarks import (
         BenchmarkSuite,
         SuiteMetadata,
         episode_from_sample,
     )
 
-    prior = ExtendedCausalTimePrior(tscm_structure="back_door", n_max=41, seed=0)
+    prior = ExtendedCausalTime(tscm_structure="back_door", n_max=41, seed=0)
     episodes = [
         episode_from_sample(prior.generate_sample(T=80), structure="back_door", scm_id=i)
         for i in range(6)
@@ -68,7 +68,7 @@ def test_load_dotpfn_and_predict_runs():
 
 
 def test_dotpfn_requires_checkpoint():
-    from causaltimeprior import baselines
+    from causaltime import baselines
 
     with pytest.raises(ValueError, match="needs a trained checkpoint"):
         baselines.get("DoOverTimePFN")

@@ -13,11 +13,11 @@ to compute the encoder ONCE per trajectory and reuse for many queries.
 import torch
 import torch.nn as nn
 
-from causaltimeprior.models.bar_head import BarDistributionHead
-from causaltimeprior.models.cross_variable_mixer import CrossVariableMixer
-from causaltimeprior.models.encoder import TemporalEncoder
-from causaltimeprior.models.quantile_head import QuantileHead
-from causaltimeprior.models.value_bypass import make_value_bypass
+from causaltime.models.bar_head import BarDistributionHead
+from causaltime.models.cross_variable_mixer import CrossVariableMixer
+from causaltime.models.encoder import TemporalEncoder
+from causaltime.models.quantile_head import QuantileHead
+from causaltime.models.value_bypass import make_value_bypass
 
 
 class DoOverTimePFN(nn.Module):

@@ -14,7 +14,7 @@ from pathlib import Path
 
 import torch
 
-from causaltimeprior.models.do_over_time_pfn import DoOverTimePFN
+from causaltime.models.do_over_time_pfn import DoOverTimePFN
 
 __all__ = ["load_dotpfn"]
 

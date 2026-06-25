@@ -25,7 +25,7 @@ dopfnprior = pytest.importorskip(
     "dopfnprior", reason="original Do-PFN-prior not installed; equivalence test skipped"
 )
 
-from causaltimeprior import _activations, _graph_builder, _mechanism, _sampling
+from causaltime import _activations, _graph_builder, _mechanism, _sampling
 
 
 def _gen(seed: int) -> torch.Generator:

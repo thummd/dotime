@@ -19,11 +19,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from causaltimeprior._activations import Tanh, TanhReLU
-from causaltimeprior._sampling import TorchDistributionSampler
-from causaltimeprior.temporal_graph import TemporalDAG
-from causaltimeprior.temporal_mechanism import TemporalMechanism
-from causaltimeprior.temporal_scm import TemporalSCM
+from causaltime._activations import Tanh, TanhReLU
+from causaltime._sampling import TorchDistributionSampler
+from causaltime.temporal_graph import TemporalDAG
+from causaltime.temporal_mechanism import TemporalMechanism
+from causaltime.temporal_scm import TemporalSCM
 
 
 class TSCMStructure(Enum):
@@ -64,7 +64,7 @@ DEFAULT_ACTIVATIONS = [
 class TSCMSampler:
     """Samples temporal SCMs with specific causal structures.
 
-    Unlike CausalTimePrior which randomly samples graph structure,
+    Unlike CausalTime which randomly samples graph structure,
     this builds a fixed named structure with random mechanisms/noise.
 
     All structures use the convention:

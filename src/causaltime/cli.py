@@ -1,12 +1,12 @@
-"""Command-line interface for CausalTimePrior.
+"""Command-line interface for CausalTime.
 
 Two console scripts are installed with the package (see ``[project.scripts]`` in
 ``pyproject.toml``):
 
-    ctp-generate    sample paired trajectories from the prior and write to disk
-    ctp-benchmark   evaluate a baseline against a frozen benchmark suite
+    ct-generate    sample paired trajectories from the prior and write to disk
+    ct-benchmark   evaluate a baseline against a frozen benchmark suite
 
-Run ``ctp-generate --help`` or ``ctp-benchmark --help`` for usage.
+Run ``ct-generate --help`` or ``ct-benchmark --help`` for usage.
 
 The functions :func:`generate_main` and :func:`benchmark_main` are the entry
 points; both accept an optional ``argv`` list (handy for tests) and return a
@@ -19,7 +19,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from causaltimeprior import __version__
+from causaltime import __version__
 
 _AVAILABLE_SUITES = (
     "CTP-Identifiability-v1",
@@ -44,17 +44,17 @@ def _add_common(parser: argparse.ArgumentParser) -> None:
         help="torch device: cpu, cuda, cuda:0, ... (default: cpu).",
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose logging to stderr.")
-    parser.add_argument("--version", action="version", version=f"causaltimeprior {__version__}")
+    parser.add_argument("--version", action="version", version=f"causaltime {__version__}")
 
 
 # --------------------------------------------------------------------------- #
-# ctp-generate
+# ct-generate
 # --------------------------------------------------------------------------- #
 
 
 def _build_generate_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog="ctp-generate",
+        prog="ct-generate",
         description="Sample paired observational/interventional trajectories from the prior.",
     )
     p.add_argument(
@@ -81,19 +81,19 @@ def _build_generate_parser() -> argparse.ArgumentParser:
 
 
 def generate_main(argv: list[str] | None = None) -> int:
-    """Entry point for ``ctp-generate``."""
+    """Entry point for ``ct-generate``."""
     args = _build_generate_parser().parse_args(argv)
 
-    from causaltimeprior import CausalTimePrior
+    from causaltime import CausalTime
 
     if args.verbose:
         print(
-            f"[ctp-generate] sampling {args.n_scms} SCMs at T={args.length} "
+            f"[ct-generate] sampling {args.n_scms} SCMs at T={args.length} "
             f"(seed={args.seed}, source={args.intervention_source})",
             file=sys.stderr,
         )
 
-    prior = CausalTimePrior(seed=args.seed)
+    prior = CausalTime(seed=args.seed)
     dataset = prior.generate_dataset(n_scms=args.n_scms, T=args.length)
 
     out: Path = args.output
@@ -110,7 +110,7 @@ def generate_main(argv: list[str] | None = None) -> int:
             f"error: unsupported output extension {out.suffix!r} (use .pt or .parquet)"
         )
 
-    print(f"[ctp-generate] wrote {len(dataset)} trajectories to {out}")
+    print(f"[ct-generate] wrote {len(dataset)} trajectories to {out}")
     return 0
 
 
@@ -119,7 +119,7 @@ def _write_parquet(dataset: list, out: Path, *, seed: int) -> None:
 
     Each ``(X_obs, X_int, intervention)`` tuple becomes one Episode (with a query
     derived from the most intervention-affected variable), written via the
-    canonical :mod:`causaltimeprior._release_io` schema. ``out``'s ``.parquet``
+    canonical :mod:`causaltime._release_io` schema. ``out``'s ``.parquet``
     suffix is treated as the suite-directory stem.
     """
     try:
@@ -127,11 +127,11 @@ def _write_parquet(dataset: list, out: Path, *, seed: int) -> None:
     except ModuleNotFoundError as exc:  # pragma: no cover
         raise SystemExit(
             "parquet output requires the 'evaluation' extra:\n"
-            "    pip install 'causaltimeprior[evaluation]'"
+            "    pip install 'causaltime[evaluation]'"
         ) from exc
 
-    from causaltimeprior import __version__, _release_io
-    from causaltimeprior.benchmarks import SuiteMetadata, episode_from_pair
+    from causaltime import __version__, _release_io
+    from causaltime.benchmarks import SuiteMetadata, episode_from_pair
 
     episodes = [
         episode_from_pair(x_obs, x_int, intervention, scm_id=i)
@@ -143,21 +143,21 @@ def _write_parquet(dataset: list, out: Path, *, seed: int) -> None:
         version="0.0.0",
         zenodo_record_id="LOCAL",
         doi="",
-        description="Locally generated via ctp-generate.",
+        description="Locally generated via ct-generate.",
         n_episodes=len(episodes),
     )
     _release_io.write_suite(meta, episodes, suite_dir, package_version=__version__, seed=seed)
 
 
 # --------------------------------------------------------------------------- #
-# ctp-benchmark
+# ct-benchmark
 # --------------------------------------------------------------------------- #
 
 
 def _build_benchmark_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog="ctp-benchmark",
-        description="Evaluate a baseline against a frozen CausalTimePrior benchmark suite.",
+        prog="ct-benchmark",
+        description="Evaluate a baseline against a frozen CausalTime benchmark suite.",
     )
     p.add_argument("--list", action="store_true", help="List available benchmark suites and exit.")
     p.add_argument(
@@ -181,7 +181,7 @@ def _build_benchmark_parser() -> argparse.ArgumentParser:
 
 
 def benchmark_main(argv: list[str] | None = None) -> int:
-    """Entry point for ``ctp-benchmark``."""
+    """Entry point for ``ct-benchmark``."""
     args = _build_benchmark_parser().parse_args(argv)
 
     if args.list:
@@ -190,8 +190,8 @@ def benchmark_main(argv: list[str] | None = None) -> int:
             print(f"  {suite_name}")
         return 0
 
-    # Imported lazily so `ctp-benchmark --list` works without the baselines extra.
-    from causaltimeprior import baselines as _baselines
+    # Imported lazily so `ct-benchmark --list` works without the baselines extra.
+    from causaltime import baselines as _baselines
 
     if args.list_baselines:
         print("Available baselines:")
@@ -204,14 +204,14 @@ def benchmark_main(argv: list[str] | None = None) -> int:
         raise SystemExit("error: --suite is required (or pass --list). See --help.")
     if args.suite not in _AVAILABLE_SUITES:
         raise SystemExit(
-            f"error: unknown suite {args.suite!r}. Run `ctp-benchmark --list` to see options."
+            f"error: unknown suite {args.suite!r}. Run `ct-benchmark --list` to see options."
         )
 
-    from causaltimeprior.benchmarks import load_benchmark
-    from causaltimeprior.evaluation import evaluate
+    from causaltime.benchmarks import load_benchmark
+    from causaltime.evaluation import evaluate
 
     if args.verbose:
-        print(f"[ctp-benchmark] loading suite {args.suite}", file=sys.stderr)
+        print(f"[ct-benchmark] loading suite {args.suite}", file=sys.stderr)
 
     suite = load_benchmark(args.suite)
 
@@ -229,21 +229,21 @@ def benchmark_main(argv: list[str] | None = None) -> int:
         args.json_out.parent.mkdir(parents=True, exist_ok=True)
         payload = results.to_dict() if hasattr(results, "to_dict") else results
         args.json_out.write_text(json.dumps(payload, indent=2))
-        print(f"[ctp-benchmark] wrote results to {args.json_out}")
+        print(f"[ct-benchmark] wrote results to {args.json_out}")
 
     return 0
 
 
 # --------------------------------------------------------------------------- #
-# Allow `python -m causaltimeprior.cli generate ...` style invocation too.
+# Allow `python -m causaltime.cli generate ...` style invocation too.
 # --------------------------------------------------------------------------- #
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Dispatch ``python -m causaltimeprior.cli {generate,benchmark} ...``."""
+    """Dispatch ``python -m causaltime.cli {generate,benchmark} ...``."""
     argv = list(sys.argv[1:] if argv is None else argv)
     if not argv or argv[0] in {"-h", "--help"}:
-        print("usage: python -m causaltimeprior.cli {generate,benchmark} [options]")
+        print("usage: python -m causaltime.cli {generate,benchmark} [options]")
         return 0 if argv else 1
     sub, rest = argv[0], argv[1:]
     if sub == "generate":

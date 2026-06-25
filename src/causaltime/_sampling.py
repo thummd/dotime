@@ -1,8 +1,8 @@
 """Distribution samplers for hyperparameter and noise sampling.
 
 This module is a first-class reimplementation of the small sampling surface that
-the CausalTimePrior base prior used from ``Do-PFN-prior`` (``dopfnprior.utils.sampling``).
-It is reproduced here so that ``causaltimeprior`` is a self-contained package with
+the CausalTime base prior used from ``Do-PFN-prior`` (``dopfnprior.utils.sampling``).
+It is reproduced here so that ``causaltime`` is a self-contained package with
 no git-submodule dependency.
 
 Attribution

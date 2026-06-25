@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import torch
 
-from causaltimeprior.tscm_sampler import TSCMSampler, TSCMStructure
+from causaltime.tscm_sampler import TSCMSampler, TSCMStructure
 
 from .continuous_scm import ContinuousSCM
 from .ou_mechanism import OUMechanism, sample_ou_mechanism

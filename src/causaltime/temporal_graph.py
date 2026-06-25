@@ -1,4 +1,4 @@
-"""Temporal graph prior for CausalTimePrior.
+"""Temporal graph prior for CausalTime.
 
 This module extends Do-PFN's GraphBuilder to support temporal (time-lagged) DAGs.
 """
@@ -9,7 +9,7 @@ import networkx as nx
 import numpy as np
 import torch
 
-from causaltimeprior._graph_builder import GraphBuilder
+from causaltime._graph_builder import GraphBuilder
 
 
 @dataclass

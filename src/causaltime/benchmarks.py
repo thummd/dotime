@@ -1,4 +1,4 @@
-"""Frozen benchmark suites for CausalTimePrior.
+"""Frozen benchmark suites for CausalTime.
 
 This module exposes the *consumer* side of the released benchmarks: loading a
 versioned, immutable suite (downloading + caching it from Zenodo on first use)
@@ -29,7 +29,7 @@ from pathlib import Path
 
 import torch
 
-from causaltimeprior.interventions import InterventionSpec
+from causaltime.interventions import InterventionSpec
 
 __all__ = [
     "BenchmarkSuite",
@@ -219,8 +219,8 @@ def _cache_root(cache_dir: str | os.PathLike[str] | None) -> Path:
     if cache_dir is not None:
         root = Path(cache_dir)
     else:
-        env = os.environ.get("CAUSALTIMEPRIOR_CACHE")
-        root = Path(env) if env else Path.home() / ".cache" / "causaltimeprior"
+        env = os.environ.get("CAUSALTIME_CACHE")
+        root = Path(env) if env else Path.home() / ".cache" / "causaltime"
     root.mkdir(parents=True, exist_ok=True)
     return root
 
@@ -235,8 +235,8 @@ def load_benchmark(
     """Load a frozen benchmark suite by name.
 
     On first use the suite is downloaded from Zenodo into the cache directory
-    (``~/.cache/causaltimeprior`` by default, override with
-    ``$CAUSALTIMEPRIOR_CACHE`` or the ``cache_dir`` argument). Subsequent calls
+    (``~/.cache/causaltime`` by default, override with
+    ``$CAUSALTIME_CACHE`` or the ``cache_dir`` argument). Subsequent calls
     read from the cache.
 
     Parameters
@@ -289,7 +289,7 @@ def _download_from_hf(meta: SuiteMetadata, dest: Path, *, force: bool) -> None:
     except ModuleNotFoundError as exc:  # pragma: no cover
         raise ImportError(
             "downloading suites from Hugging Face needs the 'hf' extra:\n"
-            "    pip install 'causaltimeprior[hf]'"
+            "    pip install 'causaltime[hf]'"
         ) from exc
 
     dest.mkdir(parents=True, exist_ok=True)
@@ -341,10 +341,10 @@ def _download_from_zenodo(meta: SuiteMetadata, dest: Path, *, force: bool) -> No
 def _parse_suite_dir(meta: SuiteMetadata, suite_dir: Path) -> BenchmarkSuite:
     """Parse a cached suite directory into a :class:`BenchmarkSuite`.
 
-    Delegates to the canonical reader in :mod:`causaltimeprior._release_io`, which
+    Delegates to the canonical reader in :mod:`causaltime._release_io`, which
     validates the manifest schema version and per-shard md5 checksums.
     """
-    from causaltimeprior import _release_io
+    from causaltime import _release_io
 
     return _release_io.read_suite(meta, suite_dir)
 
@@ -355,9 +355,9 @@ def _generate_fallback(meta: SuiteMetadata, n: int = 64) -> BenchmarkSuite:
     This is NOT the released artifact — it is a development convenience that
     produces ``n`` episodes from the live prior. Remove once suites are hosted.
     """
-    from causaltimeprior import CausalTimePrior
+    from causaltime import CausalTime
 
-    prior = CausalTimePrior(seed=0)
+    prior = CausalTime(seed=0)
     episodes: list[Episode] = []
     structures = meta.structures or (None,)
     for i in range(n):
@@ -387,13 +387,13 @@ def episode_from_sample(
 ) -> Episode:
     """Build an :class:`Episode` from a generator ``generate_sample`` dict.
 
-    Works for the structured generators (``ExtendedCausalTimePrior``,
+    Works for the structured generators (``ExtendedCausalTime``,
     ``ContinuousExtendedPrior``) whose samples carry exact counterfactual targets
     and a per-structure query protocol. Trajectories padded to ``n_max`` are
     un-padded to clean ``(T, n_vars)`` here — this is the model-facing/release
     boundary for the padding, so released tensors carry no zero columns.
     """
-    from causaltimeprior.interventions import InterventionType
+    from causaltime.interventions import InterventionType
 
     # Released episodes carry the FULL observational trajectory; causal masking
     # (zeroing post-onset) is a model-input transform applied by the baseline.
@@ -447,7 +447,7 @@ def episode_from_pair(
     The query targets the last step of the most intervention-affected variable
     that is not itself a treatment target — its interventional value is the exact
     counterfactual ground truth (also stored as ``y_oracle`` for the Oracle
-    baseline). Shared by the local fallback suite and ``ctp-generate``.
+    baseline). Shared by the local fallback suite and ``ct-generate``.
     """
     t_query = x_int.shape[0] - 1
     effect = (x_int[t_query] - x_obs[t_query]).abs().clone()

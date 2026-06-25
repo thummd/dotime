@@ -1,4 +1,4 @@
-"""Regime-switching temporal SCMs for CausalTimePrior.
+"""Regime-switching temporal SCMs for CausalTime.
 
 This module implements temporal SCMs where the causal structure and/or mechanisms
 can change over time according to a discrete Markov process.
@@ -9,11 +9,11 @@ import warnings
 import numpy as np
 import torch
 
-from causaltimeprior._sampling import DistributionSampler
-from causaltimeprior.interventions import InterventionSpec, InterventionType
-from causaltimeprior.temporal_graph import TemporalDAG
-from causaltimeprior.temporal_mechanism import TemporalMechanism
-from causaltimeprior.utils import check_divergence, clip_values
+from causaltime._sampling import DistributionSampler
+from causaltime.interventions import InterventionSpec, InterventionType
+from causaltime.temporal_graph import TemporalDAG
+from causaltime.temporal_mechanism import TemporalMechanism
+from causaltime.utils import check_divergence, clip_values
 
 
 class RegimeSwitchingTemporalSCM:

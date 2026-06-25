@@ -17,7 +17,7 @@ Usage
 
 import torch
 
-from causaltimeprior.tscm_sampler import TSCMSampler, TSCMStructure
+from causaltime.tscm_sampler import TSCMSampler, TSCMStructure
 
 # Activation functions that work on batched tensors
 BATCHED_ACTIVATIONS = [

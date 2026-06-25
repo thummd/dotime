@@ -83,7 +83,7 @@ class TemporalEncoder(nn.Module):
                 raise ImportError(
                     "the 'gdp' encoder backend requires the optional [gdp] extra "
                     "(TempoPFN + flash-linear-attention) and a CUDA GPU:\n"
-                    "    pip install 'causaltimeprior[gdp]'\n"
+                    "    pip install 'causaltime[gdp]'\n"
                     "Use the default backend='transformer' to run on CPU without it."
                 ) from exc
 

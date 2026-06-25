@@ -4,9 +4,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from causaltimeprior._sampling import ShiftedExponentialSampler
-from causaltimeprior.regime_switching import RegimeSwitchingTemporalSCM
-from causaltimeprior.temporal_scm_builder import TemporalSCMBuilder
+from causaltime._sampling import ShiftedExponentialSampler
+from causaltime.regime_switching import RegimeSwitchingTemporalSCM
+from causaltime.temporal_scm_builder import TemporalSCMBuilder
 
 
 class RegimeSwitchingSCMBuilder:
@@ -131,7 +131,7 @@ class RegimeSwitchingSCMBuilder:
             # Remap DAG
             import networkx as nx
 
-            from causaltimeprior.temporal_graph import TemporalDAG
+            from causaltime.temporal_graph import TemporalDAG
 
             G_0_remapped = nx.DiGraph()
             G_0_remapped.add_nodes_from(canonical_node_names)

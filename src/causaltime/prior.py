@@ -1,4 +1,4 @@
-"""CausalTimePrior: Main orchestrator for sampling temporal SCMs with interventions."""
+"""CausalTime: Main orchestrator for sampling temporal SCMs with interventions."""
 
 from __future__ import annotations
 
@@ -7,15 +7,15 @@ from typing import Any
 import torch
 import torch.nn as nn
 
-from causaltimeprior._activations import Tanh, TanhReLU, TanhX2
-from causaltimeprior._sampling import ShiftedExponentialSampler
-from causaltimeprior.chain_scm import ChainSCMBuilder
-from causaltimeprior.interventions import InterventionSampler, InterventionSpec
-from causaltimeprior.regime_switching import RegimeSwitchingTemporalSCM
-from causaltimeprior.regime_switching_builder import RegimeSwitchingSCMBuilder
-from causaltimeprior.temporal_scm import TemporalSCM
-from causaltimeprior.temporal_scm_builder import TemporalSCMBuilder
-from causaltimeprior.utils import DEFAULT_CONFIG
+from causaltime._activations import Tanh, TanhReLU, TanhX2
+from causaltime._sampling import ShiftedExponentialSampler
+from causaltime.chain_scm import ChainSCMBuilder
+from causaltime.interventions import InterventionSampler, InterventionSpec
+from causaltime.regime_switching import RegimeSwitchingTemporalSCM
+from causaltime.regime_switching_builder import RegimeSwitchingSCMBuilder
+from causaltime.temporal_scm import TemporalSCM
+from causaltime.temporal_scm_builder import TemporalSCMBuilder
+from causaltime.utils import DEFAULT_CONFIG
 
 
 class Sin(nn.Module):
@@ -38,7 +38,7 @@ class Square(nn.Module):
         return torch.pow(x, 2)
 
 
-class CausalTimePrior:
+class CausalTime:
     """
     Prior distribution over temporal SCMs with interventions.
 

@@ -1,6 +1,6 @@
 """On-the-fly temporal intervention dataloader.
 
-Generates batches by sampling from the extended CausalTimePrior,
+Generates batches by sampling from the extended CausalTime,
 following the pattern of Do-PFN's ObservationalDataLoader.
 
 Supports background prefetching to overlap data generation with GPU compute.
@@ -13,8 +13,8 @@ from threading import Thread
 
 import torch
 
-from causaltimeprior.extended import ExtendedCausalTimePrior
-from causaltimeprior.normalization import normalize_batch
+from causaltime.extended import ExtendedCausalTime
+from causaltime.normalization import normalize_batch
 
 # Per-TSCM-structure canonical query offset range (matches the per-structure
 # eval pipeline in scripts/analyze_s9ho.py and the per-structure training
@@ -85,7 +85,7 @@ class TemporalInterventionDataLoader:
             # structure uniformly at random per call so the model sees
             # all three identification strategies during training.
             self.priors = [
-                ExtendedCausalTimePrior(
+                ExtendedCausalTime(
                     n_max=n_max,
                     n_max_prior=n_max_prior,
                     t_range=t_range,
@@ -108,7 +108,7 @@ class TemporalInterventionDataLoader:
             self._rng = random.Random(seed)
             self.prior = self.priors[0]  # default for any external readers
         else:
-            self.prior = ExtendedCausalTimePrior(
+            self.prior = ExtendedCausalTime(
                 n_max=n_max,
                 n_max_prior=n_max_prior,
                 t_range=t_range,

@@ -5,9 +5,9 @@
    :toctree: ../_autosummary
    :nosignatures:
 
-   causaltimeprior.CausalTimePrior
-   causaltimeprior.TemporalSCM
-   causaltimeprior.InterventionSpec
-   causaltimeprior.InterventionType
-   causaltimeprior.RegimeSwitchingTemporalSCM
+   causaltime.CausalTime
+   causaltime.TemporalSCM
+   causaltime.InterventionSpec
+   causaltime.InterventionType
+   causaltime.RegimeSwitchingTemporalSCM
 ```

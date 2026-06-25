@@ -8,13 +8,13 @@ Common install / runtime snags and their fixes.
 pin a CUDA build. If `import torch` fails or silently runs on CPU when you expect
 GPU, install the matching wheel from the
 [PyTorch site](https://pytorch.org/get-started/locally/) *before* installing
-`causaltimeprior`.
+`causaltime`.
 
 **`ModuleNotFoundError: pyarrow`.** Reading/writing frozen suites (parquet) needs
 the `evaluation` extra:
 
 ```bash
-pip install 'causaltimeprior[evaluation]'
+pip install 'causaltime[evaluation]'
 ```
 
 **`The 'gdp' encoder backend requires the optional [gdp] extra`.** The default
@@ -22,7 +22,7 @@ encoder backend is `transformer` and runs on CPU with no extra dependency. The
 `gdp` (GatedDeltaProduct / TempoPFN) backend is GPU-only and needs:
 
 ```bash
-pip install 'causaltimeprior[gdp]'   # requires a CUDA GPU + flash-linear-attention
+pip install 'causaltime[gdp]'   # requires a CUDA GPU + flash-linear-attention
 ```
 
 Unless you explicitly pass `backend="gdp"`, you never need this.
@@ -32,7 +32,7 @@ Unless you explicitly pass `backend="gdp"`, you never need this.
 **`DoOverTimePFN baseline needs a trained checkpoint`.** Pass a checkpoint path:
 
 ```python
-from causaltimeprior import baselines
+from causaltime import baselines
 model = baselines.get("DoOverTimePFN", checkpoint="/path/to/best.pt")
 ```
 
@@ -46,7 +46,7 @@ the warnings are safe to ignore (or filter with `warnings.simplefilter("ignore")
 ## Benchmark cache
 
 `load_benchmark` caches downloaded suites under
-`~/.cache/causaltimeprior` (override with `$CAUSALTIMEPRIOR_CACHE` or the
+`~/.cache/causaltime` (override with `$CAUSALTIME_CACHE` or the
 `cache_dir=` argument). If a cached suite is corrupt you will see a
 `checksum mismatch` error — delete the suite directory and reload with
 `force_download=True`.

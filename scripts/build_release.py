@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Reproducible build of the frozen CausalTimePrior benchmark suites.
+"""Reproducible build of the frozen CausalTime benchmark suites.
 
 This is the reproducibility anchor cited in the paper: a single committed,
 config-driven script that regenerates every released suite with fixed seeds and
@@ -15,7 +15,7 @@ Usage
 
 Each suite is written under ``<output-dir>/<timestamp>/<suite>-<version>/`` as
 parquet shards + ``manifest.json`` (the canonical schema from
-``causaltimeprior._release_io``), plus a per-suite Croissant ``croissant.json``
+``causaltime._release_io``), plus a per-suite Croissant ``croissant.json``
 and a top-level ``build_manifest.json`` recording the config hash, seed, package
 version, and hardware.
 """
@@ -34,13 +34,13 @@ from pathlib import Path
 import torch
 import yaml
 
-from causaltimeprior import CausalTimePrior, __version__, _release_io
-from causaltimeprior.benchmarks import (
+from causaltime import CausalTime, __version__, _release_io
+from causaltime.benchmarks import (
     SuiteMetadata,
     episode_from_pair,
     episode_from_sample,
 )
-from causaltimeprior.extended import ExtendedCausalTimePrior
+from causaltime.extended import ExtendedCausalTime
 
 _CONFIG_PATH = Path(__file__).with_name("release_config.yaml")
 
@@ -60,7 +60,7 @@ def build_identifiability(cfg: dict, seed: int, scale: float):
     episodes = []
     scm_id = 0
     for offset, (structure, tier) in enumerate(cfg["structures"].items()):
-        prior = ExtendedCausalTimePrior(tscm_structure=structure, n_max=41, seed=seed + offset)
+        prior = ExtendedCausalTime(tscm_structure=structure, n_max=41, seed=seed + offset)
         for _ in range(per):
             sample = prior.generate_sample(T=T)
             episodes.append(
@@ -80,7 +80,7 @@ def build_regime(cfg: dict, seed: int, scale: float):
     episodes = []
     scm_id = 0
     for offset, (density, tier) in enumerate(densities.items()):
-        prior = CausalTimePrior(seed=seed + offset)
+        prior = CausalTime(seed=seed + offset)
         for _ in range(per):
             x_obs, x_int, intervention, _scm = prior.generate_regime_pair(T=T, num_regimes=density)
             episodes.append(
@@ -98,7 +98,7 @@ def build_regime(cfg: dict, seed: int, scale: float):
 
 
 def build_continuous(cfg: dict, seed: int, scale: float):
-    from causaltimeprior.continuous import ContinuousExtendedPrior
+    from causaltime.continuous import ContinuousExtendedPrior
 
     T = cfg.get("T", 200)
     structures = cfg["structures"]
@@ -127,7 +127,7 @@ def build_continuous(cfg: dict, seed: int, scale: float):
 def build_generic(cfg: dict, seed: int, scale: float):
     T = cfg.get("T", 200)
     n = _scaled(cfg["n_episodes"], scale)
-    prior = CausalTimePrior(seed=seed)
+    prior = CausalTime(seed=seed)
     episodes = []
     for i in range(n):
         x_obs, x_int, intervention, _scm = prior.generate_pair(T=T)
@@ -159,7 +159,7 @@ def croissant_metadata(meta: SuiteMetadata, manifest: dict) -> dict:
         "version": meta.version,
         "description": meta.description,
         "license": f"https://spdx.org/licenses/{meta.license}.html",
-        "citation": "CausalTimePrior (KDD 2027 Datasets & Benchmarks).",
+        "citation": "CausalTime (KDD 2027 Datasets & Benchmarks).",
         "cr:schemaVersion": manifest["schema_version"],
         "distribution": [
             {

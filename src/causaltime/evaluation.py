@@ -1,4 +1,4 @@
-"""Evaluation harness for CausalTimePrior benchmark suites.
+"""Evaluation harness for CausalTime benchmark suites.
 
 This module ports the metric functions and aggregation helpers from the
 Do-Over-Time-PFN evaluation code (``dotime/eval/metrics.py`` and the
@@ -28,8 +28,8 @@ import numpy as np
 import torch
 
 if TYPE_CHECKING:
-    from causaltimeprior.baselines import Baseline
-    from causaltimeprior.benchmarks import BenchmarkSuite
+    from causaltime.baselines import Baseline
+    from causaltime.benchmarks import BenchmarkSuite
 
 __all__ = [
     "DIR_ACC_EPS",

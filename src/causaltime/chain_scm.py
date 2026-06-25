@@ -1,4 +1,4 @@
-"""Simple chain SCM generator for CausalTimePrior.
+"""Simple chain SCM generator for CausalTime.
 
 Generates linear/nonlinear chain structures like A→B→C→D for better
 generalization to simple sequential causal systems.
@@ -10,10 +10,10 @@ import torch
 import torch.distributions as dist
 import torch.nn as nn
 
-from causaltimeprior._sampling import TorchDistributionSampler
-from causaltimeprior.temporal_graph import TemporalDAG
-from causaltimeprior.temporal_mechanism import TemporalMechanism
-from causaltimeprior.temporal_scm import TemporalSCM
+from causaltime._sampling import TorchDistributionSampler
+from causaltime.temporal_graph import TemporalDAG
+from causaltime.temporal_mechanism import TemporalMechanism
+from causaltime.temporal_scm import TemporalSCM
 
 
 class ChainSCMBuilder:

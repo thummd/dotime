@@ -8,7 +8,7 @@ A released suite is a directory::
         shard-0001.parquet
         ...
 
-Each parquet row is one :class:`~causaltimeprior.benchmarks.Episode`. Trajectories
+Each parquet row is one :class:`~causaltime.benchmarks.Episode`. Trajectories
 are stored row-major-flattened with their ``(length, n_vars)`` shape so they
 reconstruct exactly; the intervention is stored as a JSON string via
 :meth:`InterventionSpec.to_dict`. The manifest records the package version, seed,
@@ -17,7 +17,7 @@ validated against a Zenodo download.
 
 This module is imported lazily (it needs ``pyarrow`` from the ``evaluation``
 extra). :func:`write_suite` is used by ``scripts/build_release.py`` and the
-``ctp-generate`` CLI; :func:`read_suite` backs ``benchmarks._parse_suite_dir``.
+``ct-generate`` CLI; :func:`read_suite` backs ``benchmarks._parse_suite_dir``.
 """
 
 from __future__ import annotations
@@ -29,10 +29,10 @@ from typing import TYPE_CHECKING
 
 import torch
 
-from causaltimeprior.interventions import InterventionSpec
+from causaltime.interventions import InterventionSpec
 
 if TYPE_CHECKING:
-    from causaltimeprior.benchmarks import BenchmarkSuite, Episode, SuiteMetadata
+    from causaltime.benchmarks import BenchmarkSuite, Episode, SuiteMetadata
 
 SCHEMA_VERSION = "1"
 
@@ -59,7 +59,7 @@ def _require_pyarrow():
     except ModuleNotFoundError as exc:  # pragma: no cover
         raise ImportError(
             "reading/writing frozen suites needs the 'evaluation' extra:\n"
-            "    pip install 'causaltimeprior[evaluation]'"
+            "    pip install 'causaltime[evaluation]'"
         ) from exc
     return pa, pq
 
@@ -99,7 +99,7 @@ def _episode_to_row(ep: Episode) -> dict:
 
 
 def _row_to_episode(row: dict) -> Episode:
-    from causaltimeprior.benchmarks import Episode
+    from causaltime.benchmarks import Episode
 
     length, n_vars = int(row["length"]), int(row["n_vars"])
     x_obs = torch.tensor(row["x_obs"], dtype=torch.float32).reshape(length, n_vars)
@@ -166,7 +166,7 @@ def write_suite(
 def read_suite(meta: SuiteMetadata, suite_dir: str | Path) -> BenchmarkSuite:
     """Read a suite directory written by :func:`write_suite` into a BenchmarkSuite."""
     _pa, pq = _require_pyarrow()
-    from causaltimeprior.benchmarks import BenchmarkSuite
+    from causaltime.benchmarks import BenchmarkSuite
 
     suite_dir = Path(suite_dir)
     manifest_path = suite_dir / "manifest.json"

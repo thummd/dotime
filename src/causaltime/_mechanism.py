@@ -1,7 +1,7 @@
 """Base structural mechanism: a linear combination of parents + activation + noise.
 
 Reimplemented from ``Do-PFN-prior`` (``dopfnprior.scm.simple_mechanism``) so the
-package is self-contained. :class:`~causaltimeprior.temporal_mechanism.TemporalMechanism`
+package is self-contained. :class:`~causaltime.temporal_mechanism.TemporalMechanism`
 extends this to support lagged parents.
 
 Attribution: Do-PFN (Oossen et al.). RNG-determining operations (the uniform

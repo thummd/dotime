@@ -2,7 +2,7 @@
 
 Reimplemented from ``Do-PFN-prior`` (``dopfnprior.causal_graph.graph_builder``)
 so the package carries no submodule dependency.
-:class:`~causaltimeprior.temporal_graph.TemporalGraphBuilder` extends this with
+:class:`~causaltime.temporal_graph.TemporalGraphBuilder` extends this with
 lagged adjacencies.
 
 Acyclicity is guaranteed by sampling edges from a strictly upper-triangular

@@ -1,9 +1,9 @@
-"""Utility functions for CausalTimePrior."""
+"""Utility functions for CausalTime."""
 
 import torch
 import torch.distributions as dist
 
-from causaltimeprior._sampling import DistributionSampler
+from causaltime._sampling import DistributionSampler
 
 # ===== Stability Checks =====
 

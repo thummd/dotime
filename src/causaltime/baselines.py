@@ -1,4 +1,4 @@
-"""Reference baselines for CausalTimePrior benchmark suites.
+"""Reference baselines for CausalTime benchmark suites.
 
 A small registry maps baseline *names* to constructors, so the CLI and the
 evaluation harness can request a baseline by string (mirroring the
@@ -28,7 +28,7 @@ import numpy as np
 import torch
 
 if TYPE_CHECKING:
-    from causaltimeprior.benchmarks import Episode
+    from causaltime.benchmarks import Episode
 
 __all__ = ["Baseline", "available", "get", "register"]
 
@@ -322,7 +322,7 @@ class OracleBaseline:
 class PCMCIBaseline:
     """PCMCI+ causal discovery (tigramite) + linear effect estimate.
 
-    Requires the ``baselines`` extra: ``pip install 'causaltimeprior[baselines]'``.
+    Requires the ``baselines`` extra: ``pip install 'causaltime[baselines]'``.
     TODO(consolidate): run PCMCI+ to recover the lagged graph, then estimate the
     interventional effect by linear adjustment on the discovered parents.
     """
@@ -335,7 +335,7 @@ class PCMCIBaseline:
         except ModuleNotFoundError as exc:  # pragma: no cover
             raise ImportError(
                 "PCMCI+ baseline needs the 'baselines' extra: "
-                "pip install 'causaltimeprior[baselines]'"
+                "pip install 'causaltime[baselines]'"
             ) from exc
         self.lag = lag
         self.alpha = alpha
@@ -364,7 +364,7 @@ class BayesianPiecewiseITSBaseline:
         except ModuleNotFoundError as exc:  # pragma: no cover
             raise ImportError(
                 "Bayesian ITS baseline needs the 'baselines' extra: "
-                "pip install 'causaltimeprior[baselines]'"
+                "pip install 'causaltime[baselines]'"
             ) from exc
 
     def predict(self, episode: Episode) -> torch.Tensor:
@@ -391,13 +391,13 @@ _INT_TYPE_CODE = {"hard": 0, "soft": 1, "time_varying": 2}
 def _episode_to_batch(episode: Episode, n_max: int, device: str) -> dict:
     """Convert a released Episode into the model's normalized, padded batch.
 
-    Mirrors ``ExtendedCausalTimePrior.generate_sample``: causal masking (zero
+    Mirrors ``ExtendedCausalTime.generate_sample``: causal masking (zero
     ``x_obs`` from the intervention onset), per-variable normalization over the
     pre-intervention window, and the intervention/query field encoding. Returns a
     batch of size 1 with the normalization stats so predictions can be mapped back
     to the raw scale.
     """
-    from causaltimeprior.normalization import normalize_batch
+    from causaltime.normalization import normalize_batch
 
     x_obs = episode.x_obs
     t_len, n = x_obs.shape
@@ -478,7 +478,7 @@ class DoOverTimePFNBaseline:
                 "DoOverTimePFN baseline needs a trained checkpoint: "
                 "baselines.get('DoOverTimePFN', checkpoint='/path/to/best.pt')"
             )
-        from causaltimeprior.models.loader import load_dotpfn
+        from causaltime.models.loader import load_dotpfn
 
         self.device = device
         self.model = load_dotpfn(checkpoint, device=device)

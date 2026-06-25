@@ -1,6 +1,6 @@
-"""Extended CausalTimePrior wrapper for Do-Over-Time-PFN.
+"""Extended CausalTime wrapper for Do-Over-Time-PFN.
 
-Wraps CausalTimePrior.generate_pair() to produce model-ready dicts with:
+Wraps CausalTime.generate_pair() to produce model-ready dicts with:
 - Padding to N_max=41 with variable masks
 - Intervention time windows (start, end) instead of single time
 - Intervention type encoding (0=hard, 1=soft, 2=time_varying)
@@ -12,10 +12,10 @@ import contextlib
 import numpy as np
 import torch
 
-from causaltimeprior.batched_tscm import BatchedTSCMSimulator
-from causaltimeprior.interventions import InterventionSpec, InterventionType
-from causaltimeprior.prior import CausalTimePrior
-from causaltimeprior.tscm_sampler import TSCMSampler, TSCMStructure
+from causaltime.batched_tscm import BatchedTSCMSimulator
+from causaltime.interventions import InterventionSpec, InterventionType
+from causaltime.prior import CausalTime
+from causaltime.tscm_sampler import TSCMSampler, TSCMStructure
 
 # Map intervention types to integers
 INTERVENTION_TYPE_MAP = {
@@ -68,9 +68,9 @@ def _apply_hidden_mask(
 
 
 class TSCMPrior:
-    """Drop-in replacement for CausalTimePrior that generates from a single TSCM structure.
+    """Drop-in replacement for CausalTime that generates from a single TSCM structure.
 
-    Has the same ``generate_pair(T)`` interface so ``ExtendedCausalTimePrior``
+    Has the same ``generate_pair(T)`` interface so ``ExtendedCausalTime``
     can swap it in transparently.
     """
 
@@ -123,10 +123,10 @@ class TSCMPrior:
         return self.canonical_inv_perm[self._a_idx_topo]
 
     def generate_pair(self, T: int):
-        """Return (X_obs, X_int, intervention, scm) like CausalTimePrior.
+        """Return (X_obs, X_int, intervention, scm) like CausalTime.
 
         Data is returned in topo-order; the canonical reordering is applied
-        at the ExtendedCausalTimePrior level after all re-simulation logic.
+        at the ExtendedCausalTime level after all re-simulation logic.
         """
         scm = self.sampler.sample(generator=self.gen)
         len(scm._topo)
@@ -160,7 +160,7 @@ class TSCMPrior:
         return X_obs, X_int, intervention, scm
 
 
-class ExtendedCausalTimePrior:
+class ExtendedCausalTime:
     """CTP wrapper that produces model-ready dicts for Do-Over-Time-PFN."""
 
     def __init__(
@@ -233,7 +233,7 @@ class ExtendedCausalTimePrior:
                 "N_max": n_max_prior,
                 "burn_in": burn_in + dynamics_burn_in,
             }
-            self.prior = CausalTimePrior(
+            self.prior = CausalTime(
                 config=config,
                 seed=seed,
                 chain_prob=chain_prob,

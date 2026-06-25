@@ -13,7 +13,7 @@ Usage
     python scripts/upload_huggingface.py --checkpoint best.pt --namespace thummd \\
         --model-repo do-over-time-pfn
 
-Needs the ``hf`` extra: ``pip install 'causaltimeprior[hf]'``.
+Needs the ``hf`` extra: ``pip install 'causaltime[hf]'``.
 """
 
 from __future__ import annotations
@@ -29,26 +29,26 @@ def _api(token: str | None):
         from huggingface_hub import HfApi
     except ModuleNotFoundError as exc:
         raise SystemExit(
-            "this script needs the 'hf' extra: pip install 'causaltimeprior[hf]'"
+            "this script needs the 'hf' extra: pip install 'causaltime[hf]'"
         ) from exc
     return HfApi(token=token or os.environ.get("HF_TOKEN"))
 
 
 _DATASET_CARD = """---
 license: cc-by-4.0
-tags: [causal-inference, time-series, benchmark, causaltimeprior]
+tags: [causal-inference, time-series, benchmark, causaltime]
 ---
 
 # {name}
 
-A frozen evaluation suite from **CausalTimePrior** (KDD 2027 Datasets & Benchmarks).
+A frozen evaluation suite from **CausalTime** (KDD 2027 Datasets & Benchmarks).
 
 - Episodes: {n_episodes}
 - Schema: parquet shards + `manifest.json` (md5-checksummed), Croissant metadata.
 - Load with:
 
 ```python
-from causaltimeprior.benchmarks import load_benchmark
+from causaltime.benchmarks import load_benchmark
 suite = load_benchmark("{name}")   # pulls this repo at tag v{version}
 ```
 

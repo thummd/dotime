@@ -389,20 +389,61 @@ is live).
 
 ---
 
+## Phase 6.5 — Decide the package name (before Phase 7 reserves it)
+
+The drafted files use **`causaltimeprior`** as a *placeholder* import + distribution name.
+The name is genuinely under reconsideration — see the note below — so settle it before
+reserving on PyPI, because a later rename touches every drafted file.
+
+**Decision framework:**
+- **Three surfaces, can differ.** Project/paper name ("CausalTimePrior"), PyPI
+  *distribution* name (`pip install X`), and *import* name (`import x`). PyPI allows the
+  distribution and import names to differ (e.g. distribution `scikit-learn`, import
+  `sklearn`). The project/paper name need not equal the package name.
+- **Constraints.** Lowercase; import name must be a valid identifier (letters/digits/
+  underscore, can't start with a digit); avoid the `-py` suffix (PyPI discourages it —
+  redundant); avoid collisions with existing PyPI/well-known packages and with
+  causal-inference terms-of-art that imply a narrower scope than the tool has
+  (e.g. `cate`, `causica`).
+- **Availability check FIRST (gating).** Before committing, verify the name is free:
+  `pip index versions <name>` and check `pypi.org/project/<name>`. The sandbox had no
+  network, so this must be done locally.
+- **Fallback rule.** If the chosen import name is taken, use a distinct *distribution*
+  name with the clean *import* name where possible; do **not** fall back to a `-py`
+  suffix.
+
+**Candidate names (decision pending — see chat for the trade-off discussion):**
+A catchier, `pandas`-style name (a real word hiding the domain) may fit a benchmark +
+generator better than `causaltimeprior`, which over-emphasizes "prior" and undersells the
+benchmark/generator framing. Leading candidates to check for availability, in priority
+order: `cats` (CAusal Time Series — best domain-encoding + memorability), then
+`causaltime` / `ctprior` / the descriptive `causaltimeprior` (safe, citation-matching).
+Whatever is chosen, the **paper title can remain "CausalTimePrior"** even if the package
+ships under a shorter name.
+
+**Rename mechanics (once decided):** the new name must be applied consistently across
+`pyproject.toml` (`name`, `[project.scripts]`, `[tool.*]` paths), the entire `src/<name>/`
+tree (directory + all imports), the whole `docs/` tree (every `import`/`from` example +
+`conf.py`), `.github/workflows/*` (the `url`/badge references), `CITATION.cff`, and the
+CLI command prefix if it changes from `ctp-`. Do this as one mechanical pass and re-run
+the full test/build to catch stragglers. Reserve the chosen name (and a sensible alias)
+on PyPI in Phase 7 immediately after.
+
+---
+
 ## Phase 7 — Reserve the name + dry-run publish
 
-- [ ] **Reserve the PyPI name now** (before any arXiv preprint): upload a `0.0.0`
-      placeholder or use `twine` to claim `causaltimeprior`. Also reserve the
-      alternate spelling `causal-time-prior` to prevent confusion/squatting.
+- [ ] **Reserve the chosen name now** (before any arXiv preprint), per Phase 6.5: upload a
+      `0.0.0` placeholder or use `twine` to claim it. Reserve a sensible alias too
+      (e.g. the descriptive long form) to prevent confusion/squatting.
 - [ ] Configure **PyPI Trusted Publishing** on both PyPI and TestPyPI: add a GitHub
-      Actions publisher for repo `thummd/CausalTimePrior`, workflow `release.yml`,
+      Actions publisher for the repo, workflow `release.yml`,
       environments `pypi` and `testpypi` respectively.
 - [ ] Create the `pypi` and `testpypi` **GitHub Environments** (Settings →
       Environments). The release workflow references both.
 - [ ] Dry-run the build locally: `python -m build && twine check dist/*`.
 - [ ] Tag `v0.1.0`. The release workflow builds → TestPyPI → PyPI → GitHub Release.
-      Verify the TestPyPI install in a clean venv first:
-      `pip install -i https://test.pypi.org/simple/ causaltimeprior`.
+      Verify the TestPyPI install in a clean venv first.
 
 ---
 

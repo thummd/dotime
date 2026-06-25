@@ -1,7 +1,7 @@
 """Model-ready batch generator for continuous-time temporal causal PFNs.
 
 This is the continuous-time counterpart to
-:class:`dotime.prior.extended_prior.ExtendedCausalTimePrior`.  It wraps a
+:class:`dotime.prior.extended_prior.ExtendedCausalTime`.  It wraps a
 :class:`ContinuousTSCMSampler`, draws an observation schedule from one
 of the variable-Delta-t families in :mod:`time_schedule`, and produces a
 model-ready dict for every call.
@@ -47,7 +47,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import torch
 
-from causaltimeprior.tscm_sampler import TSCMStructure
+from causaltime.tscm_sampler import TSCMStructure
 
 
 @dataclass
@@ -211,7 +211,7 @@ class ContinuousExtendedPrior:
         ``(p_hard, p_soft, p_time_varying)`` probabilities for sampling
         the intervention kind per trajectory.  Must be nonnegative and
         sum to a positive number (they will be normalised).  Defaults
-        to ``(0.5, 0.3, 0.2)`` matching the CausalTimePrior defaults.
+        to ``(0.5, 0.3, 0.2)`` matching the CausalTime defaults.
     intervention_source : {"prior", "positivity_aware"}
         Source of the intervention value.  ``"prior"`` draws from
         ``N(0, intervention_value_scale^2)``.  ``"positivity_aware"``

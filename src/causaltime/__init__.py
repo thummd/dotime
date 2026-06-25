@@ -1,4 +1,4 @@
-"""CausalTimePrior: synthetic temporal SCMs with interventions for causal foundation models.
+"""CausalTime: synthetic temporal SCMs with interventions for causal foundation models.
 
 The top-level namespace exposes the lightweight *core* — the prior, the temporal
 SCM types, intervention specifications, and regime-switching builders — eagerly,
@@ -7,18 +7,18 @@ networkx).
 
 Heavier submodules that pull in optional dependencies (baselines, frozen-suite
 loaders, plotting, evaluation) are imported *lazily* via :pep:`562`, so a bare
-``import causaltimeprior`` stays fast and does not fail when an optional extra
+``import causaltime`` stays fast and does not fail when an optional extra
 is not installed. Access them as attributes and they are resolved on first use::
 
-    import causaltimeprior as ctp
+    import causaltime as ctp
 
-    prior = ctp.CausalTimePrior(seed=42)        # eager core
+    prior = ctp.CausalTime(seed=42)        # eager core
     suite = ctp.benchmarks.load_benchmark(...)  # lazily imports the submodule
 
 Example
 -------
->>> from causaltimeprior import CausalTimePrior
->>> prior = CausalTimePrior(seed=42)
+>>> from causaltime import CausalTime
+>>> prior = CausalTime(seed=42)
 >>> X_obs, X_int, intervention, scm = prior.generate_pair(T=100)
 >>> X_obs.shape == X_int.shape
 True
@@ -35,19 +35,19 @@ __version__ = "0.1.0"
 # Eager core (core runtime deps only)
 # --------------------------------------------------------------------------- #
 
-from causaltimeprior.interventions import (
+from causaltime.interventions import (
     InterventionSampler,
     InterventionSpec,
     InterventionType,
 )
-from causaltimeprior.prior import CausalTimePrior
-from causaltimeprior.regime_switching import RegimeSwitchingTemporalSCM
-from causaltimeprior.regime_switching_builder import RegimeSwitchingSCMBuilder
-from causaltimeprior.temporal_graph import TemporalDAG, TemporalGraphBuilder
-from causaltimeprior.temporal_mechanism import TemporalMechanism
-from causaltimeprior.temporal_scm import TemporalSCM
-from causaltimeprior.temporal_scm_builder import TemporalSCMBuilder
-from causaltimeprior.utils import DEFAULT_CONFIG
+from causaltime.prior import CausalTime
+from causaltime.regime_switching import RegimeSwitchingTemporalSCM
+from causaltime.regime_switching_builder import RegimeSwitchingSCMBuilder
+from causaltime.temporal_graph import TemporalDAG, TemporalGraphBuilder
+from causaltime.temporal_mechanism import TemporalMechanism
+from causaltime.temporal_scm import TemporalSCM
+from causaltime.temporal_scm_builder import TemporalSCMBuilder
+from causaltime.utils import DEFAULT_CONFIG
 
 # --------------------------------------------------------------------------- #
 # Lazy submodules (PEP 562). These names resolve to submodules on first access
@@ -90,7 +90,7 @@ def __dir__() -> list[str]:
 # Make the lazy submodules visible to type checkers and IDEs without importing
 # them at runtime.
 if TYPE_CHECKING:
-    from causaltimeprior import (
+    from causaltime import (
         baselines,
         benchmarks,
         continuous,
@@ -105,7 +105,7 @@ if TYPE_CHECKING:
 __all__ = [
     "__version__",
     # --- core types ---
-    "CausalTimePrior",
+    "CausalTime",
     "TemporalSCM",
     "TemporalDAG",
     "TemporalGraphBuilder",

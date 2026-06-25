@@ -4,11 +4,11 @@ import warnings
 
 import torch
 
-from causaltimeprior._sampling import DistributionSampler
-from causaltimeprior.interventions import InterventionSpec, InterventionType
-from causaltimeprior.temporal_graph import TemporalDAG
-from causaltimeprior.temporal_mechanism import TemporalMechanism
-from causaltimeprior.utils import check_divergence, clip_values
+from causaltime._sampling import DistributionSampler
+from causaltime.interventions import InterventionSpec, InterventionType
+from causaltime.temporal_graph import TemporalDAG
+from causaltime.temporal_mechanism import TemporalMechanism
+from causaltime.utils import check_divergence, clip_values
 
 
 class TemporalSCM:

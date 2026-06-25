@@ -1,6 +1,6 @@
 # Frozen Benchmark Suites
 
-CausalTimePrior ships four versioned, immutable suites for reproducible evaluation. Each has a Zenodo DOI and Croissant metadata.
+CausalTime ships four versioned, immutable suites for reproducible evaluation. Each has a Zenodo DOI and Croissant metadata.
 
 ## Suites
 
@@ -12,19 +12,19 @@ CausalTimePrior ships four versioned, immutable suites for reproducible evaluati
 ## Loader
 
 ```python
-from causaltimeprior.benchmarks import load_benchmark
+from causaltime.benchmarks import load_benchmark
 
 suite = load_benchmark("CTP-Identifiability-v1", version="1.0.0")
 ```
 
-On first access, the suite is downloaded from Zenodo into `~/.cache/causaltimeprior/`. Pass `force_download=True` to redownload.
+On first access, the suite is downloaded from Zenodo into `~/.cache/causaltime/`. Pass `force_download=True` to redownload.
 
 ## Evaluation protocol
 
 The default evaluation reports RMSE, NMSE, MAE, direction accuracy, lift-over-naive, and effect-error correlation, computed per-structure and pooled.
 
 ```python
-from causaltimeprior.evaluation import evaluate
+from causaltime.evaluation import evaluate
 
 results = evaluate(model, suite)
 ```

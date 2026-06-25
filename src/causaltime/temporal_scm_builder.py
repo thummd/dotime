@@ -5,11 +5,11 @@ import torch
 import torch.distributions as dist
 import torch.nn as nn
 
-from causaltimeprior._sampling import DistributionSampler, TorchDistributionSampler
-from causaltimeprior.temporal_graph import TemporalDAG, TemporalGraphBuilder
-from causaltimeprior.temporal_mechanism import TemporalMechanism
-from causaltimeprior.temporal_scm import TemporalSCM
-from causaltimeprior.utils import LaplaceSampler, UniformNoiseSampler
+from causaltime._sampling import DistributionSampler, TorchDistributionSampler
+from causaltime.temporal_graph import TemporalDAG, TemporalGraphBuilder
+from causaltime.temporal_mechanism import TemporalMechanism
+from causaltime.temporal_scm import TemporalSCM
+from causaltime.utils import LaplaceSampler, UniformNoiseSampler
 
 
 class TemporalSCMBuilder:

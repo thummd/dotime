@@ -1,12 +1,12 @@
-"""Visualization utilities for CausalTimePrior."""
+"""Visualization utilities for CausalTime."""
 
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 import torch
 
-from causaltimeprior.interventions import InterventionSpec
-from causaltimeprior.temporal_graph import TemporalDAG
+from causaltime.interventions import InterventionSpec
+from causaltime.temporal_graph import TemporalDAG
 
 
 def plot_paired_timeseries(

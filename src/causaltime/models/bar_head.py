@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 from pfns.model.bar_distribution import FullSupportBarDistribution, get_bucket_borders
 
-from causaltimeprior.models.pinball_loss import extract_quantiles, pinball_loss
+from causaltime.models.pinball_loss import extract_quantiles, pinball_loss
 
 
 class BarDistributionHead(nn.Module):
