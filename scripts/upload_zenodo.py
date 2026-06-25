@@ -73,7 +73,14 @@ def upload_suite(suite_dir: Path, token: str, base: str) -> tuple[str, str]:
     for f in sorted(suite_dir.iterdir()):
         if f.is_file():
             with f.open("rb") as fh:
-                _req("PUT", f"{bucket}/{f.name}", token, data=fh.read())
+                # Zenodo's bucket API requires an explicit content type (415 otherwise).
+                _req(
+                    "PUT",
+                    f"{bucket}/{f.name}",
+                    token,
+                    data=fh.read(),
+                    content_type="application/octet-stream",
+                )
 
     _req(
         "PUT",

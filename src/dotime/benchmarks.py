@@ -64,14 +64,15 @@ class SuiteMetadata:
         return f"https://zenodo.org/api/records/{self.zenodo_record_id}"
 
 
-# TODO(release): fill in Zenodo record ids + DOIs once the suites are minted.
-# Until then, loading falls back to local generation (see `load_benchmark`).
+# Suites are hosted on Hugging Face (mirror) + Zenodo (archive of record).
+# Zenodo depositions are DRAFTS until published in the UI; HF is the default source.
 _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
     "dot-Identifiability-v1": SuiteMetadata(
         name="dot-Identifiability-v1",
         version="1.0.0",
-        zenodo_record_id="TODO",
-        doi="TODO",
+        hf_repo_id="thummd/dot-Identifiability-v1",
+        zenodo_record_id="20846064",
+        doi="10.5281/zenodo.20846064",
         description="Named identification structures with exact counterfactuals.",
         n_episodes=10_800,
         structures=(
@@ -88,24 +89,27 @@ _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
     "dot-RegimeSwitch-v1": SuiteMetadata(
         name="dot-RegimeSwitch-v1",
         version="1.0.0",
-        zenodo_record_id="TODO",
-        doi="TODO",
+        hf_repo_id="thummd/dot-RegimeSwitch-v1",
+        zenodo_record_id="20846074",
+        doi="10.5281/zenodo.20846074",
         description="Regime-switching SCMs (ITS generalization), break density in {2,3,5}.",
         n_episodes=10_000,
     ),
     "dot-Continuous-v1": SuiteMetadata(
         name="dot-Continuous-v1",
         version="1.0.0",
-        zenodo_record_id="TODO",
-        doi="TODO",
+        hf_repo_id="thummd/dot-Continuous-v1",
+        zenodo_record_id="20845981",
+        doi="10.5281/zenodo.20845981",
         description="Continuous-time intervention windows, query offsets {1,2,3,5,10}.",
         n_episodes=10_000,
     ),
     "dot-Generic-100k": SuiteMetadata(
         name="dot-Generic-100k",
         version="1.0.0",
-        zenodo_record_id="TODO",
-        doi="TODO",
+        hf_repo_id="thummd/dot-Generic-100k",
+        zenodo_record_id="20845983",
+        doi="10.5281/zenodo.20845983",
         description="100k trajectories from the full diverse prior (training scale).",
         n_episodes=100_000,
     ),

@@ -86,8 +86,31 @@ def test_unknown_baseline_raises():
 # --------------------------------------------------------------------------- #
 
 
-def test_suite_roundtrip_shapes():
-    suite = ctp.benchmarks.load_benchmark("dot-Identifiability-v1")
+def _seed_local_suite(cache_dir, name, n=8):
+    """Write a tiny suite into the loader's cache so load_benchmark reads it
+    locally (the hosted suites are GBs; we don't download them in unit tests)."""
+    pytest.importorskip("pyarrow")
+    from dotime import _release_io
+    from dotime.benchmarks import _SUITE_REGISTRY, episode_from_pair
+
+    meta = _SUITE_REGISTRY[name]
+    prior = ctp.DoTime(seed=0)
+    structs = meta.structures or (None,)
+    eps = [
+        episode_from_pair(
+            *prior.generate_pair(T=60)[:3], structure=structs[i % len(structs)], scm_id=i
+        )
+        for i in range(n)
+    ]
+    _release_io.write_suite(
+        meta, eps, cache_dir / f"{name}-{meta.version}", package_version="test", seed=0
+    )
+
+
+def test_suite_roundtrip_shapes(tmp_path):
+    # Seed a local cache copy and load it (no network / no GB download).
+    _seed_local_suite(tmp_path, "dot-Identifiability-v1")
+    suite = ctp.benchmarks.load_benchmark("dot-Identifiability-v1", cache_dir=tmp_path)
     assert len(suite) > 0
     seen_structures = set()
     for ep in suite:
@@ -95,7 +118,6 @@ def test_suite_roundtrip_shapes():
         assert ep.y_true.numel() == ep.query_target.numel() == ep.query_time.numel()
         if ep.structure is not None:
             seen_structures.add(ep.structure)
-    # The identifiability suite should cover multiple named structures.
     assert len(seen_structures) >= 2
 
 
@@ -112,8 +134,9 @@ def test_released_episodes_store_full_unmasked_xobs():
     assert bool((ep.x_obs[onset:] != 0).any())
 
 
-def test_oracle_is_exact_on_fallback():
-    suite = ctp.benchmarks.load_benchmark("dot-Generic-100k")
+def test_oracle_is_exact_on_loaded_suite(tmp_path):
+    _seed_local_suite(tmp_path, "dot-Generic-100k")
+    suite = ctp.benchmarks.load_benchmark("dot-Generic-100k", cache_dir=tmp_path)
     results = ctp.evaluation.evaluate(ctp.baselines.get("Oracle"), suite)
     assert results.pooled["rmse"] == pytest.approx(0.0, abs=1e-5)
     assert results.pooled["mae"] == pytest.approx(0.0, abs=1e-5)
