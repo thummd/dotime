@@ -12,8 +12,7 @@
 
 `dotime` samples multivariate temporal structural causal models (SCMs),
 applies interventions to them, and produces paired observational / interventional
-trajectories together with exact counterfactual targets. It is the data engine and
-evaluation harness behind the KDD 2027 Datasets & Benchmarks paper of the same name.
+trajectories together with exact counterfactual targets.
 
 Where most time-series causal benchmarks are *observational* (recover a graph from
 passive dynamics), DoTime is *interventional / counterfactual*: it answers
