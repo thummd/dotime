@@ -74,7 +74,9 @@ def test_v2_build_is_reproducible_across_workers():
     par = build_v2(cfg, 4242, 1.0, workers=3)
     assert len(seq) == len(par) == 12
     assert all(
-        torch.equal(a.x_obs, b.x_obs) and torch.equal(a.x_int, b.x_int) and torch.equal(a.y_true, b.y_true)
+        torch.equal(a.x_obs, b.x_obs)
+        and torch.equal(a.x_int, b.x_int)
+        and torch.equal(a.y_true, b.y_true)
         for a, b in zip(seq, par, strict=True)
     )
 

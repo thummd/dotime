@@ -21,14 +21,14 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO_ROOT / "src"))
 
-import dotime  # noqa: E402  (must come after sys.path tweak)
+import dotime
 
 
 # -- Project information -----------------------------------------------------
 
 project = "DoTime"
 author = "Dennis Thumm and contributors"
-copyright = f"{datetime.now().year}, {author}"  # noqa: A001
+copyright = f"{datetime.now().year}, {author}"
 release = dotime.__version__
 version = ".".join(release.split(".")[:2])
 
@@ -116,13 +116,13 @@ napoleon_use_ivar = True
 # -- Intersphinx -------------------------------------------------------------
 
 intersphinx_mapping = {
-    "python":     ("https://docs.python.org/3", None),
-    "numpy":      ("https://numpy.org/doc/stable", None),
-    "scipy":      ("https://docs.scipy.org/doc/scipy", None),
-    "torch":      ("https://pytorch.org/docs/stable", None),
-    "networkx":   ("https://networkx.org/documentation/stable", None),
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy", None),
+    "torch": ("https://pytorch.org/docs/stable", None),
+    "networkx": ("https://networkx.org/documentation/stable", None),
     "matplotlib": ("https://matplotlib.org/stable", None),
-    "pandas":     ("https://pandas.pydata.org/docs", None),
+    "pandas": ("https://pandas.pydata.org/docs", None),
 }
 
 

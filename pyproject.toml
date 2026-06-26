@@ -219,7 +219,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["B011", "PT011", "E402"]  # E402: import after pytest.importorskip
-"docs/conf.py" = ["E402"]
+"docs/conf.py" = ["E402", "I001"]  # import after sys.path tweak (Sphinx pattern)
 "**/__init__.py" = ["F401", "RUF022"]  # re-exports; grouped (not sorted) __all__
 "scripts/build_release.py" = ["E402"]  # imports after sys.path tweak / docstring
 # Consolidated research modules: keep their original idioms (math var names,

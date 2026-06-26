@@ -126,8 +126,7 @@ def _write_parquet(dataset: list, out: Path, *, seed: int) -> None:
         import pyarrow  # noqa: F401
     except ModuleNotFoundError as exc:  # pragma: no cover
         raise SystemExit(
-            "parquet output requires the 'evaluation' extra:\n"
-            "    pip install 'dotime[evaluation]'"
+            "parquet output requires the 'evaluation' extra:\n    pip install 'dotime[evaluation]'"
         ) from exc
 
     from dotime import __version__, _release_io

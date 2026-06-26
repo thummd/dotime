@@ -334,8 +334,7 @@ class PCMCIBaseline:
             import tigramite  # noqa: F401
         except ModuleNotFoundError as exc:  # pragma: no cover
             raise ImportError(
-                "PCMCI+ baseline needs the 'baselines' extra: "
-                "pip install 'dotime[baselines]'"
+                "PCMCI+ baseline needs the 'baselines' extra: pip install 'dotime[baselines]'"
             ) from exc
         self.lag = lag
         self.alpha = alpha
@@ -363,8 +362,7 @@ class BayesianPiecewiseITSBaseline:
             import causalpy  # noqa: F401
         except ModuleNotFoundError as exc:  # pragma: no cover
             raise ImportError(
-                "Bayesian ITS baseline needs the 'baselines' extra: "
-                "pip install 'dotime[baselines]'"
+                "Bayesian ITS baseline needs the 'baselines' extra: pip install 'dotime[baselines]'"
             ) from exc
 
     def predict(self, episode: Episode) -> torch.Tensor:

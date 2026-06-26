@@ -28,9 +28,7 @@ def _api(token: str | None):
     try:
         from huggingface_hub import HfApi
     except ModuleNotFoundError as exc:
-        raise SystemExit(
-            "this script needs the 'hf' extra: pip install 'dotime[hf]'"
-        ) from exc
+        raise SystemExit("this script needs the 'hf' extra: pip install 'dotime[hf]'") from exc
     return HfApi(token=token or os.environ.get("HF_TOKEN"))
 
 
