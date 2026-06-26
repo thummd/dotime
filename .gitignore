@@ -38,3 +38,7 @@ output/
 .DS_Store
 .idea/
 .vscode/
+
+# Internal project-setup docs (local-only, not for the public repo/release)
+/HANDOVER.md
+/paper_outline.md
