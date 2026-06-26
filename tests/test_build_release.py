@@ -62,16 +62,16 @@ def test_build_release_micro_all_suites(tmp_path):
 
 
 @pytest.mark.slow
-def test_v2_build_is_reproducible_across_workers():
+def test_build_is_reproducible_across_workers():
     # The v2 per-episode scheme must produce identical episodes regardless of the
     # worker count (the whole point of per-episode deterministic seeding).
     import torch
 
-    from dotime._build import build_v2
+    from dotime._build import build_suite
 
     cfg = {"generator": "generic", "T": 60, "n_episodes": 12}
-    seq = build_v2(cfg, 4242, 1.0, workers=1)
-    par = build_v2(cfg, 4242, 1.0, workers=3)
+    seq = build_suite(cfg, 4242, 1.0, workers=1)
+    par = build_suite(cfg, 4242, 1.0, workers=3)
     assert len(seq) == len(par) == 12
     assert all(
         torch.equal(a.x_obs, b.x_obs)

@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import platform
 import sys
 import warnings
@@ -34,120 +35,19 @@ from pathlib import Path
 import torch
 import yaml
 
-from dotime import DoTime, __version__, _release_io
-from dotime.benchmarks import (
-    SuiteMetadata,
-    episode_from_pair,
-    episode_from_sample,
-)
-from dotime.extended import ExtendedDoTime
+from dotime import __version__, _release_io
+from dotime._build import build_suite
+from dotime.benchmarks import SuiteMetadata
 
 _CONFIG_PATH = Path(__file__).with_name("release_config.yaml")
 
 
-# --------------------------------------------------------------------------- #
-# Per-suite generators -> list[Episode]
-# --------------------------------------------------------------------------- #
+# Suite generation uses the per-episode deterministic-seeding scheme in
+# dotime._build (build_suite): each episode index gets an independent seed, so the
+# output is identical regardless of the worker count, and generation parallelises
+# cleanly across processes. The worker lives in the package (not this script) so it
+# is importable by multiprocessing workers under both fork and spawn.
 
-
-def _scaled(n: int, scale: float) -> int:
-    return max(1, round(n * scale))
-
-
-def build_identifiability(cfg: dict, seed: int, scale: float):
-    T = cfg.get("T", 200)
-    per = _scaled(cfg["episodes_per_structure"], scale)
-    episodes = []
-    scm_id = 0
-    for offset, (structure, tier) in enumerate(cfg["structures"].items()):
-        prior = ExtendedDoTime(tscm_structure=structure, n_max=41, seed=seed + offset)
-        for _ in range(per):
-            sample = prior.generate_sample(T=T)
-            episodes.append(
-                episode_from_sample(
-                    sample, structure=structure, scm_id=scm_id, metadata={"tier": tier}
-                )
-            )
-            scm_id += 1
-    return episodes
-
-
-def build_regime(cfg: dict, seed: int, scale: float):
-    T = cfg.get("T", 200)
-    densities = {int(k): int(v) for k, v in cfg["densities"].items()}
-    total = _scaled(cfg["n_episodes"], scale)
-    per = max(1, total // len(densities))
-    episodes = []
-    scm_id = 0
-    for offset, (density, tier) in enumerate(densities.items()):
-        prior = DoTime(seed=seed + offset)
-        for _ in range(per):
-            x_obs, x_int, intervention, _scm = prior.generate_regime_pair(T=T, num_regimes=density)
-            episodes.append(
-                episode_from_pair(
-                    x_obs,
-                    x_int,
-                    intervention,
-                    structure=f"regime_{density}",
-                    scm_id=scm_id,
-                    metadata={"tier": tier, "n_regimes": density},
-                )
-            )
-            scm_id += 1
-    return episodes
-
-
-def build_continuous(cfg: dict, seed: int, scale: float):
-    from dotime.continuous import ContinuousExtendedPrior
-
-    T = cfg.get("T", 200)
-    structures = cfg["structures"]
-    total = _scaled(cfg["n_episodes"], scale)
-    per = max(1, total // len(structures))
-    episodes = []
-    scm_id = 0
-    for offset, structure in enumerate(structures):
-        prior = ContinuousExtendedPrior(tscm_structure=structure, seed=seed + offset)
-        for _ in range(per):
-            sample = prior.generate_sample(T=T)
-            # Tier by intervention-window fraction (longer window = harder).
-            tier = 1
-            if "intervention_time_start" in sample and "intervention_time_end" in sample:
-                frac = float(sample["intervention_time_end"] - sample["intervention_time_start"])
-                tier = 1 if frac < 0.15 else (2 if frac < 0.3 else 3)
-            episodes.append(
-                episode_from_sample(
-                    sample, structure=structure, scm_id=scm_id, metadata={"tier": tier}
-                )
-            )
-            scm_id += 1
-    return episodes
-
-
-def build_generic(cfg: dict, seed: int, scale: float):
-    T = cfg.get("T", 200)
-    n = _scaled(cfg["n_episodes"], scale)
-    prior = DoTime(seed=seed)
-    episodes = []
-    for i in range(n):
-        x_obs, x_int, intervention, _scm = prior.generate_pair(T=T)
-        episodes.append(
-            episode_from_pair(x_obs, x_int, intervention, scm_id=i, metadata={"tier": 1})
-        )
-    return episodes
-
-
-_GENERATORS = {
-    "identifiability": build_identifiability,
-    "regime": build_regime,
-    "continuous": build_continuous,
-    "generic": build_generic,
-}
-
-
-# v2 parallel generation (per-episode deterministic seeding) lives in the package
-# so the worker is importable by multiprocessing workers; see dotime._build.
-from dotime._build import build_v2
 
 # --------------------------------------------------------------------------- #
 # Croissant metadata
@@ -235,13 +135,12 @@ def main(argv: list[str] | None = None) -> int:
         "--workers",
         type=int,
         default=0,
-        help="Parallel workers for the v2 per-episode generation scheme. 0 (default) "
-        "uses the v1 sequential scheme that reproduces the hosted v1.0.0 suites; "
-        "N>=1 uses v2 (per-episode seeds; output is independent of worker count but "
-        "differs from v1).",
+        help="Parallel worker processes. 0 (default) auto-selects ~all CPU cores. "
+        "Generation uses per-episode deterministic seeding, so the output is "
+        "identical regardless of the worker count.",
     )
     args = parser.parse_args(argv)
-    scheme = "v2-perepisode" if args.workers else "v1-sequential"
+    workers = args.workers if args.workers > 0 else max(1, (os.cpu_count() or 2) - 1)
 
     config_text = args.config.read_text()
     config = yaml.safe_load(config_text)
@@ -262,15 +161,12 @@ def main(argv: list[str] | None = None) -> int:
         seed = base_seed + 1000 * (offset + 1)
         print(
             f"[build_release] generating {name} (scale={args.scale}, seed={seed}, "
-            f"scheme={scheme}, workers={args.workers}) ...",
+            f"workers={workers}) ...",
             flush=True,
         )
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)  # handled SCM divergence
-            if args.workers:
-                episodes = build_v2(cfg, seed, args.scale, args.workers)
-            else:
-                episodes = _GENERATORS[cfg["generator"]](cfg, seed, args.scale)
+            episodes = build_suite(cfg, seed, args.scale, workers)
 
         meta = _suite_metadata(name, cfg, len(episodes))
         suite_dir = run_dir / f"{name}-{meta.version}"
@@ -284,7 +180,7 @@ def main(argv: list[str] | None = None) -> int:
                 "generator": cfg["generator"],
                 "config_hash": config_hash,
                 "scale": args.scale,
-                "scheme": scheme,
+                "scheme": "perepisode",
             },
         )
         manifest = json.loads((suite_dir / "manifest.json").read_text())
@@ -300,8 +196,8 @@ def main(argv: list[str] | None = None) -> int:
         "config_hash": config_hash,
         "base_seed": base_seed,
         "scale": args.scale,
-        "scheme": scheme,
-        "workers": args.workers,
+        "scheme": "perepisode",
+        "workers": workers,
         "python": sys.version.split()[0],
         "torch": torch.__version__,
         "platform": platform.platform(),

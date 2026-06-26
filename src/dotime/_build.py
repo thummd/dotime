@@ -1,4 +1,4 @@
-"""Parallel-safe v2 suite generation (per-episode deterministic seeding).
+"""Parallel-safe suite generation (per-episode deterministic seeding).
 
 This lives in the package (not the ``scripts/build_release.py`` driver) so the
 multiprocessing worker :func:`make_episode` is importable as
@@ -6,10 +6,10 @@ multiprocessing worker :func:`make_episode` is importable as
 ``spawn`` start methods — a function defined in a script's ``__main__`` cannot be
 pickled by reference and breaks ``spawn``.
 
-The v2 scheme derives an independent seed per *episode index*, so the generated
-suite is identical regardless of worker count (and differs from the v1 sequential
-scheme, which advances a single RNG; v1 remains the default that reproduces the
-hosted ``v1.0.0`` suites). The chosen scheme is recorded in each suite manifest.
+The scheme derives an independent seed per *episode index* (including the global
+torch RNG, which parts of the prior use), so the generated suite is identical
+regardless of the worker count and parallelises cleanly across processes. This is
+the canonical generation scheme for the released suites.
 """
 
 from __future__ import annotations
@@ -144,8 +144,8 @@ def episode_specs(cfg: dict, suite_seed: int, scale: float) -> list[dict]:
     return specs
 
 
-def build_v2(cfg: dict, seed: int, scale: float, workers: int) -> list:
-    """v2 parallel build: per-episode deterministic seeding across ``workers`` procs.
+def build_suite(cfg: dict, seed: int, scale: float, workers: int) -> list:
+    """Build a suite via per-episode deterministic seeding across ``workers`` procs.
 
     Output is independent of ``workers`` (reproducible). ``workers<=1`` runs
     sequentially through the same per-episode path.
