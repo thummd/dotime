@@ -40,7 +40,7 @@ tags: [causal-inference, time-series, benchmark, dotime]
 
 # {name}
 
-A frozen evaluation suite from **DoTime** (KDD 2027 Datasets & Benchmarks).
+A frozen evaluation suite from **DoTime**.
 
 - Episodes: {n_episodes}
 - Schema: parquet shards + `manifest.json` (md5-checksummed), Croissant metadata.

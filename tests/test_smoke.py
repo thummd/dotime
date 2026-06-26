@@ -13,7 +13,7 @@ import dotime as ctp
 
 
 def test_version_and_eager_core():
-    assert ctp.__version__ == "0.1.0"
+    assert ctp.__version__ == "0.1.1"
     for name in [
         "DoTime",
         "TemporalSCM",

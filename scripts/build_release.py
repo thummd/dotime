@@ -63,7 +63,7 @@ def croissant_metadata(meta: SuiteMetadata, manifest: dict) -> dict:
         "version": meta.version,
         "description": meta.description,
         "license": f"https://spdx.org/licenses/{meta.license}.html",
-        "citation": "DoTime (KDD 2027 Datasets & Benchmarks).",
+        "citation": "DoTime: synthetic interventional/counterfactual time-series suites.",
         "cr:schemaVersion": manifest["schema_version"],
         "distribution": [
             {

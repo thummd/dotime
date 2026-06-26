@@ -12,7 +12,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dotime"
-version = "0.1.0"
+version = "0.1.1"
 description = "Synthetic temporal structural causal models with interventions for causal foundation models"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -74,7 +74,7 @@ chamber = [
     "causalchamber>=0.5",
 ]
 
-# Classical and Bayesian baselines used in the KDD D&B reference results.
+# Classical and Bayesian baselines used in the reference results.
 baselines = [
     "statsmodels>=0.14",
     "causalpy>=0.4",       # Bayesian piecewise ITS reference

@@ -46,8 +46,8 @@ def _metadata(manifest: dict) -> dict:
             "title": f"DoTime — {manifest['name']} (v{manifest['version']})",
             "upload_type": "dataset",
             "description": (
-                f"Frozen evaluation suite '{manifest['name']}' from DoTime "
-                f"(KDD 2027 Datasets & Benchmarks). {manifest['n_episodes']} episodes; "
+                f"Frozen evaluation suite '{manifest['name']}' from DoTime. "
+                f"{manifest['n_episodes']} episodes; "
                 "parquet shards + manifest + Croissant metadata. Generated reproducibly "
                 "by scripts/build_release.py."
             ),

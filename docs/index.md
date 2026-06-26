@@ -5,8 +5,7 @@
 `dotime` samples multivariate temporal structural causal models (SCMs),
 applies interventions, and produces paired observational / interventional
 trajectories with exact counterfactual targets. It ships four frozen evaluation
-suites, reference baselines, and an evaluation harness — the artifact behind the
-KDD 2027 Datasets & Benchmarks paper.
+suites, reference baselines, and an evaluation harness.
 
 ```{toctree}
 :maxdepth: 2
