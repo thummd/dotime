@@ -145,6 +145,10 @@ _GENERATORS = {
 }
 
 
+# v2 parallel generation (per-episode deterministic seeding) lives in the package
+# so the worker is importable by multiprocessing workers; see dotime._build.
+from dotime._build import build_v2
+
 # --------------------------------------------------------------------------- #
 # Croissant metadata
 # --------------------------------------------------------------------------- #
@@ -227,7 +231,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--scale", type=float, default=1.0, help="Scale every episode count.")
     parser.add_argument("--output-dir", type=Path, default=Path("output"))
     parser.add_argument("--timestamp", default=None, help="Override the output timestamp dir.")
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=0,
+        help="Parallel workers for the v2 per-episode generation scheme. 0 (default) "
+        "uses the v1 sequential scheme that reproduces the hosted v1.0.0 suites; "
+        "N>=1 uses v2 (per-episode seeds; output is independent of worker count but "
+        "differs from v1).",
+    )
     args = parser.parse_args(argv)
+    scheme = "v2-perepisode" if args.workers else "v1-sequential"
 
     config_text = args.config.read_text()
     config = yaml.safe_load(config_text)
@@ -247,11 +261,16 @@ def main(argv: list[str] | None = None) -> int:
         cfg = suites[name]
         seed = base_seed + 1000 * (offset + 1)
         print(
-            f"[build_release] generating {name} (scale={args.scale}, seed={seed}) ...", flush=True
+            f"[build_release] generating {name} (scale={args.scale}, seed={seed}, "
+            f"scheme={scheme}, workers={args.workers}) ...",
+            flush=True,
         )
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)  # handled SCM divergence
-            episodes = _GENERATORS[cfg["generator"]](cfg, seed, args.scale)
+            if args.workers:
+                episodes = build_v2(cfg, seed, args.scale, args.workers)
+            else:
+                episodes = _GENERATORS[cfg["generator"]](cfg, seed, args.scale)
 
         meta = _suite_metadata(name, cfg, len(episodes))
         suite_dir = run_dir / f"{name}-{meta.version}"
@@ -265,6 +284,7 @@ def main(argv: list[str] | None = None) -> int:
                 "generator": cfg["generator"],
                 "config_hash": config_hash,
                 "scale": args.scale,
+                "scheme": scheme,
             },
         )
         manifest = json.loads((suite_dir / "manifest.json").read_text())
@@ -280,6 +300,8 @@ def main(argv: list[str] | None = None) -> int:
         "config_hash": config_hash,
         "base_seed": base_seed,
         "scale": args.scale,
+        "scheme": scheme,
+        "workers": args.workers,
         "python": sys.version.split()[0],
         "torch": torch.__version__,
         "platform": platform.platform(),
