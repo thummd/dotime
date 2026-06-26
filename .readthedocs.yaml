@@ -1,4 +1,4 @@
-# Read the Docs configuration for CausalTimePrior.
+# Read the Docs configuration for DoTime.
 # See https://docs.readthedocs.io/en/stable/config-file/v2.html
 
 version: 2
@@ -13,8 +13,10 @@ sphinx:
   fail_on_warning: true
 
 formats:
+  # HTML (always) + a downloadable htmlzip. PDF is omitted for now: it needs a
+  # full LaTeX toolchain on RTD and is prone to first-build failures with
+  # mathjax/nbsphinx; re-enable `- pdf` once a PDF build is verified green.
   - htmlzip
-  - pdf
 
 python:
   install:
