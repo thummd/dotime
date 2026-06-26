@@ -19,6 +19,7 @@ Needs the ``hf`` extra: ``pip install 'dotime[hf]'``.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import os
 from pathlib import Path
@@ -65,9 +66,21 @@ def upload_suite(api, suite_dir: Path, namespace: str, private: bool) -> str:
     card.write_text(
         _DATASET_CARD.format(name=name, version=version, n_episodes=manifest["n_episodes"])
     )
-    api.upload_folder(repo_id=repo_id, repo_type="dataset", folder_path=str(suite_dir))
-    api.create_tag(repo_id, repo_type="dataset", tag=f"v{version}", exist_ok=True)
-    print(f"[hf] uploaded {name} -> https://huggingface.co/datasets/{repo_id} (tag v{version})")
+    # delete_patterns removes any stale shards from a prior upload so the repo
+    # contents are exactly this build (the version tag must point at fresh data).
+    api.upload_folder(
+        repo_id=repo_id,
+        repo_type="dataset",
+        folder_path=str(suite_dir),
+        delete_patterns=["*.parquet", "*.json"],
+    )
+    # create_tag(exist_ok=True) does NOT move an existing tag, so when re-hosting
+    # we delete it first to re-point v<version> at the new commit.
+    tag = f"v{version}"
+    with contextlib.suppress(Exception):  # tag may not exist yet (first upload)
+        api.delete_tag(repo_id, repo_type="dataset", tag=tag)
+    api.create_tag(repo_id, repo_type="dataset", tag=tag)
+    print(f"[hf] uploaded {name} -> https://huggingface.co/datasets/{repo_id} (tag {tag})")
     return repo_id
 
 

@@ -71,8 +71,8 @@ _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
         name="dot-Identifiability-v1",
         version="1.0.0",
         hf_repo_id="thummd/dot-Identifiability-v1",
-        zenodo_record_id="20846064",
-        doi="10.5281/zenodo.20846064",
+        zenodo_record_id="20919553",
+        doi="10.5281/zenodo.20846063",  # concept DOI (resolves to latest version)
         description="Named identification structures with exact counterfactuals.",
         n_episodes=10_800,
         structures=(
@@ -90,26 +90,26 @@ _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
         name="dot-RegimeSwitch-v1",
         version="1.0.0",
         hf_repo_id="thummd/dot-RegimeSwitch-v1",
-        zenodo_record_id="20846074",
-        doi="10.5281/zenodo.20846074",
+        zenodo_record_id="20919599",
+        doi="10.5281/zenodo.20846073",  # concept DOI (resolves to latest version)
         description="Regime-switching SCMs (ITS generalization), break density in {2,3,5}.",
-        n_episodes=10_000,
+        n_episodes=9_999,
     ),
     "dot-Continuous-v1": SuiteMetadata(
         name="dot-Continuous-v1",
         version="1.0.0",
         hf_repo_id="thummd/dot-Continuous-v1",
-        zenodo_record_id="20845981",
-        doi="10.5281/zenodo.20845981",
+        zenodo_record_id="20919057",
+        doi="10.5281/zenodo.20845980",  # concept DOI (resolves to latest version)
         description="Continuous-time intervention windows, query offsets {1,2,3,5,10}.",
-        n_episodes=10_000,
+        n_episodes=9_999,
     ),
     "dot-Generic-100k": SuiteMetadata(
         name="dot-Generic-100k",
         version="1.0.0",
         hf_repo_id="thummd/dot-Generic-100k",
-        zenodo_record_id="20845983",
-        doi="10.5281/zenodo.20845983",
+        zenodo_record_id="20919177",
+        doi="10.5281/zenodo.20845982",  # concept DOI (resolves to latest version)
         description="100k trajectories from the full diverse prior (training scale).",
         n_episodes=100_000,
     ),
