@@ -65,5 +65,4 @@ python scripts/eval_submission.py --suite dot-Identifiability-v1 \
 ```
 
 Open a pull request adding your `submission.json` under `leaderboard/<suite>/`,
-or submit through the project's leaderboard space. Since the D&B track is
-single-blind, submissions may use real names.
+or submit through the project's leaderboard space.

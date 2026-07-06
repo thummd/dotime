@@ -50,7 +50,7 @@ print(suite)
 # dot-Identifiability-v1
 #   8 structures (back_door, observed_confounder, confounder_mediator,
 #                 front_door, mediator, instrumental_variable,
-#                 rct_no_confounding, unobserved_confounder)
+#                 bi_variate, unobserved_confounder)
 #   1 350 episodes per structure
 #   T = 200, N_max = 10
 ```
@@ -75,5 +75,6 @@ dotime-benchmark --suite dot-Identifiability-v1 --baseline VAR-OLS
 ## Where to go next
 
 - {doc}`benchmarks` — the four frozen suites and their evaluation protocol.
+- {doc}`custom_data` — running Do-Over-Time-PFN on your own dataset.
 - {doc}`troubleshoot` — common install / runtime issues.
 - {doc}`api` — the full API reference.

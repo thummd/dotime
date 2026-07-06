@@ -36,6 +36,10 @@ if TYPE_CHECKING:
 
 SCHEMA_VERSION = "1"
 
+# Structure labels renamed after the v1 suites were frozen; map old labels from
+# released shards to their current names at read time.
+_STRUCTURE_ALIASES = {"rct_no_confounding": "bi_variate"}
+
 _COLUMNS = (
     "scm_id",
     "structure",
@@ -113,7 +117,7 @@ def _row_to_episode(row: dict) -> Episode:
         y_true=y_true,
         query_target=torch.tensor(row["query_target"], dtype=torch.long),
         query_time=torch.tensor(row["query_time"], dtype=torch.float32),
-        structure=row["structure"] or None,
+        structure=_STRUCTURE_ALIASES.get(row["structure"], row["structure"]) or None,
         scm_id=int(row["scm_id"]) if int(row["scm_id"]) >= 0 else None,
         metadata={**metadata, "y_oracle": y_true},
     )

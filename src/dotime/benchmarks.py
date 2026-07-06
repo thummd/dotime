@@ -82,7 +82,7 @@ _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
             "front_door",
             "mediator",
             "instrumental_variable",
-            "rct_no_confounding",
+            "bi_variate",
             "unobserved_confounder",
         ),
     ),

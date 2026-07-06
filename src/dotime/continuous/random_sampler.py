@@ -256,7 +256,7 @@ class RandomContinuousExtendedPrior(ContinuousExtendedPrior):
         p_neural: float = 0.0,
         neural_hidden_dim: int = 8,
         neural_out_scale_range: tuple = (0.5, 2.0),
-        tscm_structure_placeholder: str = "rct_no_confounding",
+        tscm_structure_placeholder: str = "bi_variate",
         **kwargs,
     ) -> None:
         # Parent __init__ expects theta_range, sigma_range, weight_scale; we

@@ -22,7 +22,7 @@ suites:
     episodes_per_structure: 1350     # ~10.8k total across 8 structures
     # structure -> difficulty tier (1 = simplest identification, 3 = hardest/non-id)
     structures:
-      rct_no_confounding:      1
+      bi_variate:              1
       back_door:               1
       observed_confounder:     1
       mediator:                2

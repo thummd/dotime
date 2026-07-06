@@ -34,7 +34,7 @@ class TSCMStructure(Enum):
       Adjust via observed covariates that block all back-door paths.
     - Frontdoor: FRONT_DOOR, MEDIATOR
       Adjust via mediator when confounder is hidden.
-    - Trivially identified: RCT_NO_CONFOUNDING
+    - Trivially identified: BI_VARIATE
       No confounding => p(Y|do(A)) = p(Y|A).
     - IV: INSTRUMENTAL_VARIABLE
       X -> A -> Y with hidden confounding U -> A, U -> Y.
@@ -49,7 +49,15 @@ class TSCMStructure(Enum):
     BACK_DOOR = "back_door"  # X -> A, X -> Y, A -> Y (backdoor)
     FRONT_DOOR = "front_door"  # A -> M -> Y, U -> A, U -> Y (frontdoor)
     INSTRUMENTAL_VARIABLE = "instrumental_variable"  # X -> A -> Y, U -> A, U -> Y (IV)
-    RCT_NO_CONFOUNDING = "rct_no_confounding"  # A -> Y (trivially identified)
+    BI_VARIATE = "bi_variate"  # A -> Y (trivially identified)
+
+    @classmethod
+    def _missing_(cls, value):
+        # Legacy alias: the structure was called "rct_no_confounding" up to
+        # v0.1.1 and in the v1 released suites.
+        if value == "rct_no_confounding":
+            return cls.BI_VARIATE
+        return None
 
 
 # Default activations for random mechanism sampling
@@ -321,7 +329,7 @@ class TSCMSampler:
         topo = list(nx.topological_sort(G_0))
         return TemporalDAG(G_0, G_lags, self.max_lag, topo)
 
-    def _build_rct_no_confounding(self) -> TemporalDAG:
+    def _build_bi_variate(self) -> TemporalDAG:
         """A -> Y (inst). No confounding. Trivially identified: p(Y|do(A)) = p(Y|A)."""
         G_0 = nx.DiGraph()
         nodes = ["A", "Y"]
