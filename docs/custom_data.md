@@ -90,6 +90,60 @@ This reports the same pooled (and, if you set `Episode.structure`,
 per-structure) metrics as the frozen suites, and plugs directly into
 `scripts/eval_submission.py` for leaderboard-format output.
 
+## Single-stream data (interrupted time series)
+
+You do not need paired observational / interventional trajectories — the
+pairing in the suites is an artifact of the synthetic generator, which can
+produce both arms from the same SCM and noise. At predict time the model never
+reads `x_int`, and `x_obs` is causally masked from the intervention onset
+onward, so its actual input is the pre-event history plus the intervention
+spec and the query. A single real-world stream with an embedded event is
+therefore the native deployment shape (the interrupted-time-series setting the
+benchmark generalizes). Slice it per event:
+
+- **Pre-event window → context.** Everything before the onset is treated as
+  the undisturbed observational regime. The normalization stats come from this
+  window, so give it enough length (the encoder's default context is 200
+  steps).
+- **The event → `InterventionSpec`** — onset step, affected variable, imposed
+  level.
+- **Post-event observations → `y_true`.** After the event, the stream *is* the
+  interventional trajectory: the value actually observed at the query time is
+  a valid ground-truth target for the model's prediction.
+- **Pass the stream as both `x_obs` and `x_int`.** Pre-onset the two arms
+  coincide by definition, and the post-onset part of `x_obs` is masked away.
+  The one thing a single stream cannot give you is the *no-intervention*
+  counterfactual — and the model is not asked to predict that.
+
+```python
+onset, t_query = 480, 520   # event at step 480, evaluate 40 steps later
+j, k = 2, 4                 # intervened variable, outcome variable
+
+episode = Episode(
+    x_obs=stream,           # (T, N); masked from `onset` internally
+    x_int=stream,
+    intervention=InterventionSpec(
+        targets=[j], times=[onset],
+        intervention_type=InterventionType.HARD,
+        values=float(stream[onset, j]),      # the level the event imposed
+    ),
+    y_true=stream[t_query, k].reshape(1),    # what actually happened
+    query_target=torch.tensor([k]),
+    query_time=torch.tensor([float(t_query)]),
+)
+```
+
+For the resulting metrics to mean anything, three things must hold. The event
+has to be do-like — imposed exogenously (a policy rollout, a forced setpoint
+change, an A/B switch), not triggered by the system's own state, which
+confounds the realized outcome unless the drivers of the decision are
+themselves observed channels in the context. An event that is not a clamp on
+an observed variable should be encoded as an explicit 0/1 treatment column in
+the `(T, N)` matrix, with the event as `do(treatment := 1)`. And one event is
+one episode: a stream with *k* events yields *k* episodes, each of whose
+pre-onset windows should be clear of the previous event's transient, since the
+model reads everything before onset as the undisturbed regime.
+
 ## Constraints and caveats
 
 - **Input shape.** The model assumes a single intervention target per episode,
