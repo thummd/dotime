@@ -1,0 +1,90 @@
+{
+  "suite": "dot-Identifiability-v1",
+  "n_episodes": 10800,
+  "rows": [
+    {
+      "baseline": "Zero",
+      "n_episodes": 10800,
+      "n_queries": 10800,
+      "pooled_rmse": 0.7222750186920166,
+      "rmse_ci95": [
+        0.6923665050082797,
+        0.7527141689607144
+      ],
+      "dir_acc": 0.0,
+      "dir_n_valid": 8641
+    },
+    {
+      "baseline": "Mean",
+      "n_episodes": 10800,
+      "n_queries": 10800,
+      "pooled_rmse": 0.6176286935806274,
+      "rmse_ci95": [
+        0.5907968510743076,
+        0.6437988263115085
+      ],
+      "dir_acc": 0.6722601652145386,
+      "dir_n_valid": 8641
+    },
+    {
+      "baseline": "AR1",
+      "n_episodes": 10800,
+      "n_queries": 10800,
+      "pooled_rmse": 0.7436259388923645,
+      "rmse_ci95": [
+        0.7074074038337107,
+        0.784035661308727
+      ],
+      "dir_acc": 0.5962272882461548,
+      "dir_n_valid": 8641
+    },
+    {
+      "baseline": "VAR-OLS",
+      "n_episodes": 10800,
+      "n_queries": 10800,
+      "pooled_rmse": 0.6589543223381042,
+      "rmse_ci95": [
+        0.6331459962682414,
+        0.6857492300964108
+      ],
+      "dir_acc": 0.6447170376777649,
+      "dir_n_valid": 8641
+    },
+    {
+      "baseline": "BackDoorOLS",
+      "n_episodes": 10800,
+      "n_queries": 10800,
+      "pooled_rmse": 0.7759881615638733,
+      "rmse_ci95": [
+        0.740956072002347,
+        0.8123576915246334
+      ],
+      "dir_acc": 0.6461057662963867,
+      "dir_n_valid": 8641
+    },
+    {
+      "baseline": "IV2SLS",
+      "n_episodes": 10800,
+      "n_queries": 10800,
+      "pooled_rmse": 0.8783727884292603,
+      "rmse_ci95": [
+        0.7743693614200267,
+        0.9989519578580557
+      ],
+      "dir_acc": 0.6663580536842346,
+      "dir_n_valid": 8641
+    },
+    {
+      "baseline": "Oracle",
+      "n_episodes": 10800,
+      "n_queries": 10800,
+      "pooled_rmse": 0.0,
+      "rmse_ci95": [
+        0.0,
+        0.0
+      ],
+      "dir_acc": 1.0,
+      "dir_n_valid": 8641
+    }
+  ]
+}

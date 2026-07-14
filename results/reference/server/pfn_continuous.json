@@ -1,0 +1,51 @@
+{
+  "suite": "dot-Continuous-v1",
+  "PFN_int": {
+    "checkpoint": "/home/dennis/repos/do-over-time-pfn/checkpoints/s9ho_all_causal/do_over_time_pfn_best.pt",
+    "pooled_rmse": 4.071348190307617,
+    "rmse_ci95": [
+      2.1874624391297877,
+      5.58893468671841
+    ],
+    "dir_acc": 0.5089447498321533,
+    "n_episodes": 9999,
+    "per_structure": {
+      "back_door": {
+        "rmse": 5.61741828918457,
+        "dir_acc": 0.5028862357139587
+      },
+      "front_door": {
+        "rmse": 2.446599245071411,
+        "dir_acc": 0.5003403425216675
+      },
+      "instrumental_variable": {
+        "rmse": 3.490901231765747,
+        "dir_acc": 0.5235673189163208
+      }
+    }
+  },
+  "PFN_obs": {
+    "checkpoint": "/home/dennis/repos/do-over-time-pfn/checkpoints/s9ho_all_obs/do_over_time_pfn_best.pt",
+    "pooled_rmse": 2.9743103981018066,
+    "rmse_ci95": [
+      1.7466004503688386,
+      4.4998752066925825
+    ],
+    "dir_acc": 0.4926404058933258,
+    "n_episodes": 9999,
+    "per_structure": {
+      "back_door": {
+        "rmse": 2.1076860427856445,
+        "dir_acc": 0.4981324374675751
+      },
+      "front_door": {
+        "rmse": 2.1821677684783936,
+        "dir_acc": 0.4965963363647461
+      },
+      "instrumental_variable": {
+        "rmse": 4.163576126098633,
+        "dir_acc": 0.4832146465778351
+      }
+    }
+  }
+}

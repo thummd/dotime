@@ -1,0 +1,90 @@
+{
+  "suite": "dot-RegimeSwitch-v1",
+  "n_episodes": 9999,
+  "rows": [
+    {
+      "baseline": "Zero",
+      "n_episodes": 9999,
+      "n_queries": 9999,
+      "pooled_rmse": 1.8198052644729614,
+      "rmse_ci95": [
+        1.7491460138922779,
+        1.8903897144289117
+      ],
+      "dir_acc": 0.0,
+      "dir_n_valid": 8316
+    },
+    {
+      "baseline": "Mean",
+      "n_episodes": 9999,
+      "n_queries": 9999,
+      "pooled_rmse": 1.8403161764144897,
+      "rmse_ci95": [
+        1.7725876000966967,
+        1.9091396633866902
+      ],
+      "dir_acc": 0.49759501218795776,
+      "dir_n_valid": 8316
+    },
+    {
+      "baseline": "AR1",
+      "n_episodes": 9999,
+      "n_queries": 9999,
+      "pooled_rmse": 2.536000967025757,
+      "rmse_ci95": [
+        2.4345395742705405,
+        2.627270663065731
+      ],
+      "dir_acc": 0.49242424964904785,
+      "dir_n_valid": 8316
+    },
+    {
+      "baseline": "VAR-OLS",
+      "n_episodes": 9999,
+      "n_queries": 9999,
+      "pooled_rmse": 1.9184372425079346,
+      "rmse_ci95": [
+        1.8439715451619025,
+        1.9948350606636276
+      ],
+      "dir_acc": 0.5049302577972412,
+      "dir_n_valid": 8316
+    },
+    {
+      "baseline": "BackDoorOLS",
+      "n_episodes": 9999,
+      "n_queries": 9999,
+      "pooled_rmse": 1.8403162956237793,
+      "rmse_ci95": [
+        1.7725876004352976,
+        1.9091396651881956
+      ],
+      "dir_acc": 0.49759501218795776,
+      "dir_n_valid": 8316
+    },
+    {
+      "baseline": "IV2SLS",
+      "n_episodes": 9999,
+      "n_queries": 9999,
+      "pooled_rmse": 1.8403162956237793,
+      "rmse_ci95": [
+        1.7725876004352976,
+        1.9091396651881956
+      ],
+      "dir_acc": 0.49759501218795776,
+      "dir_n_valid": 8316
+    },
+    {
+      "baseline": "Oracle",
+      "n_episodes": 9999,
+      "n_queries": 9999,
+      "pooled_rmse": 0.0,
+      "rmse_ci95": [
+        0.0,
+        0.0
+      ],
+      "dir_acc": 1.0,
+      "dir_n_valid": 8316
+    }
+  ]
+}

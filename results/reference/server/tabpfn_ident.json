@@ -1,0 +1,11 @@
+{
+  "baseline": "TabPFN",
+  "suite": "dot-Identifiability-v1",
+  "n": 480,
+  "pooled_rmse": 0.6210245210231686,
+  "rmse_ci95": [
+    0.5288638573623803,
+    0.7109052047898018
+  ],
+  "dir_acc": 0.6657825112342834
+}

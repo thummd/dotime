@@ -1,0 +1,90 @@
+{
+  "suite": "dot-Generic-100k",
+  "n_episodes": 100000,
+  "rows": [
+    {
+      "baseline": "Zero",
+      "n_episodes": 100000,
+      "n_queries": 100000,
+      "pooled_rmse": 46.229366302490234,
+      "rmse_ci95": [
+        43.33146218918351,
+        48.918573764945776
+      ],
+      "dir_acc": 0.0,
+      "dir_n_valid": 62234
+    },
+    {
+      "baseline": "Mean",
+      "n_episodes": 100000,
+      "n_queries": 100000,
+      "pooled_rmse": 46.573917388916016,
+      "rmse_ci95": [
+        43.742053479296416,
+        49.218720028678796
+      ],
+      "dir_acc": 0.6600090265274048,
+      "dir_n_valid": 62234
+    },
+    {
+      "baseline": "AR1",
+      "n_episodes": 100000,
+      "n_queries": 100000,
+      "pooled_rmse": 49.44969177246094,
+      "rmse_ci95": [
+        46.3255152012046,
+        52.16217377056974
+      ],
+      "dir_acc": 0.6244014501571655,
+      "dir_n_valid": 62234
+    },
+    {
+      "baseline": "VAR-OLS",
+      "n_episodes": 100000,
+      "n_queries": 100000,
+      "pooled_rmse": 62.09830856323242,
+      "rmse_ci95": [
+        55.15929734086041,
+        73.30872965230928
+      ],
+      "dir_acc": 0.6456599235534668,
+      "dir_n_valid": 62234
+    },
+    {
+      "baseline": "BackDoorOLS",
+      "n_episodes": 100000,
+      "n_queries": 100000,
+      "pooled_rmse": 46.573917388916016,
+      "rmse_ci95": [
+        43.74205355667107,
+        49.21871999812399
+      ],
+      "dir_acc": 0.6600090265274048,
+      "dir_n_valid": 62234
+    },
+    {
+      "baseline": "IV2SLS",
+      "n_episodes": 100000,
+      "n_queries": 100000,
+      "pooled_rmse": 46.573917388916016,
+      "rmse_ci95": [
+        43.74205355667107,
+        49.21871999812399
+      ],
+      "dir_acc": 0.6600090265274048,
+      "dir_n_valid": 62234
+    },
+    {
+      "baseline": "Oracle",
+      "n_episodes": 100000,
+      "n_queries": 100000,
+      "pooled_rmse": 0.0,
+      "rmse_ci95": [
+        0.0,
+        0.0
+      ],
+      "dir_acc": 1.0,
+      "dir_n_valid": 62234
+    }
+  ]
+}

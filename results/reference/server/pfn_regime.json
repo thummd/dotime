@@ -1,0 +1,51 @@
+{
+  "suite": "dot-RegimeSwitch-v1",
+  "PFN_int": {
+    "checkpoint": "/home/dennis/repos/do-over-time-pfn/checkpoints/s9ho_all_causal/do_over_time_pfn_best.pt",
+    "pooled_rmse": 1.9945849180221558,
+    "rmse_ci95": [
+      1.9254764637976534,
+      2.066400971827589
+    ],
+    "dir_acc": 0.4913419783115387,
+    "n_episodes": 9999,
+    "per_structure": {
+      "regime_2": {
+        "rmse": 1.9881454706192017,
+        "dir_acc": 0.4796954393386841
+      },
+      "regime_3": {
+        "rmse": 1.9700539112091064,
+        "dir_acc": 0.494577020406723
+      },
+      "regime_5": {
+        "rmse": 2.0251595973968506,
+        "dir_acc": 0.4996418356895447
+      }
+    }
+  },
+  "PFN_obs": {
+    "checkpoint": "/home/dennis/repos/do-over-time-pfn/checkpoints/s9ho_all_obs/do_over_time_pfn_best.pt",
+    "pooled_rmse": 2.0721435546875,
+    "rmse_ci95": [
+      1.9966348893670076,
+      2.148470126486213
+    ],
+    "dir_acc": 0.5056517720222473,
+    "n_episodes": 9999,
+    "per_structure": {
+      "regime_2": {
+        "rmse": 2.0109686851501465,
+        "dir_acc": 0.515591025352478
+      },
+      "regime_3": {
+        "rmse": 2.0737509727478027,
+        "dir_acc": 0.4967462122440338
+      },
+      "regime_5": {
+        "rmse": 2.130000114440918,
+        "dir_acc": 0.5046561360359192
+      }
+    }
+  }
+}

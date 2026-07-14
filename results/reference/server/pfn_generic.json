@@ -1,0 +1,25 @@
+{
+  "suite": "dot-Generic-100k",
+  "PFN_int": {
+    "checkpoint": "/home/dennis/repos/do-over-time-pfn/checkpoints/s9ho_all_causal/do_over_time_pfn_best.pt",
+    "pooled_rmse": 48.19132614135742,
+    "rmse_ci95": [
+      45.311819763722205,
+      50.84757247089376
+    ],
+    "dir_acc": 0.660973072052002,
+    "n_episodes": 100000,
+    "per_structure": {}
+  },
+  "PFN_obs": {
+    "checkpoint": "/home/dennis/repos/do-over-time-pfn/checkpoints/s9ho_all_obs/do_over_time_pfn_best.pt",
+    "pooled_rmse": 46.31178665161133,
+    "rmse_ci95": [
+      43.415230591601144,
+      49.080791150420495
+    ],
+    "dir_acc": 0.6213805675506592,
+    "n_episodes": 100000,
+    "per_structure": {}
+  }
+}
