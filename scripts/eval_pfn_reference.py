@@ -128,9 +128,10 @@ def run(model, episodes):
     boot = np.array([np.sqrt(sse[i].sum() / cnt[i].sum())
                      for i in (rng.integers(0, m, size=(1000, m)))])
     ci = [float(np.quantile(boot, 0.025)), float(np.quantile(boot, 0.975))]
-    # per-structure direction accuracy
+    # per-structure direction accuracy (skip unstructured suites, e.g. Generic)
     per_struct = {}
-    for st in sorted(set(structs)):
+    uniq = sorted(s for s in set(structs) if s is not None)
+    for st in uniq:
         idx = [i for i, s in enumerate(structs) if s == st]
         p = np.concatenate([ep_pred[i] for i in idx]); t = np.concatenate([ep_tgt[i] for i in idx])
         d = direction_accuracy(torch.from_numpy(p), torch.from_numpy(t))
@@ -164,10 +165,12 @@ def main():
         model = PFNRef(ck, device=args.device, observational=obs)
         r = run(model, episodes)
         out[tag] = {"checkpoint": ck, **r}
+        _da = r['dir_acc'] if r['dir_acc'] is not None else float('nan')
         print(f"{tag}: RMSE={r['pooled_rmse']:.3f} CI[{r['rmse_ci95'][0]:.3f},{r['rmse_ci95'][1]:.3f}] "
-              f"dir_acc={r['dir_acc']:.3f}  ({time.time()-t0:.0f}s)")
+              f"dir_acc={_da:.3f}  ({time.time()-t0:.0f}s)")
         for st, v in r["per_structure"].items():
-            print(f"    {st:24s} rmse={v['rmse']:.3f} dir={v['dir_acc']:.3f}")
+            vd = v['dir_acc'] if v['dir_acc'] is not None else float('nan')
+            print(f"    {st:24s} rmse={v['rmse']:.3f} dir={vd:.3f}")
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(json.dumps(out, indent=2))
