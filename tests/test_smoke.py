@@ -143,3 +143,27 @@ def test_oracle_is_exact_on_loaded_suite(tmp_path):
     # summary() and to_dict() must work (the CLI calls both).
     assert "Oracle" in results.summary()
     assert results.to_dict()["baseline"] == "Oracle"
+
+
+def test_scale_beyond_default_bounds():
+    """N_max/K_max are config bounds, not architectural limits.
+
+    Backs the Limitations claim that the generator scales past the frozen
+    suites' DEFAULT_CONFIG (N<=10, K<=3) via a config override.
+    """
+    import warnings
+
+    from dotime import DoTime
+    from dotime.utils import DEFAULT_CONFIG
+
+    cfg = {**DEFAULT_CONFIG, "N_max": 60, "K_max": 8}
+    sizes = []
+    for seed in range(8):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            x_obs, x_int, _, _ = DoTime(config=cfg, seed=seed).generate_pair(T=40)
+        assert x_obs.shape[0] == 40
+        assert x_obs.shape == x_int.shape
+        sizes.append(x_obs.shape[1])
+    # the override actually widens the sampled graph beyond the default cap
+    assert max(sizes) > 10

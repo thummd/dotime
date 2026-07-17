@@ -1,0 +1,91 @@
+{
+  "suite": "dot-Identifiability-v1",
+  "PFN_int": {
+    "checkpoint": "/home/dennis/repos/do-over-time-pfn/checkpoints/s9ho_all_causal/do_over_time_pfn_best.pt",
+    "pooled_rmse": 0.6566478610038757,
+    "rmse_ci95": [
+      0.5659303960517266,
+      0.7510326072437911
+    ],
+    "dir_acc": 0.6366047859191895,
+    "n_episodes": 480,
+    "per_structure": {
+      "back_door": {
+        "rmse": 0.9277462959289551,
+        "dir_acc": 0.5714285969734192
+      },
+      "bi_variate": {
+        "rmse": 0.6341849565505981,
+        "dir_acc": 0.6595744490623474
+      },
+      "confounder_mediator": {
+        "rmse": 0.4089285731315613,
+        "dir_acc": 0.6521739363670349
+      },
+      "front_door": {
+        "rmse": 0.38013842701911926,
+        "dir_acc": 0.6136363744735718
+      },
+      "instrumental_variable": {
+        "rmse": 0.7653387784957886,
+        "dir_acc": 0.7200000286102295
+      },
+      "mediator": {
+        "rmse": 0.5735273361206055,
+        "dir_acc": 0.5531914830207825
+      },
+      "observed_confounder": {
+        "rmse": 0.8326759338378906,
+        "dir_acc": 0.6904761791229248
+      },
+      "unobserved_confounder": {
+        "rmse": 0.5165593028068542,
+        "dir_acc": 0.6346153616905212
+      }
+    }
+  },
+  "PFN_obs": {
+    "checkpoint": "/home/dennis/repos/do-over-time-pfn/checkpoints/s9ho_all_obs/do_over_time_pfn_best.pt",
+    "pooled_rmse": 0.6460667848587036,
+    "rmse_ci95": [
+      0.5611233257374983,
+      0.7297284818307717
+    ],
+    "dir_acc": 0.5543766617774963,
+    "n_episodes": 480,
+    "per_structure": {
+      "back_door": {
+        "rmse": 0.9333069324493408,
+        "dir_acc": 0.4693877696990967
+      },
+      "bi_variate": {
+        "rmse": 0.7408420443534851,
+        "dir_acc": 0.4680851101875305
+      },
+      "confounder_mediator": {
+        "rmse": 0.45468491315841675,
+        "dir_acc": 0.5652173757553101
+      },
+      "front_door": {
+        "rmse": 0.4502459168434143,
+        "dir_acc": 0.5681818127632141
+      },
+      "instrumental_variable": {
+        "rmse": 0.8285596966743469,
+        "dir_acc": 0.6000000238418579
+      },
+      "mediator": {
+        "rmse": 0.4186887741088867,
+        "dir_acc": 0.7234042286872864
+      },
+      "observed_confounder": {
+        "rmse": 0.6968647241592407,
+        "dir_acc": 0.380952388048172
+      },
+      "unobserved_confounder": {
+        "rmse": 0.403011679649353,
+        "dir_acc": 0.6346153616905212
+      }
+    }
+  }
+}
