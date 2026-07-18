@@ -42,7 +42,9 @@
         "rmse": 0.5165593028068542,
         "dir_acc": 0.6346153616905212
       }
-    }
+    },
+    "dir_n_valid": 377,
+    "dir_acc_se": 0.024771589595705603
   },
   "PFN_obs": {
     "checkpoint": "/home/dennis/repos/do-over-time-pfn/checkpoints/s9ho_all_obs/do_over_time_pfn_best.pt",
@@ -86,6 +88,8 @@
         "rmse": 0.403011679649353,
         "dir_acc": 0.6346153616905212
       }
-    }
+    },
+    "dir_n_valid": 377,
+    "dir_acc_se": 0.025598573124915768
   }
 }

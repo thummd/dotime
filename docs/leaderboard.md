@@ -34,7 +34,7 @@ Generic RMSE is on the raw (un-normalized) scale, hence the larger magnitudes.
 The PFN rows use the general `s9ho_all_causal` / `s9ho_all_obs` checkpoints
 (HF `thummd/do-over-time-pfn`) evaluated with `scripts/eval_pfn_reference.py`
 (interpolation causal-masking; observational mode zeroes the intervention
-features). Direction-accuracy standard errors are ≤ 0.01 on every full-suite row;
+features). Per-baseline NMSE on Identifiability (the near-saturation figures cited in the paper) ships as `results/reference/nmse_identifiability.json`. Direction-accuracy standard errors are ≤ 0.01 on every full-suite row;
 a constant prediction (Zero) has no sign and scores 0 by convention.
 
 Foundation-model int-vs-obs comparisons (TabPFN, Chronos-2) and the

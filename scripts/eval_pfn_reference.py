@@ -136,7 +136,10 @@ def run(model, episodes):
         p = np.concatenate([ep_pred[i] for i in idx]); t = np.concatenate([ep_tgt[i] for i in idx])
         d = direction_accuracy(torch.from_numpy(p), torch.from_numpy(t))
         per_struct[st] = {"rmse": float(np.sqrt(np.mean((p - t) ** 2))), "dir_acc": d["accuracy"]}
+    import math as _m
+    _se = _m.sqrt(da["accuracy"]*(1-da["accuracy"])/da["n_valid"]) if da["n_valid"] else float("nan")
     return {"pooled_rmse": rmse, "rmse_ci95": ci, "dir_acc": da["accuracy"],
+            "dir_n_valid": da["n_valid"], "dir_acc_se": _se,
             "n_episodes": len(ep_pred), "per_structure": per_struct}
 
 

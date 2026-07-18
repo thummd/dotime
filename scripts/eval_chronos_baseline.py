@@ -114,7 +114,9 @@ def main():
         se = (preds - tgts) ** 2
         boot = np.array([np.sqrt(se[rng.integers(0, len(se), len(se))].mean()) for _ in range(1000)])
         ci = [float(np.quantile(boot, 0.025)), float(np.quantile(boot, 0.975))]
-        out[tag] = {"pooled_rmse": rmse, "rmse_ci95": ci, "dir_acc": da["accuracy"]}
+        _nv = da["n_valid"]; _se = (da["accuracy"]*(1-da["accuracy"])/_nv)**0.5 if _nv else float("nan")
+        out[tag] = {"pooled_rmse": rmse, "rmse_ci95": ci, "dir_acc": da["accuracy"],
+                    "dir_n_valid": _nv, "dir_acc_se": _se}
         print(f"{tag}  RMSE={rmse:.3f} CI[{ci[0]:.3f},{ci[1]:.3f}] dir_acc={da['accuracy']:.3f} "
               f"({time.time()-t0:.0f}s)")
     if args.out:
