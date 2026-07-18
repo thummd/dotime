@@ -1,0 +1,141 @@
+{
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "rows": [
+    {
+      "label": "Warfarin (concentration)",
+      "mech": "linear",
+      "n_seeds": 5,
+      "rmse_mean": 3.490572118759155,
+      "rmse_std": 0.039886222476427285,
+      "naive_rmse_mean": 3.5085246562957764,
+      "naive_rmse_std": 0.0,
+      "lift_mean": 0.005116833796338484,
+      "lift_std": 0.011368374568739181,
+      "pearson_mean": 0.49358353730832966,
+      "pearson_std": 0.6865873964442964
+    },
+    {
+      "label": "Warfarin (PD response)",
+      "mech": "linear",
+      "n_seeds": 5,
+      "rmse_mean": 25.209155654907228,
+      "rmse_std": 0.4415778639002705,
+      "naive_rmse_mean": 25.248294830322266,
+      "naive_rmse_std": 0.0,
+      "lift_mean": 0.0015501710384035264,
+      "lift_std": 0.017489413319506705,
+      "pearson_mean": -0.08993748877099457,
+      "pearson_std": 0.5295280311876627
+    },
+    {
+      "label": "Chamber-WT (rpm_in)",
+      "mech": "linear",
+      "n_seeds": 5,
+      "rmse_mean": 660.8347534179687,
+      "rmse_std": 4.377776999362648,
+      "naive_rmse_mean": 1264.77490234375,
+      "naive_rmse_std": 0.0,
+      "lift_mean": 0.47750801174708785,
+      "lift_std": 0.003461309195217423,
+      "pearson_mean": 0.12054921575938135,
+      "pearson_std": 0.16790522378141842
+    },
+    {
+      "label": "Chamber-WT (current_in)",
+      "mech": "linear",
+      "n_seeds": 5,
+      "rmse_mean": 77.11942443847656,
+      "rmse_std": 0.2686922547855304,
+      "naive_rmse_mean": 159.82688903808594,
+      "naive_rmse_std": 0.0,
+      "lift_mean": 0.5174815395418265,
+      "lift_std": 0.0016811454968725583,
+      "pearson_mean": 0.08067117026493092,
+      "pearson_std": 0.34650109687176106
+    },
+    {
+      "label": "Chamber-WT (pressure_downwind)",
+      "mech": "linear",
+      "n_seeds": 5,
+      "rmse_mean": 3.874339485168457,
+      "rmse_std": 0.023228542240573597,
+      "naive_rmse_mean": 7.779247760772705,
+      "naive_rmse_std": 0.0,
+      "lift_mean": 0.5019647651916896,
+      "lift_std": 0.0029859625191146007,
+      "pearson_mean": 0.008134787401337247,
+      "pearson_std": 0.0526991143675199
+    },
+    {
+      "label": "Warfarin (concentration)",
+      "mech": "mixed",
+      "n_seeds": 5,
+      "rmse_mean": 3.5336813926696777,
+      "rmse_std": 0.05728263241369704,
+      "naive_rmse_mean": 3.5085246562957764,
+      "naive_rmse_std": 0.0,
+      "lift_mean": -0.007170175169999032,
+      "lift_std": 0.01632670082876795,
+      "pearson_mean": -0.16475023192515154,
+      "pearson_std": 0.8116254123811989
+    },
+    {
+      "label": "Warfarin (PD response)",
+      "mech": "mixed",
+      "n_seeds": 5,
+      "rmse_mean": 25.057647705078125,
+      "rmse_std": 0.6293136874029512,
+      "naive_rmse_mean": 25.248294830322266,
+      "naive_rmse_std": 0.0,
+      "lift_mean": 0.007550891120582942,
+      "lift_std": 0.02492499757437753,
+      "pearson_mean": -0.049722365008974465,
+      "pearson_std": 0.5684527705922761
+    },
+    {
+      "label": "Chamber-WT (rpm_in)",
+      "mech": "mixed",
+      "n_seeds": 5,
+      "rmse_mean": 659.2418823242188,
+      "rmse_std": 2.3747523959865906,
+      "naive_rmse_mean": 1264.77490234375,
+      "naive_rmse_std": 0.0,
+      "lift_mean": 0.47876742248555065,
+      "lift_std": 0.0018776087283088533,
+      "pearson_mean": 0.21140656280720935,
+      "pearson_std": 0.3725547051166654
+    },
+    {
+      "label": "Chamber-WT (current_in)",
+      "mech": "mixed",
+      "n_seeds": 5,
+      "rmse_mean": 77.04025268554688,
+      "rmse_std": 0.14121291741556766,
+      "naive_rmse_mean": 159.82688903808594,
+      "naive_rmse_std": 0.0,
+      "lift_mean": 0.5179768989485332,
+      "lift_std": 0.0008835366706156365,
+      "pearson_mean": -0.15902227750531245,
+      "pearson_std": 0.008028781209029954
+    },
+    {
+      "label": "Chamber-WT (pressure_downwind)",
+      "mech": "mixed",
+      "n_seeds": 5,
+      "rmse_mean": 3.867984962463379,
+      "rmse_std": 0.011983105072648149,
+      "naive_rmse_mean": 7.779247760772705,
+      "naive_rmse_std": 0.0,
+      "lift_mean": 0.5027816208698339,
+      "lift_std": 0.001540393806850292,
+      "pearson_mean": 0.008813255885125191,
+      "pearson_std": 0.014223666987385775
+    }
+  ]
+}
