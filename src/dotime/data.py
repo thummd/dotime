@@ -16,9 +16,9 @@ import torch
 from dotime.extended import ExtendedDoTime
 from dotime.normalization import normalize_batch
 
-# Per-TSCM-structure canonical query offset range (matches the per-structure
-# eval pipeline in scripts/analyze_s9ho.py and the per-structure training
-# launcher run_sanity9_hardened_oscillatory.sh).
+# Per-TSCM-structure canonical query offset range. Matches the protocol behind
+# the paper's structure-matched gap tables (results/reference/structure_matched/;
+# the training/eval drivers live in the upstream do-over-time-pfn codebase).
 PER_STRUCT_OFFSET_RANGE: dict[str, tuple[int, int]] = {
     "back_door": (0, 0),
     "front_door": (1, 5),
