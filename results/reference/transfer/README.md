@@ -12,7 +12,7 @@ applied zero-shot to two real interventional systems:
 Headline (linear, from the aggregate): chamber `rpm_in` RMSE 660.8 vs. naive
 last-value 1264.8 (+47.8% ± 0.3% lift over 5 seeds), per-episode Pearson
 r = 0.12 ± 0.17; Warfarin concentration Pearson r = 0.49 ± 0.69 (4/5 seeds in
-[0.72, 0.89], one seed at −0.88).
+[0.72, 0.89], one seed at −0.87).
 
 Provenance: produced by the FMSD/continuous-time line (companion work
 thumm2026towards); the full transfer pipeline lives in that codebase. These JSONs

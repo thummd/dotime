@@ -131,4 +131,5 @@ def test_stability_retries_removes_divergence():
     baseline = zeroed_fraction(0)
     hardened = zeroed_fraction(20)
     assert baseline > 0.10, f"expected sizable v1.0.0 divergence, got {baseline:.2%}"
-    assert hardened < 0.02, f"retries should near-eliminate divergence, got {hardened:.2%}"
+    # deterministic build (fixed seed): retries=20 fully eliminates divergence.
+    assert hardened == 0.0, f"retries should eliminate divergence, got {hardened:.2%}"
