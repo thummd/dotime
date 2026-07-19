@@ -36,15 +36,30 @@ def make_episode(spec: dict):
     from dotime.benchmarks import episode_from_pair, episode_from_sample
 
     kind, seed, idx, t_len = spec["kind"], spec["seed"], spec["idx"], spec["T"]
+    # ``stability_retries``: on a diverged (all-zero) generic/regime episode,
+    # resample with a deterministic seed perturbation up to this many times.
+    # Default 0 preserves the exact v1.0.0 output; the hardened build sets it
+    # >0 so the generic prior no longer ships ~30% zeroed episodes (the
+    # identifiability path already retries internally, hence its ~5% residual).
+    retries = int(spec.get("stability_retries", 0))
     # Seed the GLOBAL torch RNG per episode too: parts of the prior (e.g. the
     # Beta edge-probability draw) use the global generator rather than the
     # instance one, so this is what makes the v2 output independent of worker
     # count / processing order.
     _torch.manual_seed(seed)
+
+    def _diverged(xo, xi):
+        return float(xo.abs().max()) == 0.0 and float(xi.abs().max()) == 0.0
+
     if kind == "generic":
         from dotime import DoTime
 
-        x_obs, x_int, iv, _ = DoTime(seed=seed).generate_pair(T=t_len)
+        for attempt in range(retries + 1):
+            s = seed if attempt == 0 else seed * 100003 + attempt
+            _torch.manual_seed(s)
+            x_obs, x_int, iv, _ = DoTime(seed=s).generate_pair(T=t_len)
+            if attempt == retries or not _diverged(x_obs, x_int):
+                break
         return episode_from_pair(x_obs, x_int, iv, scm_id=idx, metadata={"tier": 1})
     if kind == "regime":
         from dotime import DoTime
@@ -87,11 +102,18 @@ def make_episode(spec: dict):
 def episode_specs(cfg: dict, suite_seed: int, scale: float) -> list[dict]:
     """Build the per-episode spec list (deterministic seeds) for a suite config."""
     gen, t_len = cfg["generator"], cfg.get("T", 200)
+    retries = int(cfg.get("stability_retries", 0))
     specs: list[dict] = []
     if gen == "generic":
         for i in range(scaled(cfg["n_episodes"], scale)):
             specs.append(
-                {"kind": "generic", "idx": i, "seed": episode_seed(suite_seed, i), "T": t_len}
+                {
+                    "kind": "generic",
+                    "idx": i,
+                    "seed": episode_seed(suite_seed, i),
+                    "T": t_len,
+                    "stability_retries": retries,
+                }
             )
     elif gen == "regime":
         densities = {int(k): int(v) for k, v in cfg["densities"].items()}

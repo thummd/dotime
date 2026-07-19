@@ -100,3 +100,35 @@ def test_identifiability_covers_all_eight_structures(tmp_path):
     suite_dir = next((tmp_path / "T").glob("dot-Identifiability-v1*"))
     manifest = json.loads((suite_dir / "manifest.json").read_text())
     assert len(manifest["structures"]) == 8
+
+
+def test_stability_retries_removes_divergence():
+    """The opt-in stability_retries flag resamples diverged generic episodes.
+
+    v1.0.0 (retries=0) ships ~30% all-zero (diverged) generic episodes; the
+    hardened build (retries>0) should reduce that to ~0 while leaving the
+    retries=0 output byte-identical to the release.
+    """
+    import warnings
+
+    from dotime._build import episode_specs, make_episode
+
+    cfg = {"generator": "generic", "n_episodes": 300, "T": 200, "seed": 20260714}
+
+    def zeroed_fraction(retries):
+        c = {**cfg, "stability_retries": retries}
+        specs = episode_specs(c, c["seed"], 1.0)[:200]
+        assert specs[0].get("stability_retries") == retries
+        z = 0
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            for sp in specs:
+                ep = make_episode(sp)
+                if float(ep.x_obs.abs().max()) == 0 and float(ep.x_int.abs().max()) == 0:
+                    z += 1
+        return z / len(specs)
+
+    baseline = zeroed_fraction(0)
+    hardened = zeroed_fraction(20)
+    assert baseline > 0.10, f"expected sizable v1.0.0 divergence, got {baseline:.2%}"
+    assert hardened < 0.02, f"retries should near-eliminate divergence, got {hardened:.2%}"
