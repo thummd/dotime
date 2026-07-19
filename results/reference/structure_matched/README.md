@@ -28,3 +28,12 @@ design), seed 42, T=200, n_batches=60, offset (0,0). Finding: the gap is small
 and similar on both (+0.028±0.028 and +0.032±0.024) — it does **not** vanish
 under non-identifiability. Both structures are near-saturated in direction
 accuracy (int/obs ≈ 0.89–0.92), which compresses the achievable gap.
+
+## Lagged replication (reviewer follow-up)
+
+`s9ho_lag/lag_eval.json` — the same structure-matched int/obs protocol with
+**lagged edges enabled in both training and evaluation** (checkpoints
+`s9ho_{bd,fd,iv}_{causal,obs}_lag`, seed 42, T=200, n_batches=60). The gap
+survives DoTime's temporal axis: back_door +0.116±0.026, front_door
++0.042±0.023, instrumental_variable +0.055±0.023, pooled +0.071 (vs +0.084
+in the primary no-lag study at the same protocol point).
