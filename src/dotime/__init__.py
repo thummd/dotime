@@ -29,7 +29,7 @@ from __future__ import annotations
 import importlib
 from typing import TYPE_CHECKING
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 # --------------------------------------------------------------------------- #
 # Eager core (core runtime deps only)

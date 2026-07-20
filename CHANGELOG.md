@@ -6,6 +6,28 @@ All notable changes to `dotime` are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-07-20
+
+### Added
+- Reference evaluation harness now ships with the package as
+  `dotime.reference`, exposed as four console scripts so the published
+  reference tables reproduce from a plain `pip install` (they previously lived
+  in `scripts/`, which is not part of the wheel):
+  `dotime-eval-reference`, `dotime-eval-pfn`, `dotime-eval-tabpfn`,
+  `dotime-eval-chronos`. The leaderboard submission path moved the same way:
+  `scripts/eval_submission.py` is now `dotime-eval-submission`. The TabPFN and Chronos evaluators need the
+  `baselines` extra; their imports are deferred so the package stays
+  importable without it.
+- `Results` now reports the uncertainty on direction accuracy: `dir_acc_se`
+  (binomial standard error, exact because the suites score one query per
+  episode) and `dir_n_valid` (queries with a scoreable sign) appear in
+  `pooled`, in `per_structure`, in `to_dict()`, and in `summary()`.
+- `scripts/build_release.py --stability-retries R` overrides the per-suite
+  `stability_retries`, deterministically resampling numerically diverged
+  episodes instead of releasing them as all-zero. The override is folded into
+  the recorded `config_hash`, so a hardened rebuild is never mistaken for the
+  frozen v1 suites.
+
 ### Changed
 - Renamed the `rct_no_confounding` identification structure to `bi_variate`.
   The old string still loads: `TSCMStructure("rct_no_confounding")` resolves to

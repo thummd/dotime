@@ -12,7 +12,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "dotime"
-version = "0.1.1"
+version = "0.1.2"
 description = "Synthetic temporal structural causal models with interventions for causal foundation models"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -153,6 +153,12 @@ Changelog     = "https://github.com/thummd/dotime/blob/main/CHANGELOG.md"
 [project.scripts]
 dotime-generate  = "dotime.cli:generate_main"
 dotime-benchmark = "dotime.cli:benchmark_main"
+# Reference evaluation harness (reproduces the released reference results).
+dotime-eval-submission = "dotime.reference.submission:main"
+dotime-eval-reference  = "dotime.reference.reference_table:main"
+dotime-eval-pfn       = "dotime.reference.pfn:main"
+dotime-eval-tabpfn    = "dotime.reference.tabpfn:main"
+dotime-eval-chronos   = "dotime.reference.chronos:main"
 
 
 # ---------------------------------------------------------------------------
@@ -165,6 +171,7 @@ packages = ["src/dotime"]
 [tool.hatch.build.targets.sdist]
 include = [
     "/src",
+    "/scripts",
     "/tests",
     "/docs",
     "/README.md",

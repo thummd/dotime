@@ -10,6 +10,13 @@
 # columns. Tiers increase with #variables, lag depth, confounding, and
 # intervention-window complexity.
 
+# Stability: a small fraction of generic/regime SCMs diverge numerically and are
+# released as all-zero episodes. Setting `stability_retries: R` on a suite (or
+# passing `--stability-retries R` to build_release.py) deterministically
+# resamples such an episode up to R times instead. The frozen v1 suites were
+# built with 0 -- keep it 0 to reproduce them; use ~20 for a divergence-free
+# rebuild (which produces a *different*, non-v1 suite).
+
 seed: 20260719          # global base seed (per-suite seeds derive from this)
 T: 200                  # default trajectory length
 

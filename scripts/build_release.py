@@ -139,12 +139,26 @@ def main(argv: list[str] | None = None) -> int:
         "Generation uses per-episode deterministic seeding, so the output is "
         "identical regardless of the worker count.",
     )
+    parser.add_argument(
+        "--stability-retries",
+        type=int,
+        default=None,
+        help="Override each suite's stability_retries. On a diverged (all-zero) "
+        "generic/regime episode, resample it deterministically up to this many "
+        "times instead of releasing the zeroed episode. 0 reproduces the frozen "
+        "v1 suites; ~20 drives the divergence rate to zero.",
+    )
     args = parser.parse_args(argv)
     workers = args.workers if args.workers > 0 else max(1, (os.cpu_count() or 2) - 1)
 
     config_text = args.config.read_text()
     config = yaml.safe_load(config_text)
-    config_hash = hashlib.sha256(config_text.encode()).hexdigest()[:16]
+    # A CLI override changes what is generated, so it has to change the
+    # provenance hash too -- otherwise two different builds claim one hash.
+    hash_text = config_text
+    if args.stability_retries is not None:
+        hash_text += f"\n# --stability-retries={args.stability_retries}\n"
+    config_hash = hashlib.sha256(hash_text.encode()).hexdigest()[:16]
     base_seed = int(config["seed"])
 
     stamp = args.timestamp or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -158,10 +172,12 @@ def main(argv: list[str] | None = None) -> int:
         if name not in suites:
             raise SystemExit(f"unknown suite {name!r}; available: {list(suites)}")
         cfg = suites[name]
+        if args.stability_retries is not None:
+            cfg = {**cfg, "stability_retries": args.stability_retries}
         seed = base_seed + 1000 * (offset + 1)
         print(
             f"[build_release] generating {name} (scale={args.scale}, seed={seed}, "
-            f"workers={workers}) ...",
+            f"workers={workers}, stability_retries={cfg.get('stability_retries', 0)}) ...",
             flush=True,
         )
         with warnings.catch_warnings():

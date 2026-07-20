@@ -5,9 +5,9 @@ Runs the registered CPU baselines (and, if a checkpoint is given, the
 Do-Over-Time-PFN) over a full suite, reporting pooled RMSE and direction
 accuracy with an episode-cluster bootstrap CI on the pooled RMSE.
 
-    python scripts/eval_reference_table.py --suite dot-Identifiability-v1 \
-        --out results/reference/ident.json
+    dotime-eval-reference --suite dot-Identifiability-v1 --out ident.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -29,15 +29,15 @@ def _pooled_rmse(pred: np.ndarray, tgt: np.ndarray) -> float:
     return float(np.sqrt(np.mean((pred - tgt) ** 2)))
 
 
-def _cluster_bootstrap_rmse(ep_pred, ep_tgt, n=1000, seed=0):
+def _cluster_bootstrap_rmse(ep_pred, ep_tgt, n_boot=1000, seed=0):
     """Episode-cluster bootstrap CI for pooled RMSE."""
     rng = np.random.default_rng(seed)
     m = len(ep_pred)
     # precompute per-episode summed sq error and count for fast pooling
-    sse = np.array([float(np.sum((p - t) ** 2)) for p, t in zip(ep_pred, ep_tgt)])
+    sse = np.array([float(np.sum((p - t) ** 2)) for p, t in zip(ep_pred, ep_tgt, strict=True)])
     cnt = np.array([len(t) for t in ep_tgt], dtype=np.float64)
-    boot = np.empty(n)
-    for b in range(n):
+    boot = np.empty(n_boot)
+    for b in range(n_boot):
         idx = rng.integers(0, m, size=m)
         boot[b] = np.sqrt(sse[idx].sum() / cnt[idx].sum())
     lo, hi = np.quantile(boot, [0.025, 0.975])
@@ -82,7 +82,7 @@ def main():
 
     t0 = time.time()
     episodes = list(load_benchmark(args.suite))
-    print(f"[{args.suite}] loaded {len(episodes)} episodes in {time.time()-t0:.1f}s")
+    print(f"[{args.suite}] loaded {len(episodes)} episodes in {time.time() - t0:.1f}s")
 
     rows = []
     todo = list(args.baselines)
@@ -97,9 +97,11 @@ def main():
             rows.append({"baseline": name, "error": str(ex)})
             continue
         rows.append(row)
-        print(f"  {name:14s} RMSE={row['pooled_rmse']:8.3f} "
-              f"[{row['rmse_ci95'][0]:.3f},{row['rmse_ci95'][1]:.3f}] "
-              f"dir_acc={row['dir_acc']:.3f}  ({time.time()-t:.1f}s)")
+        print(
+            f"  {name:14s} RMSE={row['pooled_rmse']:8.3f} "
+            f"[{row['rmse_ci95'][0]:.3f},{row['rmse_ci95'][1]:.3f}] "
+            f"dir_acc={row['dir_acc']:.3f}  ({time.time() - t:.1f}s)"
+        )
 
     out = {"suite": args.suite, "n_episodes": len(episodes), "rows": rows}
     if args.out:

@@ -14,8 +14,8 @@ synthetic suites; intervention-unaware baselines (`Zero`, `Mean`, `AR1`,
 ## Reference results (release scale)
 
 Pooled RMSE ± bootstrap std (direction accuracy in parentheses) on the **full
-frozen suites** — 10,800 / 9,999 / 9,999 / 100,000 episodes. Reproduce with
-`scripts/eval_reference_table.py`; the backing JSONs (with 95% episode-cluster
+frozen suites** — 10,800 / 9,999 / 9,999 / 100,000 episodes. Reproduce with the
+`dotime-eval-reference` console script (ships with the package); the backing JSONs (with 95% episode-cluster
 bootstrap CIs) live under [`results/reference/`](https://github.com/thummd/dotime/tree/main/results/reference).
 
 | Baseline | Identifiability | RegimeSwitch | Continuous | Generic |
@@ -32,7 +32,7 @@ bootstrap CIs) live under [`results/reference/`](https://github.com/thummd/dotim
 
 Generic RMSE is on the raw (un-normalized) scale, hence the larger magnitudes.
 The PFN rows use the general `s9ho_all_causal` / `s9ho_all_obs` checkpoints
-(HF `thummd/do-over-time-pfn`) evaluated with `scripts/eval_pfn_reference.py`
+(HF `thummd/do-over-time-pfn`) evaluated with `dotime-eval-pfn`
 (interpolation causal-masking; observational mode zeroes the intervention
 features). Per-baseline NMSE on Identifiability (the near-saturation figures cited in the paper) ships as `results/reference/nmse_identifiability.json`. Direction-accuracy standard errors are ≤ 0.01 on every full-suite row;
 a constant prediction (Zero) has no sign and scores 0 by convention.
@@ -50,11 +50,11 @@ by the reproducible evaluator:
 
 ```bash
 # a registered baseline
-python scripts/eval_submission.py --suite dot-Identifiability-v1 \
+dotime-eval-submission --suite dot-Identifiability-v1 \
     --baseline VAR-OLS --out submission.json
 
 # your own model (anything with predict(episode) -> Tensor)
-python scripts/eval_submission.py --suite dot-Identifiability-v1 \
+dotime-eval-submission --suite dot-Identifiability-v1 \
     --model mypkg.models:MyModel --name MyModel --out submission.json
 ```
 
@@ -65,13 +65,21 @@ python scripts/eval_submission.py --suite dot-Identifiability-v1 \
   "schema": "ctp-submission/1",
   "suite": "dot-Identifiability-v1",
   "model": "MyModel",
-  "package_version": "0.1.0",
+  "package_version": "0.1.2",
   "n_episodes": 10800,
   "n_queries": 10800,
-  "pooled":        {"rmse": 0.0, "mae": 0.0, "nmse": 0.0, "r2": 0.0, "dir_acc": 0.0},
+  "pooled":        {"rmse": 0.0, "mae": 0.0, "nmse": 0.0, "r2": 0.0,
+                    "dir_acc": 0.0, "dir_n_valid": 8641, "dir_acc_se": 0.0},
   "per_structure": {"back_door": {"rmse": 0.0, "...": 0.0}, "...": {}}
 }
 ```
+
+`dir_n_valid` counts the queries with a scoreable sign (near-zero targets,
+`|y| < 0.1`, are excluded), and `dir_acc_se` is the binomial standard error
+`sqrt(p(1-p)/dir_n_valid)` — exact here because the suites score one query per
+episode, so there is no within-episode clustering. Both are emitted
+automatically; a direction accuracy reported without its SE is not comparable
+across submissions of different sizes.
 
 Open a pull request adding your `submission.json` under `leaderboard/<suite>/`,
 or submit through the project's leaderboard space.

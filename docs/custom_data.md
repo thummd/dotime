@@ -88,7 +88,7 @@ print(results.summary())
 
 This reports the same pooled (and, if you set `Episode.structure`,
 per-structure) metrics as the frozen suites, and plugs directly into
-`scripts/eval_submission.py` for leaderboard-format output.
+`dotime-eval-submission` for leaderboard-format output.
 
 ## Single-stream data (interrupted time series)
 

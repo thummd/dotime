@@ -13,12 +13,14 @@ Reconstructs the training/eval protocol of the s9 checkpoints
   against raw episode ``y_true`` (level space), as in analyze_s7.
 
 Usage:
-    python scripts/eval_pfn_reference.py --suite dot-Identifiability-v1 \
+    dotime-eval-pfn --suite dot-Identifiability-v1 \
         --ckpt-int .../s9ho_all_causal/do_over_time_pfn_best.pt \
         --ckpt-obs .../s9ho_all_obs/do_over_time_pfn_best.pt \
-        --device cuda:0 --out results/reference/pfn_ident.json
+        --device cuda:0 --out pfn_ident.json
 """
+
 from __future__ import annotations
+
 import argparse
 import json
 import time
@@ -27,10 +29,9 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from dotime.baselines import _INT_TYPE_CODE  # protocol base
 from dotime.benchmarks import load_benchmark
-from dotime.baselines import _episode_to_batch, _INT_TYPE_CODE  # protocol base
 from dotime.evaluation import direction_accuracy
-from dotime.models.loader import load_dotpfn
 
 
 def episode_to_batch_interp(episode, n_max, device, observational=False):
@@ -72,12 +73,22 @@ def episode_to_batch_interp(episode, n_max, device, observational=False):
         ),
         "intervention_value": torch.tensor([int_value_norm], dtype=torch.float32, device=device),
         "intervention_time_start": torch.tensor(
-            [_norm_time(float(min(episode.intervention.times) if episode.intervention.times else 0))],
-            device=device, dtype=torch.float32,
+            [
+                _norm_time(
+                    float(min(episode.intervention.times) if episode.intervention.times else 0)
+                )
+            ],
+            device=device,
+            dtype=torch.float32,
         ),
         "intervention_time_end": torch.tensor(
-            [_norm_time(float(max(episode.intervention.times) if episode.intervention.times else 0))],
-            device=device, dtype=torch.float32,
+            [
+                _norm_time(
+                    float(max(episode.intervention.times) if episode.intervention.times else 0)
+                )
+            ],
+            device=device,
+            dtype=torch.float32,
         ),
         "query_target": torch.tensor([int(episode.query_target[0])], device=device),
         "query_time": torch.tensor([_norm_time(q_time)], dtype=torch.float32, device=device),
@@ -85,8 +96,13 @@ def episode_to_batch_interp(episode, n_max, device, observational=False):
     }
     if observational:
         # analyze_s7 obs protocol: zero every intervention feature
-        for k in ("intervention_target", "intervention_type", "intervention_value",
-                  "intervention_time_start", "intervention_time_end"):
+        for k in (
+            "intervention_target",
+            "intervention_type",
+            "intervention_value",
+            "intervention_time_start",
+            "intervention_time_end",
+        ):
             batch[k] = torch.zeros_like(batch[k])
     normalize_batch(batch)
     return batch
@@ -96,6 +112,15 @@ class PFNRef:
     def __init__(self, checkpoint, device="cpu", observational=False):
         self.device = device
         self.observational = observational
+        # The PFN architecture needs the `models` extra (pfns); import on use
+        # so the console script's --help works without it.
+        try:
+            from dotime.models.loader import load_dotpfn
+        except ImportError as exc:  # pragma: no cover - dependency-gated
+            raise SystemExit(
+                "The PFN architecture is required for this evaluator: pip install 'dotime[models]'"
+            ) from exc
+
         self.model = load_dotpfn(checkpoint, device=device)
         self.n_max = int(getattr(self.model, "n_max", 41))
 
@@ -116,31 +141,47 @@ def run(model, episodes):
     for ep in episodes:
         p = torch.as_tensor(model.predict(ep), dtype=torch.float32).reshape(-1).numpy()
         t = torch.as_tensor(ep.y_true, dtype=torch.float32).reshape(-1).numpy()
-        ep_pred.append(p); ep_tgt.append(t); structs.append(ep.structure)
-    pred = np.concatenate(ep_pred); tgt = np.concatenate(ep_tgt)
+        ep_pred.append(p)
+        ep_tgt.append(t)
+        structs.append(ep.structure)
+    pred = np.concatenate(ep_pred)
+    tgt = np.concatenate(ep_tgt)
     rmse = float(np.sqrt(np.mean((pred - tgt) ** 2)))
     da = direction_accuracy(torch.from_numpy(pred), torch.from_numpy(tgt))
     # episode-cluster bootstrap for pooled RMSE
     rng = np.random.default_rng(0)
-    sse = np.array([float(np.sum((p - t) ** 2)) for p, t in zip(ep_pred, ep_tgt)])
+    sse = np.array([float(np.sum((p - t) ** 2)) for p, t in zip(ep_pred, ep_tgt, strict=True)])
     cnt = np.array([len(t) for t in ep_tgt], dtype=np.float64)
     m = len(sse)
-    boot = np.array([np.sqrt(sse[i].sum() / cnt[i].sum())
-                     for i in (rng.integers(0, m, size=(1000, m)))])
+    boot = np.array(
+        [np.sqrt(sse[i].sum() / cnt[i].sum()) for i in (rng.integers(0, m, size=(1000, m)))]
+    )
     ci = [float(np.quantile(boot, 0.025)), float(np.quantile(boot, 0.975))]
     # per-structure direction accuracy (skip unstructured suites, e.g. Generic)
     per_struct = {}
     uniq = sorted(s for s in set(structs) if s is not None)
     for st in uniq:
         idx = [i for i, s in enumerate(structs) if s == st]
-        p = np.concatenate([ep_pred[i] for i in idx]); t = np.concatenate([ep_tgt[i] for i in idx])
+        p = np.concatenate([ep_pred[i] for i in idx])
+        t = np.concatenate([ep_tgt[i] for i in idx])
         d = direction_accuracy(torch.from_numpy(p), torch.from_numpy(t))
         per_struct[st] = {"rmse": float(np.sqrt(np.mean((p - t) ** 2))), "dir_acc": d["accuracy"]}
     import math as _m
-    _se = _m.sqrt(da["accuracy"]*(1-da["accuracy"])/da["n_valid"]) if da["n_valid"] else float("nan")
-    return {"pooled_rmse": rmse, "rmse_ci95": ci, "dir_acc": da["accuracy"],
-            "dir_n_valid": da["n_valid"], "dir_acc_se": _se,
-            "n_episodes": len(ep_pred), "per_structure": per_struct}
+
+    _se = (
+        _m.sqrt(da["accuracy"] * (1 - da["accuracy"]) / da["n_valid"])
+        if da["n_valid"]
+        else float("nan")
+    )
+    return {
+        "pooled_rmse": rmse,
+        "rmse_ci95": ci,
+        "dir_acc": da["accuracy"],
+        "dir_n_valid": da["n_valid"],
+        "dir_acc_se": _se,
+        "n_episodes": len(ep_pred),
+        "per_structure": per_struct,
+    }
 
 
 def main():
@@ -156,10 +197,11 @@ def main():
     episodes = list(load_benchmark(args.suite))
     if args.per_structure:
         from collections import defaultdict
+
         byst = defaultdict(list)
         for ep in episodes:
             byst[ep.structure].append(ep)
-        episodes = [e for eps in byst.values() for e in eps[:args.per_structure]]
+        episodes = [e for eps in byst.values() for e in eps[: args.per_structure]]
     print(f"[{args.suite}] evaluating {len(episodes)} episodes")
 
     out = {"suite": args.suite}
@@ -168,11 +210,13 @@ def main():
         model = PFNRef(ck, device=args.device, observational=obs)
         r = run(model, episodes)
         out[tag] = {"checkpoint": ck, **r}
-        _da = r['dir_acc'] if r['dir_acc'] is not None else float('nan')
-        print(f"{tag}: RMSE={r['pooled_rmse']:.3f} CI[{r['rmse_ci95'][0]:.3f},{r['rmse_ci95'][1]:.3f}] "
-              f"dir_acc={_da:.3f}  ({time.time()-t0:.0f}s)")
+        _da = r["dir_acc"] if r["dir_acc"] is not None else float("nan")
+        print(
+            f"{tag}: RMSE={r['pooled_rmse']:.3f} CI[{r['rmse_ci95'][0]:.3f},{r['rmse_ci95'][1]:.3f}] "
+            f"dir_acc={_da:.3f}  ({time.time() - t0:.0f}s)"
+        )
         for st, v in r["per_structure"].items():
-            vd = v['dir_acc'] if v['dir_acc'] is not None else float('nan')
+            vd = v["dir_acc"] if v["dir_acc"] is not None else float("nan")
             print(f"    {st:24s} rmse={v['rmse']:.3f} dir={vd:.3f}")
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)

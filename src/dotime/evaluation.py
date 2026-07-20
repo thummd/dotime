@@ -20,6 +20,7 @@ than via scikit-learn so it stays in the core install).
 
 from __future__ import annotations
 
+import math
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
@@ -172,8 +173,8 @@ class Results:
             f"Episodes: {self.n_episodes}   Queries: {self.n_queries}",
             "",
         ]
-        cols = ["rmse", "mae", "nmse", "r2", "dir_acc"]
-        header = f"{'group':<22}" + "".join(f"{c:>10}" for c in cols)
+        cols = ["rmse", "mae", "nmse", "r2", "dir_acc", "dir_acc_se"]
+        header = f"{'group':<22}" + "".join(f"{c:>11}" for c in cols)
         lines.append(header)
         lines.append("-" * len(header))
 
@@ -181,7 +182,7 @@ class Results:
             cells = []
             for c in cols:
                 v = m.get(c, float("nan"))
-                cells.append(f"{v:>10.4f}" if isinstance(v, (int, float)) else f"{v:>10}")
+                cells.append(f"{v:>11.4f}" if isinstance(v, (int, float)) else f"{v:>11}")
             return f"{name:<22}" + "".join(cells)
 
         lines.append(_row("pooled", self.pooled))
@@ -204,7 +205,17 @@ _DEFAULT_METRICS: dict[str, Callable[[torch.Tensor, torch.Tensor], float]] = {
 
 def _aggregate(preds: torch.Tensor, targets: torch.Tensor, metrics) -> dict[str, float]:
     out = {name: fn(preds, targets) for name, fn in metrics.items()}
-    out["dir_acc"] = direction_accuracy(preds, targets)["accuracy"]
+    da = direction_accuracy(preds, targets)
+    out["dir_acc"] = da["accuracy"]
+    # Report the uncertainty alongside the point estimate: the suites score one
+    # query per episode, so the binomial standard error is exact (no clustering).
+    # ``n_valid`` excludes near-zero targets, which carry no sign to score.
+    n_valid = int(da["n_valid"])
+    p = da["accuracy"]
+    out["dir_n_valid"] = n_valid
+    out["dir_acc_se"] = (
+        math.sqrt(p * (1.0 - p) / n_valid) if n_valid > 0 and p == p else float("nan")
+    )
     return out
 
 

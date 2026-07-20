@@ -10,10 +10,12 @@ so every episode gets a prediction.
 
 TabPFN is expensive, so we evaluate on a stratified subsample.
 
-    python scripts/eval_tabpfn_baseline.py --suite dot-Identifiability-v1 \
-        --per-structure 60 --device cuda:0 --out results/reference/tabpfn_ident.json
+    dotime-eval-tabpfn --suite dot-Identifiability-v1 \
+        --per-structure 60 --device cuda:0 --out tabpfn_ident.json
 """
+
 from __future__ import annotations
+
 import argparse
 import json
 import time
@@ -22,10 +24,21 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from tabpfn import TabPFNRegressor
 
 from dotime.benchmarks import load_benchmark
 from dotime.evaluation import direction_accuracy
+
+
+def _regressor():
+    """Import TabPFN lazily: it is an optional dependency (``baselines`` extra)."""
+    try:
+        from tabpfn import TabPFNRegressor
+    except ImportError as exc:  # pragma: no cover - dependency-gated
+        raise SystemExit(
+            "TabPFN is required for this evaluator: pip install 'dotime[baselines]'"
+        ) from exc
+    return TabPFNRegressor
+
 
 BACK_DOOR = {"back_door", "observed_confounder", "confounder_mediator"}
 FRONT_DOOR = {"front_door", "mediator"}
@@ -38,13 +51,14 @@ def _series(ep):
     y = int(ep.query_target[0])
     onset = min(ep.intervention.times) if ep.intervention.times else t_len
     fit_end = max(2, min(onset, t_len))
-    a_val = (float(ep.intervention.values)
-             if isinstance(ep.intervention.values, (int, float)) else None)
+    a_val = (
+        float(ep.intervention.values) if isinstance(ep.intervention.values, (int, float)) else None
+    )
     return x, n, a, y, fit_end, a_val
 
 
 def _mean_pred(ep):
-    x, n, a, y, fit_end, _ = _series(ep)
+    x, _n, _a, y, fit_end, _ = _series(ep)
     return float(x[:fit_end, y].mean())
 
 
@@ -55,18 +69,17 @@ def _backdoor_tabpfn(ep, n_mc=100, observational=False):
         return _mean_pred(ep)
     xcov = x[1:fit_end, adj]
     a_t = x[1:fit_end, a]
-    y_prev = x[0:fit_end - 1, y]
+    y_prev = x[0 : fit_end - 1, y]
     y_t = x[1:fit_end, y]
     # model_y: Y_t ~ [A_t, X_t..., Y_{t-1}]
-    my = TabPFNRegressor()
+    my = _regressor()()
     my.fit(np.column_stack([a_t, xcov, y_prev]), y_t)
     # MC over observed confounder rows; plug do(A=a_val) (int) or the last
     # observed A as stand-in for the natural A_t (obs), per Jake's
     # BackDoorTabPFNObservational. Y_{t-1}=last obs.
     plug = float(x[fit_end - 1, a]) if observational else a_val
     y_last = float(x[fit_end - 1, y])
-    Xq = np.column_stack([
-        np.full(len(xcov), plug), xcov, np.full(len(xcov), y_last)])
+    Xq = np.column_stack([np.full(len(xcov), plug), xcov, np.full(len(xcov), y_last)])
     return float(np.mean(my.predict(Xq)))
 
 
@@ -81,8 +94,11 @@ def _frontdoor_tabpfn(ep, n_mc=100, observational=False):
     m_t = x[1:fit_end, m_idx]
     y_t = x[1:fit_end, y]
     # model_m: M_t ~ A_t ; model_y: Y_t ~ [M_t, A_t]
-    mm = TabPFNRegressor(); mm.fit(a_t.reshape(-1, 1), m_t)
-    myd = TabPFNRegressor(); myd.fit(np.column_stack([m_t, a_t]), y_t)
+    _R = _regressor()
+    mm = _R()
+    mm.fit(a_t.reshape(-1, 1), m_t)
+    myd = _R()
+    myd.fit(np.column_stack([m_t, a_t]), y_t)
     plug = float(x[fit_end - 1, a]) if observational else a_val
     m_do = mm.predict(np.array([[plug]]))
     m_samp = np.full(len(a_t), float(m_do[0]))
@@ -108,6 +124,7 @@ def main():
     args = ap.parse_args()
 
     import os
+
     os.environ.setdefault("TABPFN_ALLOW_CPU_LARGE_DATASET", "1")
 
     allep = list(load_benchmark(args.suite))
@@ -115,9 +132,9 @@ def main():
     for ep in allep:
         byst[ep.structure].append(ep)
     samp = []
-    for st, eps in byst.items():
-        samp += eps[:args.per_structure]
-    samp = samp[:args.max_total]
+    for eps in byst.values():
+        samp += eps[: args.per_structure]
+    samp = samp[: args.max_total]
     print(f"[{args.suite}] {len(samp)} episodes across {len(byst)} structures")
 
     out = {"suite": args.suite, "n": len(samp)}
@@ -128,19 +145,30 @@ def main():
             preds.append(predict(ep, observational=obs))
             tgts.append(float(ep.y_true.reshape(-1)[0]))
             if (i + 1) % 100 == 0:
-                print(f"  {tag} {i+1}/{len(samp)}  ({time.time()-t0:.0f}s)")
-        preds = np.array(preds); tgts = np.array(tgts)
+                print(f"  {tag} {i + 1}/{len(samp)}  ({time.time() - t0:.0f}s)")
+        preds = np.array(preds)
+        tgts = np.array(tgts)
         rmse = float(np.sqrt(np.mean((preds - tgts) ** 2)))
         da = direction_accuracy(torch.from_numpy(preds).float(), torch.from_numpy(tgts).float())
         rng = np.random.default_rng(0)
         se = (preds - tgts) ** 2
-        boot = np.array([np.sqrt(se[rng.integers(0, len(se), len(se))].mean()) for _ in range(1000)])
+        boot = np.array(
+            [np.sqrt(se[rng.integers(0, len(se), len(se))].mean()) for _ in range(1000)]
+        )
         ci = [float(np.quantile(boot, 0.025)), float(np.quantile(boot, 0.975))]
-        _nv = da["n_valid"]; _se = (da["accuracy"]*(1-da["accuracy"])/_nv)**0.5 if _nv else float("nan")
-        out[tag] = {"pooled_rmse": rmse, "rmse_ci95": ci, "dir_acc": da["accuracy"],
-                    "dir_n_valid": _nv, "dir_acc_se": _se}
-        print(f"{tag}  RMSE={rmse:.3f} CI[{ci[0]:.3f},{ci[1]:.3f}] dir_acc={da['accuracy']:.3f}  "
-              f"({time.time()-t0:.0f}s total)")
+        _nv = da["n_valid"]
+        _se = (da["accuracy"] * (1 - da["accuracy"]) / _nv) ** 0.5 if _nv else float("nan")
+        out[tag] = {
+            "pooled_rmse": rmse,
+            "rmse_ci95": ci,
+            "dir_acc": da["accuracy"],
+            "dir_n_valid": _nv,
+            "dir_acc_se": _se,
+        }
+        print(
+            f"{tag}  RMSE={rmse:.3f} CI[{ci[0]:.3f},{ci[1]:.3f}] dir_acc={da['accuracy']:.3f}  "
+            f"({time.time() - t0:.0f}s total)"
+        )
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(json.dumps(out, indent=2))

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 import torch
 
@@ -13,7 +15,8 @@ import dotime as ctp
 
 
 def test_version_and_eager_core():
-    assert ctp.__version__ == "0.1.1"
+    # Exact value is pinned by test_version_strings_agree, not duplicated here.
+    assert re.fullmatch(r"\d+\.\d+\.\d+", ctp.__version__)
     for name in [
         "DoTime",
         "TemporalSCM",
@@ -145,6 +148,42 @@ def test_oracle_is_exact_on_loaded_suite(tmp_path):
     assert results.to_dict()["baseline"] == "Oracle"
 
 
+def test_results_report_direction_accuracy_uncertainty(tmp_path):
+    """Direction accuracy ships with its (exact binomial) standard error.
+
+    The suites score one query per episode, so there is no clustering to
+    correct for and sqrt(p(1-p)/n_valid) is the right SE. Leaderboard
+    submissions carry it, so a point estimate is never reported bare.
+    """
+    _seed_local_suite(tmp_path, "dot-Generic-100k")
+    suite = ctp.benchmarks.load_benchmark("dot-Generic-100k", cache_dir=tmp_path)
+    results = ctp.evaluation.evaluate(ctp.baselines.get("Mean"), suite)
+
+    for group in [results.pooled, *results.per_structure.values()]:
+        n_valid, acc, se = group["dir_n_valid"], group["dir_acc"], group["dir_acc_se"]
+        assert 0 <= n_valid <= results.n_queries
+        if n_valid > 0:
+            assert se == pytest.approx((acc * (1 - acc) / n_valid) ** 0.5)
+
+    assert "dir_acc_se" in results.summary()
+    assert "dir_acc_se" in results.to_dict()["pooled"]
+
+
+def test_reference_harness_imports_without_optional_extras():
+    """`dotime.reference` must stay importable without tabpfn/chronos installed.
+
+    The console scripts are declared unconditionally in the wheel metadata, so
+    an eager third-party import here would break `pip install dotime` users.
+    """
+    import importlib
+
+    for mod in ("dotime.reference", "dotime.reference.reference_table"):
+        importlib.import_module(mod)
+    # The dependency-gated ones import too; only *calling* them needs the extra.
+    for mod in ("dotime.reference.tabpfn", "dotime.reference.chronos"):
+        importlib.import_module(mod)
+
+
 def test_scale_beyond_default_bounds():
     """N_max/K_max are config bounds, not architectural limits.
 
@@ -167,3 +206,19 @@ def test_scale_beyond_default_bounds():
         sizes.append(x_obs.shape[1])
     # the override actually widens the sampled graph beyond the default cap
     assert max(sizes) > 10
+
+
+def test_version_strings_agree():
+    """`__version__`, pyproject, and CITATION.cff must be bumped together.
+
+    They are three hand-edited copies of one fact; a mismatch silently stamps
+    the wrong `package_version` into every leaderboard submission JSON.
+    """
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    pyproject = re.search(r'^version = "([^"]+)"', (root / "pyproject.toml").read_text(), re.M)
+    citation = re.search(r"^version: (\S+)", (root / "CITATION.cff").read_text(), re.M)
+    assert pyproject is not None
+    assert citation is not None
+    assert ctp.__version__ == pyproject.group(1) == citation.group(1)
