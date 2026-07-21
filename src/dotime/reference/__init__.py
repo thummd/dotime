@@ -18,12 +18,20 @@ the package so the numbers can be reproduced from a plain ``pip install``:
 model; ``reference_table`` covers the classical baselines and ``Oracle`` on a full
 suite; ``pfn`` evaluates the Do-Over-Time-PFN in interventional vs.
 observational mode; ``tabpfn`` and ``chronos`` are the foundation-model
-comparisons. Released per-cell outputs live under ``results/reference/`` in the
-project repository.
+comparisons; ``stationarity`` measures the generator's own spectral radius and
+burn-in behaviour (no model involved). Released per-cell outputs live under
+``results/reference/`` in the project repository.
 
 Submodules are intentionally *not* imported here: ``tabpfn`` and ``chronos``
 need optional dependencies (the ``baselines`` / ``models`` extras), so importing
 this package must stay cheap and dependency-free. Import the submodule you need.
 """
 
-__all__ = ["chronos", "pfn", "reference_table", "submission", "tabpfn"]
+__all__ = [
+    "chronos",
+    "pfn",
+    "reference_table",
+    "stationarity",
+    "submission",
+    "tabpfn",
+]
