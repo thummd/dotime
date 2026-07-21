@@ -12,6 +12,11 @@ All notable changes to `dotime` are documented here. The format follows
   their weight matrices (no simulation) and compares burn-in moments on
   non-diverged episodes. Backs the scope paragraph of the paper's convergence
   appendix; released output in `results/reference/stationarity_diagnostic.json`.
+  `--activations identity` restricts every mechanism to a linear activation --
+  the condition under which the companion radius is the exact stability
+  criterion rather than an upper bound -- released as
+  `results/reference/stationarity_diagnostic_identity.json`. On that condition
+  divergence follows rho >= 1 in 96% of cases and never occurs for rho < 1.
 
 ### Fixed
 - `docs/troubleshoot.md` claimed the SCM divergence rate was "< 1% on the

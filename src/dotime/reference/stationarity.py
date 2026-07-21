@@ -17,8 +17,15 @@ the divergence disclosed in the Limitations section. Two independent checks:
 Usage::
 
     dotime-diagnose-stationarity --n-episodes 2000 --out stationarity.json
+    dotime-diagnose-stationarity --n-episodes 2000 --activations identity
 
-The released output is ``results/reference/stationarity_diagnostic.json``.
+``--activations identity`` restricts every mechanism to a linear activation,
+the condition under which the companion rho is the exact stability criterion
+rather than an upper bound. Because rho depends on the sampled weights alone,
+the two runs cover the same SCMs and differ only in the nonlinearity, making
+the comparison a paired one. Released outputs:
+``results/reference/stationarity_diagnostic.json`` and
+``results/reference/stationarity_diagnostic_identity.json``.
 """
 
 from __future__ import annotations
@@ -30,6 +37,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from torch import nn
 
 from dotime import DoTime
 from dotime.utils import DEFAULT_CONFIG
@@ -94,8 +102,22 @@ def _pct(x) -> float:
     return 100.0 * float(np.mean(x)) if len(x) else float("nan")
 
 
-def diagnose(n_episodes: int = 2000, t_len: int = 200, seed0: int = 20260719) -> dict:
-    """Run both diagnostics over ``n_episodes`` freshly sampled generic SCMs."""
+def diagnose(
+    n_episodes: int = 2000,
+    t_len: int = 200,
+    seed0: int = 20260719,
+    activations: str = "all",
+) -> dict:
+    """Run both diagnostics over ``n_episodes`` freshly sampled generic SCMs.
+
+    ``activations="identity"`` restricts every mechanism to a linear activation.
+    On that subset the companion rho is the *exact* stability criterion rather
+    than an upper bound, so it isolates the assumption the theorem actually
+    states. The restriction needs no change to the prior: the generic and regime
+    builders are constructed per sample and read ``DoTime.activations`` at
+    generate time, and mutating the list in place also reaches the
+    chain builder, which captures it at construction.
+    """
     rhos: list[float] = []
     diverged: list[bool] = []
     all_linear: list[bool] = []
@@ -104,9 +126,14 @@ def diagnose(n_episodes: int = 2000, t_len: int = 200, seed0: int = 20260719) ->
     for i in range(n_episodes):
         seed = seed0 + i
         torch.manual_seed(seed)
+        prior = DoTime(seed=seed)
+        if activations == "identity":
+            prior.activations[:] = [nn.Identity()]
+        elif activations != "all":
+            raise ValueError(f"unknown activations mode {activations!r}")
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)  # handled divergence
-            x_obs, x_int, _iv, scm = DoTime(seed=seed).generate_pair(T=t_len)
+            x_obs, x_int, _iv, scm = prior.generate_pair(T=t_len)
 
         # A diverged episode is returned as all zeros in both arms.
         div = float(x_obs.abs().max()) == 0.0 and float(x_int.abs().max()) == 0.0
@@ -133,6 +160,7 @@ def diagnose(n_episodes: int = 2000, t_len: int = 200, seed0: int = 20260719) ->
         "n_episodes": n_episodes,
         "t_len": t_len,
         "seed0": seed0,
+        "activations": activations,
         "burn_in": int(DEFAULT_CONFIG.get("burn_in", 50)),
         "rho": {
             "n_measurable": int(ok.sum()),
@@ -157,7 +185,7 @@ def diagnose(n_episodes: int = 2000, t_len: int = 200, seed0: int = 20260719) ->
     }
 
     lin = ok & np.array(all_linear, dtype=bool)
-    if lin.any():
+    if lin.any() and activations != "identity":
         out["rho_identity_only"] = {
             "n": int(lin.sum()),
             "note": "All-Identity SCMs: the linear rho is exact, not an upper bound.",
@@ -200,10 +228,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--n-episodes", type=int, default=2000)
     parser.add_argument("--t-len", type=int, default=200)
     parser.add_argument("--seed0", type=int, default=20260719)
+    parser.add_argument(
+        "--activations",
+        choices=("all", "identity"),
+        default="all",
+        help="'identity' restricts every mechanism to a linear activation, the "
+        "subset on which the companion rho is exact rather than an upper bound.",
+    )
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args(argv)
 
-    out = diagnose(args.n_episodes, args.t_len, args.seed0)
+    out = diagnose(args.n_episodes, args.t_len, args.seed0, args.activations)
     text = json.dumps(out, indent=2)
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,35 @@
+{
+  "n_episodes": 2000,
+  "t_len": 200,
+  "seed0": 20260719,
+  "activations": "identity",
+  "burn_in": 50,
+  "rho": {
+    "n_measurable": 1715,
+    "note": "Regime-switching and chain SCMs have no single companion matrix and are excluded from the rho statistics by design.",
+    "median": 1.2631712587533173,
+    "p90": 3.144745379355991,
+    "max": 28.177117486016726,
+    "pct_ge_1": 62.91545189504373
+  },
+  "divergence": {
+    "pct_all": 51.949999999999996,
+    "pct_measurable_subset": 60.583090379008745,
+    "pct_diverged_given_rho_ge_1": 96.29286376274328,
+    "pct_diverged_given_rho_lt_1": 0.0,
+    "pct_rho_ge_1_given_diverged": 100.0
+  },
+  "burn_in_moments": {
+    "n_nondiverged_episodes": 961,
+    "n_variables": 5186,
+    "var_ratio_median": 1.0123300552368164,
+    "var_ratio_p10": 0.6697348356246948,
+    "var_ratio_p90": 1.573232650756836,
+    "pct_var_ratio_within_2x": 93.51160047188361,
+    "std_drift_median": 0.13573259115219116,
+    "std_drift_p90": 0.3910488784313202,
+    "pct_std_drift_lt_0p5": 94.1801022414471,
+    "median_abs_mean_early": 0.11000630259513855,
+    "median_abs_mean_late": 0.11203213036060333
+  }
+}
