@@ -12,6 +12,7 @@ the package so the numbers can be reproduced from a plain ``pip install``:
         --ckpt-int <s9ho_all_causal.pt> --ckpt-obs <s9ho_all_obs.pt>
     dotime-eval-tabpfn    --suite dot-Identifiability-v1   # needs [baselines]
     dotime-eval-chronos   --suite dot-Identifiability-v1   # needs [baselines]
+    dotime-diagnose-stationarity --n-episodes 2000   # generator diagnostics
 
 ``submission`` is the reproducible leaderboard submission path for your own
 model; ``reference_table`` covers the classical baselines and ``Oracle`` on a full

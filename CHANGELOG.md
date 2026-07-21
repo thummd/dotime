@@ -6,6 +6,13 @@ All notable changes to `dotime` are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- `dotime-diagnose-stationarity` (`dotime.reference.stationarity`): measures the
+  reduced-form companion spectral radius of sampled generic SCMs directly from
+  their weight matrices (no simulation) and compares burn-in moments on
+  non-diverged episodes. Backs the scope paragraph of the paper's convergence
+  appendix; released output in `results/reference/stationarity_diagnostic.json`.
+
 ### Fixed
 - `docs/troubleshoot.md` claimed the SCM divergence rate was "< 1% on the
   released suites". The actual zeroed fraction is 28.7% on `dot-Generic-100k`

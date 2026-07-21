@@ -159,6 +159,7 @@ dotime-eval-reference  = "dotime.reference.reference_table:main"
 dotime-eval-pfn       = "dotime.reference.pfn:main"
 dotime-eval-tabpfn    = "dotime.reference.tabpfn:main"
 dotime-eval-chronos   = "dotime.reference.chronos:main"
+dotime-diagnose-stationarity = "dotime.reference.stationarity:main"
 
 
 # ---------------------------------------------------------------------------
