@@ -40,8 +40,13 @@ The `[models]` extra (`pfns`) must be installed for the model to import.
 
 **`RuntimeWarning: SCM diverged ... returning zeros`.** The diverse prior
 occasionally samples an unstable SCM; those trajectories are zeroed and flagged
-rather than dropped. The empirical divergence rate is < 1% on the released suites;
-the warnings are safe to ignore (or filter with `warnings.simplefilter("ignore")`).
+rather than dropped. In the released v1.0.0 suites the zeroed fraction is **28.7%
+on `dot-Generic-100k`** and **4.6% on `dot-Identifiability-v1`** (0% on
+RegimeSwitch/Continuous) -- high enough that you should filter on
+`X.abs().max() > 0` rather than ignore it. To build a divergence-free suite
+instead, pass `--stability-retries 20` to `scripts/build_release.py` (opt-in
+deterministic resampling; it produces a *different*, non-v1 suite). The warnings
+themselves are safe to filter with `warnings.simplefilter("ignore")`.
 
 ## Benchmark cache
 

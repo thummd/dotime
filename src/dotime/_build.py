@@ -65,7 +65,12 @@ def make_episode(spec: dict):
         from dotime import DoTime
 
         d = spec["num_regimes"]
-        x_obs, x_int, iv, _ = DoTime(seed=seed).generate_regime_pair(T=t_len, num_regimes=d)
+        for attempt in range(retries + 1):
+            s = seed if attempt == 0 else seed * 100003 + attempt
+            _torch.manual_seed(s)
+            x_obs, x_int, iv, _ = DoTime(seed=s).generate_regime_pair(T=t_len, num_regimes=d)
+            if attempt == retries or not _diverged(x_obs, x_int):
+                break
         return episode_from_pair(
             x_obs,
             x_int,
@@ -129,6 +134,7 @@ def episode_specs(cfg: dict, suite_seed: int, scale: float) -> list[dict]:
                         "T": t_len,
                         "num_regimes": density,
                         "tier": tier,
+                        "stability_retries": retries,
                     }
                 )
     elif gen == "identifiability":

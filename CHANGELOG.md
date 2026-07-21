@@ -6,6 +6,19 @@ All notable changes to `dotime` are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- `docs/troubleshoot.md` claimed the SCM divergence rate was "< 1% on the
+  released suites". The actual zeroed fraction is 28.7% on `dot-Generic-100k`
+  and 4.6% on `dot-Identifiability-v1`, as disclosed in the paper and asserted
+  by `tests/test_build_release.py`. The page now states the real rates and
+  points at `--stability-retries` for a divergence-free rebuild.
+- `stability_retries` is now honoured by the `regime` generator, not only
+  `generic`. `scripts/build_release.py --stability-retries` documented both,
+  but the regime branch had no retry loop and its episode specs did not carry
+  the setting, so a hardened rebuild would have silently left
+  `dot-RegimeSwitch-v1` unhardened. (No observable change at present: the
+  regime generator's measured divergence rate is 0%.)
+
 ## [0.1.2] - 2026-07-20
 
 ### Added
