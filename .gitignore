@@ -42,3 +42,12 @@ output/
 # Internal project-setup docs (local-only, not for the public repo/release)
 /HANDOVER.md
 /paper_outline.md
+
+# Domain-partner data and internal domain docs — kept local; these live in
+# the separate dotime-reactor repository, not in this package.
+/chemical_reactor/
+/docs/reactor_event_parser_spec.md
+/docs/prior_roadmap.md
+
+# Sphinx autosummary output (regenerated at build time)
+/docs/_autosummary/
