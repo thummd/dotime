@@ -6,6 +6,8 @@ All notable changes to `dotime` are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-08-15
+
 ### Fixed
 - `ContinuousExtendedPrior.generate_sample`: the query-time sampler bounded the
   query index with `max(onset + 1, T - 1)`, which equals `T` when the intervention
