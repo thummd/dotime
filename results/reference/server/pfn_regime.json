@@ -1,7 +1,7 @@
 {
   "suite": "dot-RegimeSwitch-v1",
   "PFN_int": {
-    "checkpoint": "/home/dennis/repos/do-over-time-pfn/checkpoints/s9ho_all_causal/do_over_time_pfn_best.pt",
+    "checkpoint": "hf://thummd/do-over-time-pfn/s9ho_all_causal/do_over_time_pfn_best.pt",
     "pooled_rmse": 1.9945849180221558,
     "rmse_ci95": [
       1.9254764637976534,
@@ -25,7 +25,7 @@
     }
   },
   "PFN_obs": {
-    "checkpoint": "/home/dennis/repos/do-over-time-pfn/checkpoints/s9ho_all_obs/do_over_time_pfn_best.pt",
+    "checkpoint": "hf://thummd/do-over-time-pfn/s9ho_all_obs/do_over_time_pfn_best.pt",
     "pooled_rmse": 2.0721435546875,
     "rmse_ci95": [
       1.9966348893670076,

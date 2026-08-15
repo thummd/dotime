@@ -222,3 +222,36 @@ def test_version_strings_agree():
     assert pyproject is not None
     assert citation is not None
     assert ctp.__version__ == pyproject.group(1) == citation.group(1)
+
+
+def test_continuous_query_index_never_overruns_trajectory():
+    """Regression: the continuous prior's query sampler bounded the query index
+    with ``max(onset + 1, T - 1)``, which equals ``T`` when the intervention
+    onset lands on the final observation — an index one past the trajectory.
+    Query indices must always lie in ``[onset, T - 1]``.
+    """
+    from dotime.continuous import ContinuousExtendedPrior
+
+    prior = ContinuousExtendedPrior(tscm_structure="back_door", seed=0)
+    ctx = prior._sample_scm_context()
+    for t_len in (2, 3, 10, 50):
+        for onset in (t_len - 1, t_len - 2, 0):
+            _, t_idx = prior._sample_queries(
+                T=t_len,
+                n_queries=64,
+                query_mode="single",
+                int_onset_idx=onset,
+                intervention_target_canon=0,
+                ctx=ctx,
+            )
+            assert int(t_idx.max()) <= t_len - 1
+            assert int(t_idx.min()) >= min(onset, t_len - 1)
+
+    # End-to-end reproducer (raised IndexError before the fix): a 3-point
+    # exponential schedule where the onset can hit the last observation.
+    gen = ContinuousExtendedPrior(
+        tscm_structure="confounder_mediator", schedule="exponential", seed=0, t_range=(2, 30)
+    )
+    for _ in range(20):
+        out = gen.generate_sample(T=3)
+        assert out["X_obs"].shape[0] == 3

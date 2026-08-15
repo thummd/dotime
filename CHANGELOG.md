@@ -6,6 +6,20 @@ All notable changes to `dotime` are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- `ContinuousExtendedPrior.generate_sample`: the query-time sampler bounded the
+  query index with `max(onset + 1, T - 1)`, which equals `T` when the intervention
+  onset lands on the final observation, so a query index could overrun the
+  trajectory (`IndexError`). Bound is now pinned to `T - 1`; draws for every
+  onset `< T - 1` are unchanged, so fixed-seed outputs (and the released suites)
+  are bit-identical.
+
+### Changed
+- Package metadata: `authors` lists the code author only; `CITATION.cff` now
+  points its preferred citation at the DoTime paper (arXiv:2607.27263).
+- Reference-result JSONs record model checkpoints as Hugging Face Hub paths
+  (`hf://thummd/do-over-time-pfn/...`) instead of machine-local paths.
+
 ### Added
 - `dotime-diagnose-stationarity` (`dotime.reference.stationarity`): measures the
   reduced-form companion spectral radius of sampled generic SCMs directly from

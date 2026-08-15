@@ -6,18 +6,12 @@ authors:
   - given-names: Dennis
     family-names: Thumm
     affiliation: National University of Singapore
-  - given-names: Billy Tim
-    family-names: Anthony
-    affiliation: National University of Singapore
-  - given-names: Ying
-    family-names: Chen
-    affiliation: National University of Singapore
 repository-code: "https://github.com/thummd/dotime"
 url: "https://dotime.readthedocs.io"
 license: Apache-2.0
 version: 0.1.2
 # NOTE: update date-released to the actual tag date at each release.
-date-released: "2026-03-01"
+date-released: "2026-07-20"
 keywords:
   - causal inference
   - time series
@@ -28,13 +22,24 @@ keywords:
   - benchmarks
   - counterfactuals
 preferred-citation:
-  type: conference-paper
-  title: "Interventional Time Series Priors for Causal Foundation Models"
+  type: article
+  title: "DoTime: A Synthetic Benchmark Generator for Interventional and Counterfactual Time Series"
   authors:
     - given-names: Dennis
       family-names: Thumm
+      affiliation: National University of Singapore
+    - given-names: Billy Tim
+      family-names: Anthony
+      affiliation: National University of Singapore
     - given-names: Ying
       family-names: Chen
-  collection-title: "1st ICLR Workshop on Time Series in the Age of Large Models (TSALM)"
+      affiliation: National University of Singapore
+  journal: "arXiv preprint"
   year: 2026
-  url: "https://openreview.net/forum?id=JbTgx2L9Z2"
+  month: 7
+  doi: 10.48550/arXiv.2607.27263
+  url: "https://arxiv.org/abs/2607.27263"
+  identifiers:
+    - type: other
+      value: "arXiv:2607.27263"
+      description: "arXiv identifier"

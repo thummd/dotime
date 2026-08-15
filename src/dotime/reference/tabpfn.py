@@ -1,6 +1,6 @@
 """TabPFN adjustment baseline for the dot-* suites (Table 3).
 
-Mirrors Jake Robertson's do-over-time-pfn TabPFN baselines
+Mirrors the TabPFN baselines of the Do-Over-Time-PFN training codebase
 (``scripts/baselines.py``): a back-door adjustment using two TabPFN
 regressors (model_x: p(X_t|X_{t-1}); model_y: p(Y_t|A_t,X_t,Y_{t-1})),
 MC-integrated over the confounder, and a front-door variant. Ported to the

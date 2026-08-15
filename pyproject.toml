@@ -19,7 +19,6 @@ requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 authors = [
     { name = "Dennis Thumm" },
-    { name = "Ying Chen" },
 ]
 maintainers = [
     { name = "Dennis Thumm" },

@@ -700,11 +700,15 @@ class ContinuousExtendedPrior:
         hidden_canon = {ctx.topo_to_canon[h] for h in ctx.hidden_vars_topo}
         observable_vars = [v for v in range(ctx.n_vars) if v not in hidden_canon]
 
-        t_lo = int_onset_idx
-        t_hi = max(int_onset_idx + 1, T - 1)
-        if t_lo >= t_hi:
-            t_lo = max(0, T - 2)
-            t_hi = T - 1
+        # Query at or after the intervention onset, never past the last
+        # observation.  ``t_hi`` is pinned to ``T - 1``: the previous
+        # ``max(int_onset_idx + 1, T - 1)`` bound evaluated to ``T`` when the
+        # onset landed on the final observation, so the (inclusive) randint
+        # below could draw an index one past the trajectory.  For every
+        # onset < T - 1 the draw is unchanged (``randint(onset, T)``), which
+        # keeps the RNG stream of the released suites intact.
+        t_hi = T - 1
+        t_lo = min(int_onset_idx, t_hi)
 
         if query_mode == "all_pairs":
             times_idx = torch.tensor(
