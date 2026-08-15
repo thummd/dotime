@@ -6,6 +6,12 @@ All notable changes to `dotime` are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- `InterventionSampler` (generic discrete prior) now raises a clear `ValueError`
+  when `T < 2 * min_intervention_length` (default: `T < 20`) instead of failing
+  inside `torch.randint` with an opaque range error. Only previously-crashing
+  calls are affected; the RNG stream of every valid configuration is unchanged.
+
 ## [0.1.3] - 2026-08-15
 
 ### Fixed

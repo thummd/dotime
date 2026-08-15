@@ -167,7 +167,27 @@ class InterventionSampler:
             Minimum length of intervention period.
         generator : torch.Generator, optional
             RNG for reproducibility.
+
+        Raises
+        ------
+        ValueError
+            If ``T < 2 * min_intervention_length``: the sampler needs room for
+            a pre-intervention window of at least ``min_intervention_length``
+            steps *and* an intervention of at least that length, otherwise the
+            length/start draws below have an empty range.
         """
+        # Validate up front so a too-short series fails with an actionable
+        # message instead of torch's opaque "random_ expects 'from' < 'to'".
+        # This only affects calls that could never succeed, so the RNG stream
+        # of every valid configuration (and the released suites) is unchanged.
+        min_T = 2 * min_intervention_length
+        if min_T > T:
+            raise ValueError(
+                f"T={T} is too short for min_intervention_length="
+                f"{min_intervention_length}: need T >= {min_T} "
+                "(a pre-intervention window plus an intervention, each at least "
+                "min_intervention_length steps)."
+            )
         self.N = N
         self.T = T
         self.p_hard = p_hard

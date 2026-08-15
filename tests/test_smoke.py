@@ -255,3 +255,15 @@ def test_continuous_query_index_never_overruns_trajectory():
     for _ in range(20):
         out = gen.generate_sample(T=3)
         assert out["X_obs"].shape[0] == 3
+
+
+def test_intervention_sampler_rejects_too_short_series():
+    """Regression: T below 2*min_intervention_length used to die inside
+    torch.randint with an opaque message; it must fail early and clearly."""
+    from dotime.interventions import InterventionSampler
+
+    with pytest.raises(ValueError, match="need T >= 20"):
+        InterventionSampler(N=3, T=19)
+    InterventionSampler(N=3, T=20).sample()  # boundary is allowed
+    with pytest.raises(ValueError, match="need T >= 4"):
+        InterventionSampler(N=3, T=3, min_intervention_length=2)
