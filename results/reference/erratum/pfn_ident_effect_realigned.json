@@ -1,0 +1,97 @@
+{
+  "suite": "dot-Identifiability-v1",
+  "PFN_int": {
+    "checkpoint": "/home/dennis/repos/do-over-time-pfn/checkpoints/s9ho_all_causal/do_over_time_pfn_best.pt",
+    "dir_target": "effect",
+    "pooled_rmse": 0.6395856738090515,
+    "rmse_ci95": [
+      0.6160744590043166,
+      0.6637652051921504
+    ],
+    "dir_acc": 0.7022892236709595,
+    "dir_n_valid": 8824,
+    "dir_acc_se": 0.004867685716271029,
+    "n_episodes": 10800,
+    "per_structure": {
+      "back_door": {
+        "rmse": 0.9467648863792419,
+        "dir_acc": 0.6094986796379089
+      },
+      "bi_variate": {
+        "rmse": 0.7476950287818909,
+        "dir_acc": 0.6929134130477905
+      },
+      "confounder_mediator": {
+        "rmse": 0.46686655282974243,
+        "dir_acc": 0.7891344428062439
+      },
+      "front_door": {
+        "rmse": 0.4591333866119385,
+        "dir_acc": 0.7657822370529175
+      },
+      "instrumental_variable": {
+        "rmse": 0.7849461436271667,
+        "dir_acc": 0.7084444165229797
+      },
+      "mediator": {
+        "rmse": 0.5061852335929871,
+        "dir_acc": 0.6975023150444031
+      },
+      "observed_confounder": {
+        "rmse": 0.4896893799304962,
+        "dir_acc": 0.6835206151008606
+      },
+      "unobserved_confounder": {
+        "rmse": 0.5255659818649292,
+        "dir_acc": 0.675527036190033
+      }
+    }
+  },
+  "PFN_obs": {
+    "checkpoint": "/home/dennis/repos/do-over-time-pfn/checkpoints/s9ho_all_obs/do_over_time_pfn_best.pt",
+    "dir_target": "effect",
+    "pooled_rmse": 0.6405484676361084,
+    "rmse_ci95": [
+      0.6122770646930307,
+      0.6684010484363314
+    ],
+    "dir_acc": 0.7038757801055908,
+    "dir_n_valid": 8824,
+    "dir_acc_se": 0.0048601785674891014,
+    "n_episodes": 10800,
+    "per_structure": {
+      "back_door": {
+        "rmse": 0.9280467629432678,
+        "dir_acc": 0.6684256792068481
+      },
+      "bi_variate": {
+        "rmse": 0.7844749093055725,
+        "dir_acc": 0.6272965669631958
+      },
+      "confounder_mediator": {
+        "rmse": 0.5294837951660156,
+        "dir_acc": 0.7384898662567139
+      },
+      "front_door": {
+        "rmse": 0.5212937593460083,
+        "dir_acc": 0.7108874917030334
+      },
+      "instrumental_variable": {
+        "rmse": 0.8466694951057434,
+        "dir_acc": 0.6595555543899536
+      },
+      "mediator": {
+        "rmse": 0.4293961524963379,
+        "dir_acc": 0.7483811378479004
+      },
+      "observed_confounder": {
+        "rmse": 0.436346173286438,
+        "dir_acc": 0.7200374603271484
+      },
+      "unobserved_confounder": {
+        "rmse": 0.4025157690048218,
+        "dir_acc": 0.7653529047966003
+      }
+    }
+  }
+}

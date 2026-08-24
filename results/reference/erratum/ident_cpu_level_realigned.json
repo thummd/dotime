@@ -1,0 +1,97 @@
+{
+  "suite": "dot-Identifiability-v1",
+  "n_episodes": 10800,
+  "rows": [
+    {
+      "baseline": "Zero",
+      "n_episodes": 10800,
+      "n_queries": 10800,
+      "pooled_rmse": 0.7222750186920166,
+      "rmse_ci95": [
+        0.6923665050082797,
+        0.7527141689607144
+      ],
+      "dir_acc": 0.0,
+      "dir_n_valid": 8641,
+      "dir_target": "level"
+    },
+    {
+      "baseline": "Mean",
+      "n_episodes": 10800,
+      "n_queries": 10800,
+      "pooled_rmse": 0.5869518518447876,
+      "rmse_ci95": [
+        0.5606278295328423,
+        0.6145227906961023
+      ],
+      "dir_acc": 0.6944798231124878,
+      "dir_n_valid": 8641,
+      "dir_target": "level"
+    },
+    {
+      "baseline": "AR1",
+      "n_episodes": 10800,
+      "n_queries": 10800,
+      "pooled_rmse": 0.7167617678642273,
+      "rmse_ci95": [
+        0.6809036640636505,
+        0.7593219138244419
+      ],
+      "dir_acc": 0.6113875508308411,
+      "dir_n_valid": 8641,
+      "dir_target": "level"
+    },
+    {
+      "baseline": "VAR-OLS",
+      "n_episodes": 10800,
+      "n_queries": 10800,
+      "pooled_rmse": 0.6284414529800415,
+      "rmse_ci95": [
+        0.6029672933505563,
+        0.654407488022504
+      ],
+      "dir_acc": 0.663580596446991,
+      "dir_n_valid": 8641,
+      "dir_target": "level"
+    },
+    {
+      "baseline": "BackDoorOLS",
+      "n_episodes": 10800,
+      "n_queries": 10800,
+      "pooled_rmse": 0.5727968215942383,
+      "rmse_ci95": [
+        0.5519827512112295,
+        0.5957764018571756
+      ],
+      "dir_acc": 0.6952899098396301,
+      "dir_n_valid": 8641,
+      "dir_target": "level"
+    },
+    {
+      "baseline": "IV2SLS",
+      "n_episodes": 10800,
+      "n_queries": 10800,
+      "pooled_rmse": 0.5812891721725464,
+      "rmse_ci95": [
+        0.5565595266555605,
+        0.6071172796923388
+      ],
+      "dir_acc": 0.6976044178009033,
+      "dir_n_valid": 8641,
+      "dir_target": "level"
+    },
+    {
+      "baseline": "Oracle",
+      "n_episodes": 10800,
+      "n_queries": 10800,
+      "pooled_rmse": 0.0,
+      "rmse_ci95": [
+        0.0,
+        0.0
+      ],
+      "dir_acc": 1.0,
+      "dir_n_valid": 8641,
+      "dir_target": "level"
+    }
+  ]
+}
