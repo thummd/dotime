@@ -101,7 +101,7 @@ _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
         hf_repo_id="thummd/dot-Continuous-v1",
         zenodo_record_id="20919057",
         doi="10.5281/zenodo.20845980",  # concept DOI (resolves to latest version)
-        description="Continuous-time intervention windows, query offsets {1,2,3,5,10}.",
+        description="Continuous-time intervention windows; query times uniform over [onset, T-1].",
         n_episodes=9_999,
     ),
     "dot-Generic-100k": SuiteMetadata(

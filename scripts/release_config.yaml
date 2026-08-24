@@ -50,7 +50,9 @@ suites:
     version: "1.0.0"
     generator: continuous
     T: 200
-    query_offsets: [1, 2, 3, 5, 10]
+    # Query times are drawn uniformly from [intervention onset, T-1] by the
+    # generator (dotime.continuous). An earlier draft's fixed-offset list was
+    # never consumed by any code path and has been removed (v1 erratum #2).
     structures: [back_door, front_door, instrumental_variable]
     n_episodes: 10000
 

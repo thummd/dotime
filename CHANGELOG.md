@@ -7,6 +7,33 @@ All notable changes to `dotime` are documented here. The format follows
 ## [Unreleased]
 
 ### Fixed
+- `ExtendedDoTime.generate_sample`/`generate_batch`: the released (unmasked)
+  observational tensor now receives the same canonical column permutation and
+  hidden-variable zeroing as `X_int` — v1.0.0 `dot-Identifiability-v1` shipped
+  `x_obs` in topological order (misaligned for 6/8 structures) and leaked
+  hidden-confounder values.
+- `Y_causal_effect`/`Y_obs` are computed from the unmasked observational
+  trajectory; the causally-masked tensor is zero at every post-onset query, so
+  v1 metadata stored the interventional level instead of the effect. RNG
+  streams and all other fixed-seed outputs are bit-identical.
+
+### Added
+- `evaluation.query_obs_levels` and a `--dir-target {level,effect}` /
+  `--realignment` option on `dotime-eval-reference` and `dotime-eval-pfn`:
+  score direction accuracy on the causal effect instead of the interventional
+  level (the v1 paper protocol scored levels).
+- `dotime._build` flags diverged (all-zero) episodes with a `diverged`
+  metadata key (v1.0.0 shipped them unflagged: 28.7% of Generic-100k, 4.6% of
+  Identifiability).
+- Datasheet erratum section in `docs/benchmarks.md` documenting v1.0.0 field
+  semantics, column alignment, and the realignment sidecar.
+
+### Changed
+- `dot-Continuous-v1` registry description states the actual query protocol
+  (uniform over [onset, T-1]); the dead `query_offsets` key was removed from
+  `release_config.yaml`.
+
+### Fixed
 - `InterventionSampler` (generic discrete prior) now raises a clear `ValueError`
   when `T < 2 * min_intervention_length` (default: `T < 20`) instead of failing
   inside `torch.randint` with an opaque range error. Only previously-crashing

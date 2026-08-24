@@ -432,6 +432,10 @@ class ExtendedDoTime:
             perm_t = torch.tensor(full_perm, dtype=torch.long)
             X_obs_padded = X_obs_padded.index_select(dim=1, index=perm_t)
             X_int_padded = X_int_padded.index_select(dim=1, index=perm_t)
+            # The unmasked release tensor must live in the SAME column order as
+            # X_int/query_target; leaving it in topo order shipped misaligned
+            # x_obs in dot-Identifiability-v1 (v1 erratum).
+            X_obs_full_padded = X_obs_full_padded.index_select(dim=1, index=perm_t)
             intervention_target = canonical_inv_perm[intervention_target]
             hidden_vars_topo = getattr(self.prior, "hidden_vars", [])
             hidden_canonical = [canonical_inv_perm[h] for h in hidden_vars_topo]
@@ -442,6 +446,11 @@ class ExtendedDoTime:
         # zeroing). Must happen AFTER canonical permutation so hidden_canonical
         # refers to the same columns as the permuted trajectory tensors.
         _apply_hidden_mask(X_obs_padded, X_int_padded, variable_mask, hidden_canonical)
+        # Hidden variables must not leak through the released (unmasked) obs
+        # trajectory either -- hiding them only in the model-input tensors
+        # shipped the confounder's values in v1.
+        if hidden_canonical:
+            X_obs_full_padded[:, hidden_canonical] = 0.0
 
         # Query sampling — aligned with identifiability theory:
         # P(Y_{t+offset} | do(A_t), H_{t-1},...,H_{t-K})
@@ -490,8 +499,11 @@ class ExtendedDoTime:
             float(X_int_padded[qti, qt].item())
             for qt, qti in zip(query_targets, query_time_idxs, strict=False)
         ]
+        # Effect baseline reads the UNMASKED obs: the causally-masked tensor is
+        # zero at/after onset, which collapsed Y_causal_effect to the
+        # interventional level in v1 (the query is always post-onset).
         y_obs_vals = [
-            float(X_obs_padded[qti, qt].item())
+            float(X_obs_full_padded[qti, qt].item())
             for qt, qti in zip(query_targets, query_time_idxs, strict=False)
         ]
         y_effects = [yi - yo for yi, yo in zip(y_trues, y_obs_vals, strict=False)]
@@ -627,6 +639,9 @@ class ExtendedDoTime:
             # Pad to n_max (topo order in first N cols)
             X_obs_padded = pad_to_max_nodes(X_obs_masked, self.n_max)
             X_int_padded = pad_to_max_nodes(X_int, self.n_max)
+            # Unmasked twin of X_obs_padded, used only for Y_obs / the causal
+            # effect below (the masked tensor is zero at every post-onset query).
+            X_obs_full_padded = pad_to_max_nodes(X_obs, self.n_max)
 
             # Variable mask -- hidden-variable exclusion and X_obs/X_int
             # zeroing happen AFTER canonical permutation below so the mask
@@ -658,6 +673,7 @@ class ExtendedDoTime:
                 perm_t = torch.tensor(full_perm, dtype=torch.long)
                 X_obs_padded = X_obs_padded.index_select(dim=1, index=perm_t)
                 X_int_padded = X_int_padded.index_select(dim=1, index=perm_t)
+                X_obs_full_padded = X_obs_full_padded.index_select(dim=1, index=perm_t)
                 int_target_out = canonical_inv_perm[int_target]
                 # Remap hidden_vars to canonical indices for query filtering
                 hidden_canonical = [canonical_inv_perm[h] for h in hidden_vars]
@@ -673,6 +689,8 @@ class ExtendedDoTime:
                 variable_mask,
                 hidden_canonical,
             )
+            if hidden_canonical:
+                X_obs_full_padded[:, hidden_canonical] = 0.0
 
             # Query targets. If the prior has a canonical outcome (TSCMPrior), pin
             # queries to Y. Otherwise fall back to all non-hidden non-intervention.
@@ -707,7 +725,7 @@ class ExtendedDoTime:
                 for qt, qti in zip(query_targets, query_time_idxs, strict=False)
             ]
             y_obs_vals = [
-                float(X_obs_padded[qti, qt].item())
+                float(X_obs_full_padded[qti, qt].item())
                 for qt, qti in zip(query_targets, query_time_idxs, strict=False)
             ]
             y_effects = [yi - yo for yi, yo in zip(y_trues, y_obs_vals, strict=False)]

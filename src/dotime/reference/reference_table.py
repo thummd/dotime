@@ -20,7 +20,7 @@ import torch
 
 from dotime import baselines
 from dotime.benchmarks import load_benchmark
-from dotime.evaluation import direction_accuracy
+from dotime.evaluation import direction_accuracy, query_obs_levels, realign_episode
 
 CPU_BASELINES = ["Zero", "Mean", "AR1", "VAR-OLS", "BackDoorOLS", "IV2SLS", "Oracle"]
 
@@ -44,22 +44,48 @@ def _cluster_bootstrap_rmse(ep_pred, ep_tgt, n_boot=1000, seed=0):
     return float(lo), float(hi)
 
 
-def run_baseline(name, suite_episodes, checkpoint=None, device="cpu"):
+def _episode_obs_levels(ep, realignment):
+    """Per-query observational levels, preferring the realignment sidecar.
+
+    Args:
+        ep: The episode being scored.
+        realignment: Optional ``{scm_id: y_obs}`` map from the released v1
+            realignment sidecar (required for archived suites whose ``x_obs``
+            is column-misaligned; see the datasheet erratum).
+
+    Returns:
+        1-D numpy array of observational levels, one per query.
+    """
+    if realignment is not None and ep.scm_id in realignment:
+        return np.asarray([realignment[ep.scm_id]["y_obs_corrected"]], dtype=np.float32)
+    return query_obs_levels(ep).cpu().numpy()
+
+
+def run_baseline(
+    name, suite_episodes, checkpoint=None, device="cpu", dir_target="level", realignment=None
+):
     if name == "DoOverTimePFN":
         model = baselines.get(name, checkpoint=checkpoint, device=device)
     else:
         model = baselines.get(name)
-    ep_pred, ep_tgt = [], []
+    ep_pred, ep_tgt, ep_obs = [], [], []
     for ep in suite_episodes:
         p = torch.as_tensor(model.predict(ep), dtype=torch.float32).reshape(-1).cpu().numpy()
         t = torch.as_tensor(ep.y_true, dtype=torch.float32).reshape(-1).cpu().numpy()
         ep_pred.append(p)
         ep_tgt.append(t)
+        ep_obs.append(_episode_obs_levels(ep, realignment) if dir_target == "effect" else None)
     pred = np.concatenate(ep_pred)
     tgt = np.concatenate(ep_tgt)
+    # RMSE is always level-space (subtracting y_obs from both sides would not
+    # change it anyway); dir_target only changes what the sign test scores.
     rmse = _pooled_rmse(pred, tgt)
     lo, hi = _cluster_bootstrap_rmse(ep_pred, ep_tgt)
-    da = direction_accuracy(torch.from_numpy(pred), torch.from_numpy(tgt))
+    if dir_target == "effect":
+        obs = np.concatenate(ep_obs)
+        da = direction_accuracy(torch.from_numpy(pred - obs), torch.from_numpy(tgt - obs))
+    else:
+        da = direction_accuracy(torch.from_numpy(pred), torch.from_numpy(tgt))
     return {
         "baseline": name,
         "n_episodes": len(ep_pred),
@@ -68,6 +94,7 @@ def run_baseline(name, suite_episodes, checkpoint=None, device="cpu"):
         "rmse_ci95": [lo, hi],
         "dir_acc": da["accuracy"],
         "dir_n_valid": da["n_valid"],
+        "dir_target": dir_target,
     }
 
 
@@ -78,11 +105,46 @@ def main():
     ap.add_argument("--pfn-checkpoint", default=None)
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--out", type=Path, default=None)
+    ap.add_argument(
+        "--dir-target",
+        choices=["level", "effect"],
+        default="level",
+        help="What the direction-accuracy sign test scores: the interventional "
+        "level (v1 paper protocol) or the causal effect y_true - y_obs.",
+    )
+    ap.add_argument(
+        "--realignment",
+        type=Path,
+        default=None,
+        help="JSONL realignment sidecar mapping episodes to corrected y_obs "
+        "(needed for archived suites with misaligned x_obs columns).",
+    )
     args = ap.parse_args()
+    realignment = None
+    if args.realignment:
+        realignment = {}
+        with args.realignment.open() as fh:
+            for line in fh:
+                row = json.loads(line)
+                realignment[int(row["idx"])] = row
 
     t0 = time.time()
     episodes = list(load_benchmark(args.suite))
     print(f"[{args.suite}] loaded {len(episodes)} episodes in {time.time() - t0:.1f}s")
+    if realignment is not None:
+        # Repair the archived x_obs (column order + hidden zeroing) so
+        # baselines read the variable they claim to read.
+        episodes = [
+            realign_episode(
+                ep,
+                realignment[ep.scm_id]["canonical_perm"],
+                realignment[ep.scm_id]["hidden_canonical"],
+            )
+            if ep.scm_id in realignment
+            else ep
+            for ep in episodes
+        ]
+        print(f"[{args.suite}] realigned x_obs for {len(realignment)} episodes")
 
     rows = []
     todo = list(args.baselines)
@@ -91,7 +153,14 @@ def main():
     for name in todo:
         t = time.time()
         try:
-            row = run_baseline(name, episodes, checkpoint=args.pfn_checkpoint, device=args.device)
+            row = run_baseline(
+                name,
+                episodes,
+                checkpoint=args.pfn_checkpoint,
+                device=args.device,
+                dir_target=args.dir_target,
+                realignment=realignment,
+            )
         except Exception as ex:  # keep going; report the failure
             print(f"  {name:14s} FAILED: {ex}")
             rows.append({"baseline": name, "error": str(ex)})

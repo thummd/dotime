@@ -60,7 +60,16 @@ def make_episode(spec: dict):
             x_obs, x_int, iv, _ = DoTime(seed=s).generate_pair(T=t_len)
             if attempt == retries or not _diverged(x_obs, x_int):
                 break
-        return episode_from_pair(x_obs, x_int, iv, scm_id=idx, metadata={"tier": 1})
+        # Flag zeroed (diverged) episodes explicitly: v1.0.0 shipped them
+        # unflagged, which the datasheet erratum documents. Tensors and RNG
+        # streams are unchanged; only metadata_json gains the key (v1.1+).
+        return episode_from_pair(
+            x_obs,
+            x_int,
+            iv,
+            scm_id=idx,
+            metadata={"tier": 1, "diverged": _diverged(x_obs, x_int)},
+        )
     if kind == "regime":
         from dotime import DoTime
 
@@ -77,7 +86,7 @@ def make_episode(spec: dict):
             iv,
             structure=f"regime_{d}",
             scm_id=idx,
-            metadata={"tier": spec["tier"], "n_regimes": d},
+            metadata={"tier": spec["tier"], "n_regimes": d, "diverged": _diverged(x_obs, x_int)},
         )
     if kind == "identifiability":
         from dotime.extended import ExtendedDoTime
@@ -85,8 +94,12 @@ def make_episode(spec: dict):
         s = ExtendedDoTime(tscm_structure=spec["structure"], n_max=41, seed=seed).generate_sample(
             T=t_len
         )
+        zeroed = float(s["X_int"].abs().max()) == 0.0
         return episode_from_sample(
-            s, structure=spec["structure"], scm_id=idx, metadata={"tier": spec["tier"]}
+            s,
+            structure=spec["structure"],
+            scm_id=idx,
+            metadata={"tier": spec["tier"], "diverged": zeroed},
         )
     if kind == "continuous":
         from dotime.continuous import ContinuousExtendedPrior

@@ -267,3 +267,51 @@ def test_intervention_sampler_rejects_too_short_series():
     InterventionSampler(N=3, T=20).sample()  # boundary is allowed
     with pytest.raises(ValueError, match="need T >= 4"):
         InterventionSampler(N=3, T=3, min_intervention_length=2)
+
+
+def test_identifiability_release_tensors_are_canonically_aligned():
+    """Regression (v1 erratum): the released unmasked X_obs_full must share the
+    canonical column order of X_int/query_target, hide hidden variables, and
+    yield Y_causal_effect == Y_true - X_obs_full[query]."""
+    import torch as _torch
+
+    from dotime.extended import ExtendedDoTime
+
+    for struct in ("front_door", "back_door", "unobserved_confounder"):
+        _torch.manual_seed(5)
+        gen = ExtendedDoTime(tscm_structure=struct, n_max=41, seed=5)
+        s = gen.generate_sample(T=80)
+        n = int(s["num_vars"])
+        onset = int(s["int_onset_idx"])
+        # pre-onset the masked and unmasked tensors must agree -> same column order
+        assert _torch.allclose(s["X_obs_full"][:onset, :n], s["X_obs"][:onset, :n])
+        # hidden columns (variable_mask == 0 among real vars) are zero in the release tensor
+        hidden = s["variable_mask"][:n] == 0
+        if bool(hidden.any()):
+            assert float(s["X_obs_full"][:, :n][:, hidden].abs().max()) == 0.0
+        # effect identity against the unmasked obs at the query
+        qt = int(s["query_target"])
+        qti = min(round(float(s["query_time"]) * 80), 79)
+        expected = float(s["Y_true"]) - float(s["X_obs_full"][qti, qt])
+        assert float(s["Y_causal_effect"]) == pytest.approx(expected, abs=1e-5)
+
+
+def test_query_obs_levels_matches_manual_lookup():
+    from dotime.benchmarks import Episode
+    from dotime.evaluation import query_obs_levels
+    from dotime.interventions import InterventionSpec, InterventionType
+
+    x_obs = torch.arange(40, dtype=torch.float32).reshape(10, 4)
+    ep = Episode(
+        x_obs=x_obs,
+        x_int=x_obs.clone(),
+        intervention=InterventionSpec(
+            targets=[0], times=[5], intervention_type=InterventionType.HARD, values=1.0
+        ),
+        y_true=torch.tensor([1.0]),
+        query_target=torch.tensor([2]),
+        query_time=torch.tensor([0.7]),  # normalized -> index 7
+    )
+    assert float(query_obs_levels(ep)[0]) == float(x_obs[7, 2])
+    ep.query_time = torch.tensor([8.0])  # absolute index
+    assert float(query_obs_levels(ep)[0]) == float(x_obs[8, 2])

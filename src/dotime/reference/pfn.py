@@ -31,7 +31,7 @@ import torch
 
 from dotime.baselines import _INT_TYPE_CODE  # protocol base
 from dotime.benchmarks import load_benchmark
-from dotime.evaluation import direction_accuracy
+from dotime.evaluation import direction_accuracy, query_obs_levels, realign_episode
 
 
 def episode_to_batch_interp(episode, n_max, device, observational=False):
@@ -136,18 +136,29 @@ class PFNRef:
         return (pred_norm * std + mean).cpu()
 
 
-def run(model, episodes):
-    ep_pred, ep_tgt, structs = [], [], []
+def run(model, episodes, dir_target="level", realignment=None):
+    ep_pred, ep_tgt, ep_obs, structs = [], [], [], []
     for ep in episodes:
         p = torch.as_tensor(model.predict(ep), dtype=torch.float32).reshape(-1).numpy()
         t = torch.as_tensor(ep.y_true, dtype=torch.float32).reshape(-1).numpy()
         ep_pred.append(p)
         ep_tgt.append(t)
         structs.append(ep.structure)
+        if dir_target == "effect":
+            if realignment is not None and ep.scm_id in realignment:
+                ep_obs.append(
+                    np.asarray([realignment[ep.scm_id]["y_obs_corrected"]], dtype=np.float32)
+                )
+            else:
+                ep_obs.append(query_obs_levels(ep).cpu().numpy())
+        else:
+            ep_obs.append(np.zeros_like(t))  # zero offset == level scoring
     pred = np.concatenate(ep_pred)
     tgt = np.concatenate(ep_tgt)
+    obs = np.concatenate(ep_obs)
+    # RMSE stays level-space; the y_obs offset cancels in pred - tgt anyway.
     rmse = float(np.sqrt(np.mean((pred - tgt) ** 2)))
-    da = direction_accuracy(torch.from_numpy(pred), torch.from_numpy(tgt))
+    da = direction_accuracy(torch.from_numpy(pred - obs), torch.from_numpy(tgt - obs))
     # episode-cluster bootstrap for pooled RMSE
     rng = np.random.default_rng(0)
     sse = np.array([float(np.sum((p - t) ** 2)) for p, t in zip(ep_pred, ep_tgt, strict=True)])
@@ -164,7 +175,8 @@ def run(model, episodes):
         idx = [i for i, s in enumerate(structs) if s == st]
         p = np.concatenate([ep_pred[i] for i in idx])
         t = np.concatenate([ep_tgt[i] for i in idx])
-        d = direction_accuracy(torch.from_numpy(p), torch.from_numpy(t))
+        o = np.concatenate([ep_obs[i] for i in idx])
+        d = direction_accuracy(torch.from_numpy(p - o), torch.from_numpy(t - o))
         per_struct[st] = {"rmse": float(np.sqrt(np.mean((p - t) ** 2))), "dir_acc": d["accuracy"]}
     import math as _m
 
@@ -192,9 +204,40 @@ def main():
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--per-structure", type=int, default=0, help="0 = full suite")
     ap.add_argument("--out", type=Path, default=None)
+    ap.add_argument(
+        "--dir-target",
+        choices=["level", "effect"],
+        default="level",
+        help="Direction-accuracy target: interventional level (v1 protocol) or "
+        "causal effect y_true - y_obs.",
+    )
+    ap.add_argument(
+        "--realignment",
+        type=Path,
+        default=None,
+        help="JSONL sidecar with corrected per-episode y_obs (archived v1 suites).",
+    )
     args = ap.parse_args()
+    realignment = None
+    if args.realignment:
+        realignment = {}
+        with args.realignment.open() as fh:
+            for line in fh:
+                row = json.loads(line)
+                realignment[int(row["idx"])] = row
 
     episodes = list(load_benchmark(args.suite))
+    if realignment is not None:
+        episodes = [
+            realign_episode(
+                ep,
+                realignment[ep.scm_id]["canonical_perm"],
+                realignment[ep.scm_id]["hidden_canonical"],
+            )
+            if ep.scm_id in realignment
+            else ep
+            for ep in episodes
+        ]
     if args.per_structure:
         from collections import defaultdict
 
@@ -208,8 +251,8 @@ def main():
     for tag, ck, obs in [("PFN_int", args.ckpt_int, False), ("PFN_obs", args.ckpt_obs, True)]:
         t0 = time.time()
         model = PFNRef(ck, device=args.device, observational=obs)
-        r = run(model, episodes)
-        out[tag] = {"checkpoint": ck, **r}
+        r = run(model, episodes, dir_target=args.dir_target, realignment=realignment)
+        out[tag] = {"checkpoint": ck, "dir_target": args.dir_target, **r}
         _da = r["dir_acc"] if r["dir_acc"] is not None else float("nan")
         print(
             f"{tag}: RMSE={r['pooled_rmse']:.3f} CI[{r['rmse_ci95'][0]:.3f},{r['rmse_ci95'][1]:.3f}] "

@@ -94,6 +94,64 @@ def compute_r2(predictions: torch.Tensor, targets: torch.Tensor) -> float:
     return (1.0 - ss_res / ss_tot).item()
 
 
+def realign_episode(episode, canonical_perm, hidden_canonical=()):
+    """Return a copy of an episode with its ``x_obs`` columns realigned.
+
+    Repairs the archived ``dot-Identifiability-v1`` (v1.0.0) episodes, whose
+    released ``x_obs`` is in topological order while ``x_int``/``query_target``
+    are canonical, and whose hidden variables were not zeroed (v1 erratum).
+
+    Args:
+        episode: The episode to repair.
+        canonical_perm: ``canonical_idx -> topo_idx`` permutation from the
+            realignment sidecar.
+        hidden_canonical: Canonical indices of hidden variables to zero out.
+
+    Returns:
+        A new :class:`~dotime.benchmarks.Episode` with realigned ``x_obs``;
+        every other field is shared with the input episode.
+    """
+    import dataclasses
+
+    perm = torch.as_tensor(list(canonical_perm), dtype=torch.long)
+    x = episode.x_obs.index_select(1, perm).clone()
+    for h in hidden_canonical:
+        x[:, int(h)] = 0.0
+    return dataclasses.replace(episode, x_obs=x)
+
+
+def query_obs_levels(episode) -> torch.Tensor:
+    """Observational level of the queried variable at each query time.
+
+    Used to score direction accuracy on the *causal effect*
+    (``y_true - y_obs``) instead of the interventional level: subtracting the
+    same observational level from prediction and target leaves RMSE unchanged
+    but makes the sign test measure the effect direction.
+
+    Args:
+        episode: A benchmark :class:`~dotime.benchmarks.Episode`.
+
+    Returns:
+        Tensor of shape ``(n_queries,)`` with ``x_obs[query_time, query_target]``
+        per query (normalized query times are rescaled by the episode length).
+
+    .. warning::
+        For the archived ``dot-Identifiability-v1`` (v1.0.0) files this reads a
+        possibly *misaligned* column: the released ``x_obs`` is in topological
+        order while ``query_target`` is canonical (v1 erratum). Use the
+        released realignment sidecar for that suite; later suite versions and
+        ``dot-Continuous-v1`` are correctly aligned.
+    """
+    t_len = episode.x_obs.shape[0]
+    out = []
+    for q in range(episode.query_target.numel()):
+        var = int(episode.query_target[q])
+        v = float(episode.query_time[q])
+        idx = round(v * t_len) if v <= 1.0 else int(v)
+        out.append(float(episode.x_obs[min(max(idx, 0), t_len - 1), var]))
+    return torch.tensor(out, dtype=torch.float32)
+
+
 def direction_accuracy(
     preds: torch.Tensor, targets: torch.Tensor, eps: float = DIR_ACC_EPS
 ) -> dict[str, float | int]:
