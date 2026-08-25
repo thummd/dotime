@@ -1,0 +1,20 @@
+{
+  "trained": {
+    "rmse": 0.7745693325996399,
+    "rmse_se": 0.07368487677424405,
+    "mae": 0.4316592216491699,
+    "nmse": 0.6071305007224801,
+    "r2": 0.3928694579177112,
+    "r2_se": 0.0480505354082862,
+    "direction_accuracy": 0.7628361582756042,
+    "direction_accuracy_se": 0.02103188602078984,
+    "effect_direction_accuracy": 0.7304964661598206,
+    "effect_direction_accuracy_se": 0.021573524789399917,
+    "effect_rmse": 0.7745693325996399,
+    "effect_mae": 0.4316592216491699,
+    "mean_effect_magnitude": 0.4684167802333832,
+    "n_queries": 640,
+    "mean_positivity_score": 4.095765149259023e-08,
+    "frac_ood": 0.0
+  }
+}
