@@ -144,21 +144,20 @@ def run(model, episodes, dir_target="level", realignment=None):
         ep_pred.append(p)
         ep_tgt.append(t)
         structs.append(ep.structure)
-        if dir_target == "effect":
-            if realignment is not None and ep.scm_id in realignment:
-                ep_obs.append(
-                    np.asarray([realignment[ep.scm_id]["y_obs_corrected"]], dtype=np.float32)
-                )
-            else:
-                ep_obs.append(query_obs_levels(ep).cpu().numpy())
+        # Always collect the observational level so BOTH scorings come from
+        # one prediction pass (predictions do not depend on the target).
+        if realignment is not None and ep.scm_id in realignment:
+            ep_obs.append(np.asarray([realignment[ep.scm_id]["y_obs_corrected"]], dtype=np.float32))
         else:
-            ep_obs.append(np.zeros_like(t))  # zero offset == level scoring
+            ep_obs.append(query_obs_levels(ep).cpu().numpy())
     pred = np.concatenate(ep_pred)
     tgt = np.concatenate(ep_tgt)
     obs = np.concatenate(ep_obs)
     # RMSE stays level-space; the y_obs offset cancels in pred - tgt anyway.
     rmse = float(np.sqrt(np.mean((pred - tgt) ** 2)))
-    da = direction_accuracy(torch.from_numpy(pred - obs), torch.from_numpy(tgt - obs))
+    da_level = direction_accuracy(torch.from_numpy(pred), torch.from_numpy(tgt))
+    da_effect = direction_accuracy(torch.from_numpy(pred - obs), torch.from_numpy(tgt - obs))
+    da = da_effect if dir_target == "effect" else da_level
     # episode-cluster bootstrap for pooled RMSE
     rng = np.random.default_rng(0)
     sse = np.array([float(np.sum((p - t) ** 2)) for p, t in zip(ep_pred, ep_tgt, strict=True)])
@@ -176,8 +175,15 @@ def run(model, episodes, dir_target="level", realignment=None):
         p = np.concatenate([ep_pred[i] for i in idx])
         t = np.concatenate([ep_tgt[i] for i in idx])
         o = np.concatenate([ep_obs[i] for i in idx])
-        d = direction_accuracy(torch.from_numpy(p - o), torch.from_numpy(t - o))
-        per_struct[st] = {"rmse": float(np.sqrt(np.mean((p - t) ** 2))), "dir_acc": d["accuracy"]}
+        d_l = direction_accuracy(torch.from_numpy(p), torch.from_numpy(t))
+        d_e = direction_accuracy(torch.from_numpy(p - o), torch.from_numpy(t - o))
+        d = d_e if dir_target == "effect" else d_l
+        per_struct[st] = {
+            "rmse": float(np.sqrt(np.mean((p - t) ** 2))),
+            "dir_acc": d["accuracy"],
+            "dir_acc_level": d_l["accuracy"],
+            "dir_acc_effect": d_e["accuracy"],
+        }
     import math as _m
 
     _se = (
@@ -191,6 +197,8 @@ def run(model, episodes, dir_target="level", realignment=None):
         "dir_acc": da["accuracy"],
         "dir_n_valid": da["n_valid"],
         "dir_acc_se": _se,
+        "dir_acc_level": da_level["accuracy"],
+        "dir_acc_effect": da_effect["accuracy"],
         "n_episodes": len(ep_pred),
         "per_structure": per_struct,
     }

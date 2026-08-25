@@ -18,6 +18,9 @@ All notable changes to `dotime` are documented here. The format follows
   streams and all other fixed-seed outputs are bit-identical.
 
 ### Added
+- `dotime-eval-pfn` reports both `dir_acc_level` and `dir_acc_effect` (pooled and
+  per structure) from a single prediction pass, whichever `--dir-target` is
+  selected for the headline `dir_acc`.
 - `evaluation.query_obs_levels` and a `--dir-target {level,effect}` /
   `--realignment` option on `dotime-eval-reference` and `dotime-eval-pfn`:
   score direction accuracy on the causal effect instead of the interventional
