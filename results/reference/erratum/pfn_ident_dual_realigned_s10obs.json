@@ -1,0 +1,133 @@
+{
+  "suite": "dot-Identifiability-v1",
+  "PFN_int": {
+    "checkpoint": "/home/dennis/repos/do-over-time-pfn/checkpoints/s9ho_all_causal/do_over_time_pfn_best.pt",
+    "dir_target": "effect",
+    "pooled_rmse": 0.6395856738090515,
+    "rmse_ci95": [
+      0.6160744590043166,
+      0.6637652051921504
+    ],
+    "dir_acc": 0.7022892236709595,
+    "dir_n_valid": 8824,
+    "dir_acc_se": 0.004867685716271029,
+    "dir_acc_level": 0.6706399917602539,
+    "dir_acc_effect": 0.7022892236709595,
+    "n_episodes": 10800,
+    "per_structure": {
+      "back_door": {
+        "rmse": 0.9467648863792419,
+        "dir_acc": 0.6094986796379089,
+        "dir_acc_level": 0.6519386768341064,
+        "dir_acc_effect": 0.6094986796379089
+      },
+      "bi_variate": {
+        "rmse": 0.7476950287818909,
+        "dir_acc": 0.6929134130477905,
+        "dir_acc_level": 0.6642729043960571,
+        "dir_acc_effect": 0.6929134130477905
+      },
+      "confounder_mediator": {
+        "rmse": 0.46686655282974243,
+        "dir_acc": 0.7891344428062439,
+        "dir_acc_level": 0.7105262875556946,
+        "dir_acc_effect": 0.7891344428062439
+      },
+      "front_door": {
+        "rmse": 0.4591333866119385,
+        "dir_acc": 0.7657822370529175,
+        "dir_acc_level": 0.6966292262077332,
+        "dir_acc_effect": 0.7657822370529175
+      },
+      "instrumental_variable": {
+        "rmse": 0.7849461436271667,
+        "dir_acc": 0.7084444165229797,
+        "dir_acc_level": 0.6696348786354065,
+        "dir_acc_effect": 0.7084444165229797
+      },
+      "mediator": {
+        "rmse": 0.5061852335929871,
+        "dir_acc": 0.6975023150444031,
+        "dir_acc_level": 0.6448243260383606,
+        "dir_acc_effect": 0.6975023150444031
+      },
+      "observed_confounder": {
+        "rmse": 0.4896893799304962,
+        "dir_acc": 0.6835206151008606,
+        "dir_acc_level": 0.6733143329620361,
+        "dir_acc_effect": 0.6835206151008606
+      },
+      "unobserved_confounder": {
+        "rmse": 0.5255659818649292,
+        "dir_acc": 0.675527036190033,
+        "dir_acc_level": 0.6546830534934998,
+        "dir_acc_effect": 0.675527036190033
+      }
+    }
+  },
+  "PFN_obs": {
+    "checkpoint": "/home/dennis/repos/do-over-time-pfn/checkpoints/s10ho_all_obs/do_over_time_pfn_best.pt",
+    "dir_target": "effect",
+    "pooled_rmse": 0.5869013667106628,
+    "rmse_ci95": [
+      0.5605888930727861,
+      0.6147743962422308
+    ],
+    "dir_acc": 0.7537397742271423,
+    "dir_n_valid": 8824,
+    "dir_acc_se": 0.004586433527697143,
+    "dir_acc_level": 0.6950584650039673,
+    "dir_acc_effect": 0.7537397742271423,
+    "n_episodes": 10800,
+    "per_structure": {
+      "back_door": {
+        "rmse": 0.8700263500213623,
+        "dir_acc": 0.6983289122581482,
+        "dir_acc_level": 0.6943191885948181,
+        "dir_acc_effect": 0.6983289122581482
+      },
+      "bi_variate": {
+        "rmse": 0.7392198443412781,
+        "dir_acc": 0.6946631669998169,
+        "dir_acc_level": 0.6795332431793213,
+        "dir_acc_effect": 0.6946631669998169
+      },
+      "confounder_mediator": {
+        "rmse": 0.46724164485931396,
+        "dir_acc": 0.7845304012298584,
+        "dir_acc_level": 0.7133458852767944,
+        "dir_acc_effect": 0.7845304012298584
+      },
+      "front_door": {
+        "rmse": 0.4587584435939789,
+        "dir_acc": 0.7731015682220459,
+        "dir_acc_level": 0.6975655555725098,
+        "dir_acc_effect": 0.7731015682220459
+      },
+      "instrumental_variable": {
+        "rmse": 0.7846976518630981,
+        "dir_acc": 0.7075555324554443,
+        "dir_acc_level": 0.6705253720283508,
+        "dir_acc_effect": 0.7075555324554443
+      },
+      "mediator": {
+        "rmse": 0.37129807472229004,
+        "dir_acc": 0.7964847087860107,
+        "dir_acc_level": 0.692307710647583,
+        "dir_acc_effect": 0.7964847087860107
+      },
+      "observed_confounder": {
+        "rmse": 0.372258722782135,
+        "dir_acc": 0.7818351984024048,
+        "dir_acc_level": 0.7236467003822327,
+        "dir_acc_effect": 0.7818351984024048
+      },
+      "unobserved_confounder": {
+        "rmse": 0.3623132109642029,
+        "dir_acc": 0.8010998964309692,
+        "dir_acc_level": 0.6915799379348755,
+        "dir_acc_effect": 0.8010998964309692
+      }
+    }
+  }
+}

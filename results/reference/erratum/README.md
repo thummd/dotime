@@ -7,7 +7,7 @@ published tables' sources are in `../structure_matched/` (unchanged).
 |---|---|---|
 | `ident_cpu_{level,effect}_realigned.json` | CPU baselines on `dot-Identifiability-v1` with realigned `x_obs` (sidecar), level- and effect-scored | erratum table, items 3+5 |
 | `pfn_ident_{level,effect}_realigned.json` | published `s9ho_all_causal` vs `s9ho_all_obs` (degenerate-target obs arm), realigned inputs | erratum table decomposition |
-| `pfn_ident_{level,effect}_realigned_s10obs.json` | `s9ho_all_causal` vs **retrained** `s10ho_all_obs` | corrected tab:results / fmgap rows |
+| `pfn_ident_dual_realigned_s10obs.json` | `s9ho_all_causal` vs **retrained** `s10ho_all_obs`, realigned inputs; one pass reporting `dir_acc_level` and `dir_acc_effect` | corrected tab:results / fmgap rows |
 | `s10_sweep/` | OSC structure-matched sweep: `s9ho_*_causal` vs retrained `s10ho_*_obs`; seed 42, T in {200,500,1000,2000}, n_batches=40, OSC hardening (`analyze_s10.py`) | corrected tab:gap (level + effect) |
 | `s10btm_sweep/` | same for BTM, BTM hardening config | corrected tab:gapbtm |
 | `gap_tables_corrected.json` | per structure x T: published gap, corrected level/effect gaps + SE, per-arm accuracies, n_queries; pooled rows query-weighted | the four corrected tables |
