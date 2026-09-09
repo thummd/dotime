@@ -299,12 +299,13 @@ class IV2SLSBaseline:
 
 @register("Oracle")
 class OracleBaseline:
-    """Ground-truth SCM rollout. Upper bound on synthetic suites only.
+    """Ground-truth interventional outcome. Upper bound on synthetic suites only.
 
-    TODO(consolidate): the generating SCM is available at suite-build time;
-    persist the true counterfactual target into Episode.metadata (or compute it
-    from a stored SCM handle) and return it here. On suites without a stored
-    oracle this should raise a clear error rather than guess.
+    Reads the released ``y_true`` (the exact interventional level at the query).
+    Whether that level is also a counterfactual depends on the generator: the
+    continuous suite and the v1.1.0 discrete suites share one noise stream
+    across arms, the v1.0.0 discrete suites do not. On suites without a stored
+    target this raises rather than guesses.
     """
 
     name = "Oracle"
@@ -312,7 +313,7 @@ class OracleBaseline:
     def predict(self, episode: Episode) -> torch.Tensor:
         if "y_oracle" in episode.metadata:
             return torch.as_tensor(episode.metadata["y_oracle"], dtype=torch.float32)
-        # If y_true carries the exact counterfactual for synthetic suites, use it.
+        # y_true is the exact interventional outcome on every synthetic suite.
         if episode.y_true is not None and episode.y_true.numel():
             return episode.y_true.float()
         raise RuntimeError("Oracle baseline requires a stored ground-truth target")

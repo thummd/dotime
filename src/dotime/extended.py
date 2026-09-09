@@ -82,6 +82,7 @@ class TSCMPrior:
         use_lagged_edges: bool = True,
         intervention_scale: float = 2.0,
         sigma_w: float = 0.5,
+        pair_mode: str = "interventional",
     ):
         self.sampler = TSCMSampler(
             structure,
@@ -94,6 +95,14 @@ class TSCMPrior:
         self.burn_in = burn_in
         self.intervention_scale = intervention_scale
         self.gen = torch.Generator().manual_seed(seed)
+        if pair_mode not in ("interventional", "counterfactual"):
+            raise ValueError(
+                f"pair_mode must be interventional or counterfactual, got {pair_mode!r}"
+            )
+        # "counterfactual" freezes one noise realisation per episode and shares it
+        # across both arms (see TemporalSCM.freeze_noise); "interventional" keeps
+        # the v1.0.0 independent-draw semantics and its exact RNG stream.
+        self.pair_mode = pair_mode
         self.config = {"burn_in": burn_in}
 
         # Canonical permutation: A at index 0, Y at index N-1, others in between.
@@ -130,6 +139,11 @@ class TSCMPrior:
         """
         scm = self.sampler.sample(generator=self.gen)
         len(scm._topo)
+
+        if self.pair_mode == "counterfactual":
+            # Frozen on the SCM object so the positivity-aware re-simulation in
+            # ExtendedDoTime.generate_sample reuses the same realisation too.
+            scm.freeze_noise(T + self.burn_in, generator=self.gen)
 
         X_obs = scm.sample_observational(T=T, burn_in=self.burn_in, generator=self.gen)
 
@@ -183,6 +197,7 @@ class ExtendedDoTime:
         sim_device: str = "cpu",
         query_offset_range: tuple = (0, 0),
         hardening: dict | None = None,
+        pair_mode: str = "interventional",
     ):
         self.n_max = n_max
         self.t_range = t_range
@@ -199,6 +214,18 @@ class ExtendedDoTime:
         self.intervention_scale = intervention_scale
         self._seed = seed
         self._burn_in_total = burn_in + dynamics_burn_in
+        if pair_mode not in ("interventional", "counterfactual"):
+            raise ValueError(
+                f"pair_mode must be interventional or counterfactual, got {pair_mode!r}"
+            )
+        if pair_mode == "counterfactual" and tscm_structure is None:
+            raise NotImplementedError(
+                "counterfactual pairing is implemented for the named TSCM structures; "
+                "the generic/regime priors keep independent-noise interventional twins"
+            )
+        # Applies to generate_sample / generate_pair (the release path). generate_batch
+        # uses the batched simulator and keeps interventional-twin semantics.
+        self.pair_mode = pair_mode
 
         if tscm_structure is not None:
             structure_enum = TSCMStructure(tscm_structure)
@@ -208,6 +235,7 @@ class ExtendedDoTime:
                 seed=seed,
                 use_lagged_edges=use_lagged_edges,
                 intervention_scale=intervention_scale,
+                pair_mode=pair_mode,
             )
             # Batched simulator for vectorized generation.
             # Hardening knobs (sigma_w, noise_std, max_lag, unit_norm_rows,

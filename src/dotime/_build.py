@@ -91,15 +91,22 @@ def make_episode(spec: dict):
     if kind == "identifiability":
         from dotime.extended import ExtendedDoTime
 
-        s = ExtendedDoTime(tscm_structure=spec["structure"], n_max=41, seed=seed).generate_sample(
-            T=t_len
-        )
+        s = ExtendedDoTime(
+            tscm_structure=spec["structure"],
+            n_max=41,
+            seed=seed,
+            pair_mode=spec.get("pair_mode", "interventional"),
+        ).generate_sample(T=t_len)
         zeroed = float(s["X_int"].abs().max()) == 0.0
         return episode_from_sample(
             s,
             structure=spec["structure"],
             scm_id=idx,
-            metadata={"tier": spec["tier"], "diverged": zeroed},
+            metadata={
+                "tier": spec["tier"],
+                "diverged": zeroed,
+                "pair_mode": spec.get("pair_mode", "interventional"),
+            },
         )
     if kind == "continuous":
         from dotime.continuous import ContinuousExtendedPrior
@@ -158,6 +165,7 @@ def episode_specs(cfg: dict, suite_seed: int, scale: float) -> list[dict]:
                 specs.append(
                     {
                         "kind": "identifiability",
+                        "pair_mode": cfg.get("pair_mode", "interventional"),
                         "idx": i,
                         "seed": episode_seed(suite_seed, i),
                         "T": t_len,

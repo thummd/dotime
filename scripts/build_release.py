@@ -194,6 +194,7 @@ def main(argv: list[str] | None = None) -> int:
             seed=seed,
             extra_manifest={
                 "generator": cfg["generator"],
+                "pair_mode": cfg.get("pair_mode", "interventional"),
                 "config_hash": config_hash,
                 "scale": args.scale,
                 "scheme": "perepisode",

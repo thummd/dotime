@@ -99,6 +99,39 @@ class TemporalSCM:
         return lagged_parents
 
     @torch.no_grad()
+    def freeze_noise(
+        self, total_T: int, generator: torch.Generator | None = None
+    ) -> dict[str, torch.Tensor]:
+        """Draw one exogenous-noise realisation and reuse it for every simulation.
+
+        Calling this before ``sample_observational`` and ``sample_interventional``
+        turns the pair into a shared-noise counterfactual: the arms differ only
+        through the intervention. The draw goes through the samplers'
+        generator-aware path, so a fixed ``generator`` seed reproduces it.
+
+        Args:
+            total_T: Number of simulated steps including burn-in. Must match the
+                ``T + burn_in`` used by the subsequent ``sample_*`` calls, otherwise
+                those calls fall back to drawing fresh noise.
+            generator: RNG for the draw. ``None`` uses the global torch RNG.
+
+        Returns:
+            The frozen ``{variable: (total_T,) tensor}`` mapping.
+
+        Raises:
+            ValueError: If ``total_T`` is not positive.
+        """
+        if total_T <= 0:
+            raise ValueError(f"total_T must be positive, got {total_T}")
+        self._frozen_noise = {
+            v: self.noise[v].sample_shape((total_T,), generator=generator) for v in self._topo
+        }
+        return self._frozen_noise
+
+    def clear_noise(self) -> None:
+        """Drop a frozen realisation so later simulations draw fresh noise."""
+        self._frozen_noise = None
+
     def _simulate(
         self,
         total_T: int,
@@ -115,14 +148,23 @@ class TemporalSCM:
         total_T - burn_in
         buffer = torch.zeros(total_T, N, device=self.device, dtype=self.dtype)
 
-        # Pre-sample all noise (eliminates per-step tensor creation + RNG state swaps)
-        all_noise = {}
-        for v in self._topo:
-            all_noise[v] = (
-                self.noise[v]
-                .distribution.sample((total_T,))
-                .to(device=self.device, dtype=self.dtype)
-            )
+        frozen = getattr(self, "_frozen_noise", None)
+        if frozen is not None and all(frozen[v].shape[0] == total_T for v in self._topo):
+            # Shared-noise (counterfactual) pairing: both arms consume the same
+            # pre-drawn realisation, so they agree exactly before the
+            # intervention onset and their difference is a per-episode effect.
+            all_noise = {v: frozen[v].to(device=self.device, dtype=self.dtype) for v in self._topo}
+        else:
+            # Legacy path (v1.0.0 suites): a fresh realisation per call through
+            # torch.distributions, which ignores ``generator`` and consumes the
+            # global RNG. Kept byte-identical so the released suites reproduce.
+            all_noise = {}
+            for v in self._topo:
+                all_noise[v] = (
+                    self.noise[v]
+                    .distribution.sample((total_T,))
+                    .to(device=self.device, dtype=self.dtype)
+                )
 
         # Pre-compute intervention lookup set for O(1) checks
         int_targets = set()

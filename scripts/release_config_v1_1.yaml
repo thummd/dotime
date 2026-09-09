@@ -1,0 +1,36 @@
+# dot-Identifiability-v1 version 1.1.0: the erratum regeneration.
+#
+# Same base seed and per-episode seed derivation as release_config.yaml (the
+# suite is first in the list, so it keeps suite seed base + 1000 = 20261719).
+# What changes versus 1.0.0:
+#   pair_mode: counterfactual  -> one noise realisation per episode shared across
+#                                 the observational and interventional arms, so
+#                                 y_true - y_obs is a per-episode counterfactual
+#                                 effect and the arms agree exactly pre-onset
+#   stability_retries: 3       -> diverged (all-zero) episodes are resampled
+#   generator fixes            -> released x_obs canonically aligned, hidden
+#                                 variables zeroed, y_causal_effect correct,
+#                                 diverged flag in metadata
+# Sharing the noise changes RNG consumption, so trajectories differ from 1.0.0:
+# this is a new artifact with new targets, not a corrected copy.
+seed: 20260719
+T: 200
+
+suites:
+
+  dot-Identifiability-v1:
+    version: "1.1.0"
+    generator: identifiability
+    T: 200
+    pair_mode: counterfactual
+    stability_retries: 3
+    episodes_per_structure: 1350
+    structures:
+      bi_variate:              1
+      back_door:               1
+      observed_confounder:     1
+      mediator:                2
+      front_door:              2
+      confounder_mediator:     2
+      instrumental_variable:   3
+      unobserved_confounder:   3

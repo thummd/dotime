@@ -12,7 +12,7 @@
 
 `dotime` samples multivariate temporal structural causal models (SCMs),
 applies interventions to them, and produces paired observational / interventional
-trajectories together with exact counterfactual targets.
+trajectories together with exact interventional targets. The continuous-time generator shares one noise realisation across the two arms and therefore yields true counterfactuals. The discrete generators draw the interventional arm with independent noise in the v1.0.0 suites and share the noise stream from v1.1.0 on.
 
 Where most time-series causal benchmarks are *observational* (recover a graph from
 passive dynamics), DoTime is *interventional / counterfactual*: it answers
@@ -27,7 +27,7 @@ estimates interventional effects.
   `observed_normal`, `observed_uniform`, with a positivity guard.
 - **Regime-switching SCMs** as a strict generalization of interrupted-time-series.
 - **Eight named identification structures** (back-door, front-door, IV, …) with
-  exact counterfactual ground truth.
+  exact interventional ground truth. Shared-noise counterfactuals from suite v1.1.0.
 - **Reference baselines** and **four frozen evaluation suites** (released with
   Zenodo DOIs and Croissant metadata).
 

@@ -4,7 +4,7 @@ DoTime ships four versioned, immutable suites for reproducible evaluation. Each 
 
 ## Suites
 
-- **`dot-Identifiability-v1`** — ~10.8k trajectories across **eight** named structures: `back_door`, `observed_confounder`, `confounder_mediator` (back-door family); `front_door`, `mediator` (front-door family); `instrumental_variable` (IV); `bi_variate` (trivially identified); `unobserved_confounder` (non-identifiable, robustness check). Counterfactuals are exact.
+- **`dot-Identifiability-v1`** — ~10.8k trajectories across **eight** named structures: `back_door`, `observed_confounder`, `confounder_mediator` (back-door family); `front_door`, `mediator` (front-door family); `instrumental_variable` (IV); `bi_variate` (trivially identified); `unobserved_confounder` (non-identifiable, robustness check). Targets are exact interventional outcomes. In v1.0.0 the two arms are independent noise draws from the same SCM (interventional twins, so `y_int - y_obs` is not a per-episode counterfactual effect). From v1.1.0 one pre-drawn noise stream is shared across arms and the pair is a true counterfactual.
 - **`dot-RegimeSwitch-v1`** — regime-switching trajectories with controllable break density.
 - **`dot-Continuous-v1`** — continuous-time intervention windows, multiple query offsets.
 - **`dot-Generic-100k`** — 100 000 trajectories from the full diverse prior. Training-scale.

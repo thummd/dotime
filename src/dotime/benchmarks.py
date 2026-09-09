@@ -73,7 +73,7 @@ _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
         hf_repo_id="thummd/dot-Identifiability-v1",
         zenodo_record_id="20919553",
         doi="10.5281/zenodo.20846063",  # concept DOI (resolves to latest version)
-        description="Named identification structures with exact counterfactuals.",
+        description="Named identification structures with exact interventional targets.",
         n_episodes=10_800,
         structures=(
             "back_door",
@@ -392,7 +392,8 @@ def episode_from_sample(
     """Build an :class:`Episode` from a generator ``generate_sample`` dict.
 
     Works for the structured generators (``ExtendedDoTime``,
-    ``ContinuousExtendedPrior``) whose samples carry exact counterfactual targets
+    ``ContinuousExtendedPrior``) whose samples carry exact interventional targets
+    (counterfactual when the generator shares noise across arms)
     and a per-structure query protocol. Trajectories padded to ``n_max`` are
     un-padded to clean ``(T, n_vars)`` here — this is the model-facing/release
     boundary for the padding, so released tensors carry no zero columns.

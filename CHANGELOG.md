@@ -6,6 +6,22 @@ All notable changes to `dotime` are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- Shared-noise (counterfactual) pairing for the discrete generator:
+  `TemporalSCM.freeze_noise` / `clear_noise` and `pair_mode="counterfactual"` on
+  `ExtendedDoTime` / `TSCMPrior`. One exogenous-noise realisation is drawn per
+  episode and shared by both arms, so they agree exactly before the intervention
+  onset and `Y_causal_effect` is a per-episode counterfactual effect. The default
+  `pair_mode="interventional"` keeps the v1.0.0 independent-draw path
+  byte-identical. `scripts/release_config_v1_1.yaml` builds
+  `dot-Identifiability-v1` 1.1.0 with it (plus `stability_retries`).
+
+### Changed
+- Documentation and docstrings no longer describe the v1.0.0 discrete suites as
+  carrying exact counterfactuals: their two arms are independent noise draws
+  (interventional twins). Only the continuous suite, and discrete suites from
+  1.1.0 on, share noise across arms.
+
 ### Fixed
 - `ExtendedDoTime.generate_sample`/`generate_batch`: the released (unmasked)
   observational tensor now receives the same canonical column permutation and
