@@ -24,7 +24,7 @@ from __future__ import annotations
 import json
 import os
 from collections.abc import Iterator
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 import torch
@@ -58,6 +58,32 @@ class SuiteMetadata:
     structures: tuple[str, ...] = ()
     license: str = "CC-BY-4.0"
     hf_repo_id: str = ""  # Hugging Face dataset repo, e.g. "thummd/dot-Identifiability-v1"
+    # Earlier released versions that stay loadable by pinning ``version=``:
+    # ((version, zenodo_record_id), ...). The HF mirror serves them from the
+    # matching ``v<version>`` tag; Zenodo needs the per-version record id.
+    prior_versions: tuple[tuple[str, str], ...] = ()
+
+    def for_version(self, version: str) -> SuiteMetadata:
+        """Return the metadata for a specific released version of this suite.
+
+        Args:
+            version: ``"latest"``, the registered version, or one of the
+                ``prior_versions``.
+
+        Returns:
+            ``self`` for the registered version, otherwise a copy whose
+            ``version`` and ``zenodo_record_id`` point at the pinned release.
+
+        Raises:
+            ValueError: If ``version`` was never released for this suite.
+        """
+        if version in ("latest", self.version):
+            return self
+        for prior, record_id in self.prior_versions:
+            if prior == version:
+                return replace(self, version=prior, zenodo_record_id=record_id)
+        known = [self.version, *[v for v, _ in self.prior_versions]]
+        raise ValueError(f"suite {self.name!r} has versions {known}, requested {version!r}")
 
     @property
     def zenodo_files_url(self) -> str:
@@ -261,9 +287,9 @@ def load_benchmark(
     """
     if name not in _SUITE_REGISTRY:
         raise KeyError(f"unknown benchmark suite {name!r}; available: {available_suites()}")
-    meta = _SUITE_REGISTRY[name]
-    if version not in ("latest", meta.version):
-        raise ValueError(f"suite {name!r} has version {meta.version!r}, requested {version!r}")
+    # Pinning an earlier release keeps published numbers reproducible after the
+    # registry advances (v1.1 suites are new artifacts, not corrected copies).
+    meta = _SUITE_REGISTRY[name].for_version(version)
 
     suite_dir = _cache_root(cache_dir) / f"{name}-{meta.version}"
 

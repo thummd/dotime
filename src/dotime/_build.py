@@ -91,13 +91,24 @@ def make_episode(spec: dict):
     if kind == "identifiability":
         from dotime.extended import ExtendedDoTime
 
-        s = ExtendedDoTime(
-            tscm_structure=spec["structure"],
-            n_max=41,
-            seed=seed,
-            pair_mode=spec.get("pair_mode", "interventional"),
-        ).generate_sample(T=t_len)
-        zeroed = float(s["X_int"].abs().max()) == 0.0
+        # Same deterministic resampling as the generic/regime branches. A pair
+        # counts as diverged if EITHER arm was zeroed: with shared noise the
+        # intervention clamp can keep the interventional arm finite while the
+        # observational arm diverges, and such a pair has no valid target.
+        for attempt in range(retries + 1):
+            s_seed = seed if attempt == 0 else seed * 100003 + attempt
+            _torch.manual_seed(s_seed)
+            s = ExtendedDoTime(
+                tscm_structure=spec["structure"],
+                n_max=41,
+                seed=s_seed,
+                pair_mode=spec.get("pair_mode", "interventional"),
+            ).generate_sample(T=t_len)
+            zeroed = (
+                float(s["X_int"].abs().max()) == 0.0 or float(s["X_obs_full"].abs().max()) == 0.0
+            )
+            if attempt == retries or not zeroed:
+                break
         return episode_from_sample(
             s,
             structure=spec["structure"],

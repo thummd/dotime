@@ -315,3 +315,28 @@ def test_query_obs_levels_matches_manual_lookup():
     assert float(query_obs_levels(ep)[0]) == float(x_obs[7, 2])
     ep.query_time = torch.tensor([8.0])  # absolute index
     assert float(query_obs_levels(ep)[0]) == float(x_obs[8, 2])
+
+
+def test_load_benchmark_pins_prior_versions(tmp_path, monkeypatch):
+    """A registry entry that advances to a new version must keep earlier
+    releases loadable by pinning ``version=`` (published numbers stay
+    reproducible); unknown versions fail clearly."""
+    from dataclasses import replace
+
+    import dotime.benchmarks as B
+
+    base = B._SUITE_REGISTRY["dot-Identifiability-v1"]
+    advanced = replace(
+        base, version="9.9.9", prior_versions=((base.version, base.zenodo_record_id),)
+    )
+    monkeypatch.setitem(B._SUITE_REGISTRY, "dot-Identifiability-v1", advanced)
+    assert advanced.for_version("latest").version == "9.9.9"
+    pinned = advanced.for_version(base.version)
+    assert pinned.version == base.version
+    assert pinned.zenodo_record_id == base.zenodo_record_id
+    with pytest.raises(ValueError, match="versions"):
+        advanced.for_version("0.0.1")
+    # End to end through the loader against a seeded local cache for the pinned version.
+    _seed_local_suite(tmp_path, "dot-Identifiability-v1")  # writes <name>-<registered version>
+    suite = B.load_benchmark("dot-Identifiability-v1", version=base.version, cache_dir=tmp_path)
+    assert suite.meta.version == base.version
