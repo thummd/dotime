@@ -10,7 +10,9 @@ All notable changes to `dotime` are documented here. The format follows
 - `dot-Identifiability-v1` 1.1.0: regenerated with shared-noise counterfactual
   pairing, aligned `x_obs`, hidden variables zeroed, correct `y_causal_effect`,
   resampled divergences (0 zeroed episodes) and a `diverged` flag. Same base seeds,
-  new trajectories and targets. 1.0.0 stays loadable with `version="1.0.0"`.
+  new trajectories and targets. Zenodo version record 22673322 (concept DOI
+  10.5281/zenodo.20846063), Hugging Face tag `v1.1.0`. 1.0.0 stays loadable with
+  `version="1.0.0"`.
 - Shared-noise (counterfactual) pairing for the discrete generator:
   `TemporalSCM.freeze_noise` / `clear_noise` and `pair_mode="counterfactual"` on
   `ExtendedDoTime` / `TSCMPrior`. One exogenous-noise realisation is drawn per

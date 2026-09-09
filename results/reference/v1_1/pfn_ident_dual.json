@@ -1,0 +1,133 @@
+{
+  "suite": "dot-Identifiability-v1",
+  "PFN_int": {
+    "checkpoint": "/home/dennis/repos/do-over-time-pfn/checkpoints/s9ho_all_causal/do_over_time_pfn_best.pt",
+    "dir_target": "effect",
+    "pooled_rmse": 0.6462655663490295,
+    "rmse_ci95": [
+      0.6220403120377949,
+      0.6705139436833321
+    ],
+    "dir_acc": 0.5372573733329773,
+    "dir_n_valid": 3194,
+    "dir_acc_se": 0.008822537033972677,
+    "dir_acc_level": 0.6822450757026672,
+    "dir_acc_effect": 0.5372573733329773,
+    "n_episodes": 10800,
+    "per_structure": {
+      "back_door": {
+        "rmse": 0.9270730018615723,
+        "dir_acc": 0.5462610721588135,
+        "dir_acc_level": 0.6621043682098389,
+        "dir_acc_effect": 0.5462610721588135
+      },
+      "bi_variate": {
+        "rmse": 0.7920404076576233,
+        "dir_acc": 0.5401891469955444,
+        "dir_acc_level": 0.6608391404151917,
+        "dir_acc_effect": 0.5401891469955444
+      },
+      "confounder_mediator": {
+        "rmse": 0.48392003774642944,
+        "dir_acc": 0.5156695246696472,
+        "dir_acc_level": 0.7113857269287109,
+        "dir_acc_effect": 0.5156695246696472
+      },
+      "front_door": {
+        "rmse": 0.4872986674308777,
+        "dir_acc": 0.5417789816856384,
+        "dir_acc_level": 0.7081544995307922,
+        "dir_acc_effect": 0.5417789816856384
+      },
+      "instrumental_variable": {
+        "rmse": 0.7867432832717896,
+        "dir_acc": 0.5328554511070251,
+        "dir_acc_level": 0.6836734414100647,
+        "dir_acc_effect": 0.5328554511070251
+      },
+      "mediator": {
+        "rmse": 0.5036599636077881,
+        "dir_acc": NaN,
+        "dir_acc_level": 0.682149350643158,
+        "dir_acc_effect": NaN
+      },
+      "observed_confounder": {
+        "rmse": 0.5098555684089661,
+        "dir_acc": NaN,
+        "dir_acc_level": 0.6715328693389893,
+        "dir_acc_effect": NaN
+      },
+      "unobserved_confounder": {
+        "rmse": 0.5002513527870178,
+        "dir_acc": NaN,
+        "dir_acc_level": 0.677570104598999,
+        "dir_acc_effect": NaN
+      }
+    }
+  },
+  "PFN_obs": {
+    "checkpoint": "/home/dennis/repos/do-over-time-pfn/checkpoints/s10ho_all_obs/do_over_time_pfn_best.pt",
+    "dir_target": "effect",
+    "pooled_rmse": 0.5985174775123596,
+    "rmse_ci95": [
+      0.5715366268205052,
+      0.6240603954695124
+    ],
+    "dir_acc": 0.535065770149231,
+    "dir_n_valid": 3194,
+    "dir_acc_se": 0.008825349010002582,
+    "dir_acc_level": 0.6963871121406555,
+    "dir_acc_effect": 0.535065770149231,
+    "n_episodes": 10800,
+    "per_structure": {
+      "back_door": {
+        "rmse": 0.8628730177879333,
+        "dir_acc": 0.5310519933700562,
+        "dir_acc_level": 0.6629598140716553,
+        "dir_acc_effect": 0.5310519933700562
+      },
+      "bi_variate": {
+        "rmse": 0.7830955982208252,
+        "dir_acc": 0.5437352061271667,
+        "dir_acc_level": 0.6599650382995605,
+        "dir_acc_effect": 0.5437352061271667
+      },
+      "confounder_mediator": {
+        "rmse": 0.48370224237442017,
+        "dir_acc": 0.5185185074806213,
+        "dir_acc_level": 0.7131509184837341,
+        "dir_acc_effect": 0.5185185074806213
+      },
+      "front_door": {
+        "rmse": 0.4869040250778198,
+        "dir_acc": 0.5336927175521851,
+        "dir_acc_level": 0.705579400062561,
+        "dir_acc_effect": 0.5336927175521851
+      },
+      "instrumental_variable": {
+        "rmse": 0.7854747772216797,
+        "dir_acc": 0.5376344323158264,
+        "dir_acc_level": 0.6853741407394409,
+        "dir_acc_effect": 0.5376344323158264
+      },
+      "mediator": {
+        "rmse": 0.3750739097595215,
+        "dir_acc": NaN,
+        "dir_acc_level": 0.7131147384643555,
+        "dir_acc_effect": NaN
+      },
+      "observed_confounder": {
+        "rmse": 0.38078054785728455,
+        "dir_acc": NaN,
+        "dir_acc_level": 0.720802903175354,
+        "dir_acc_effect": NaN
+      },
+      "unobserved_confounder": {
+        "rmse": 0.3664805591106415,
+        "dir_acc": NaN,
+        "dir_acc_level": 0.714018702507019,
+        "dir_acc_effect": NaN
+      }
+    }
+  }
+}

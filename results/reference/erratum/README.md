@@ -10,6 +10,7 @@ published tables' sources are in `../structure_matched/` (unchanged).
 | `pfn_ident_dual_realigned_s10obs.json` | `s9ho_all_causal` vs **retrained** `s10ho_all_obs`, realigned inputs; one pass reporting `dir_acc_level` and `dir_acc_effect` | corrected tab:results / fmgap rows |
 | `s10_sweep/` | OSC structure-matched sweep: `s9ho_*_causal` vs retrained `s10ho_*_obs`; seed 42, T in {200,500,1000,2000}, n_batches=40, OSC hardening (`analyze_s10.py`) | corrected tab:gap (level + effect) |
 | `s10btm_sweep/` | same for BTM, BTM hardening config | corrected tab:gapbtm |
+| `../v1_1/` | reference results on `dot-Identifiability-v1` **1.1.0** (shared-noise counterfactual targets): CPU baselines level/effect (`reference_table`), PFN pair `s9ho_all_causal` vs `s10ho_all_obs` dual-scored | v1.1 leaderboard, edit.tex tab:identv11 |
 | `gap_tables_corrected.json` | per structure x T: published gap, corrected level/effect gaps + SE, per-arm accuracies, n_queries; pooled rows query-weighted | the four corrected tables |
 
 Retrained obs arms (`s10ho/s10btm x {bd,fd,iv,all}_obs`): exact s9 hyperparameters,

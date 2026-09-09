@@ -97,7 +97,7 @@ _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
         name="dot-Identifiability-v1",
         version="1.1.0",
         hf_repo_id="thummd/dot-Identifiability-v1",
-        zenodo_record_id="20919553",  # updated to the 1.1.0 record once published
+        zenodo_record_id="22673322",  # 1.1.0 version record (concept DOI below is stable)
         doi="10.5281/zenodo.20846063",  # concept DOI (resolves to latest version)
         description=(
             "Named identification structures with exact shared-noise counterfactual "
