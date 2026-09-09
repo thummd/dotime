@@ -177,6 +177,7 @@ def episode_specs(cfg: dict, suite_seed: int, scale: float) -> list[dict]:
                     {
                         "kind": "identifiability",
                         "pair_mode": cfg.get("pair_mode", "interventional"),
+                        "stability_retries": retries,
                         "idx": i,
                         "seed": episode_seed(suite_seed, i),
                         "T": t_len,
