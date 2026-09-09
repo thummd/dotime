@@ -1,0 +1,39 @@
+# dot-Identifiability-v1 version 1.2.0 (PREPARED, NOT BUILT/MINTED): the v1.1.0
+# shared-noise suite with a per-structure query offset protocol.
+#
+# Evidence (propagation-lag scan on the 1.1.0 files, fraction of episodes with
+# |Y_int - Y_obs| >= 0.1 at the outcome, by offset after onset):
+#   back_door / bi_variate / instrumental_variable: instantaneous A->Y edge,
+#       effect present at offset 0 (0.58 / 0.63 / 0.62) and decaying with lag
+#   front_door / confounder_mediator: instantaneous A->M->Y, present at 0
+#       (0.27 / 0.26); exactly-zero effects (~1/3) come from saturating mechanisms
+#   mediator: A(t-1) -> M(t) is LAGGED, effect is exactly 0 at offset 0 in every
+#       episode and appears from offset 1 (0.25)  -> query at offset 1
+#   observed_confounder / unobserved_confounder: no A->Y path at any lag; null
+#       effect by construction (controls), offset irrelevant
+# The offset draw consumes no RNG for a fixed range, so every structure other
+# than mediator is bit-identical to 1.1.0. Regenerating changes only mediator's
+# query and targets, but it is a new artifact and a release decision.
+seed: 20260719
+T: 200
+
+suites:
+
+  dot-Identifiability-v1:
+    version: "1.2.0"
+    generator: identifiability
+    T: 200
+    pair_mode: counterfactual
+    stability_retries: 3
+    episodes_per_structure: 1350
+    query_offsets:
+      mediator: [1, 1]
+    structures:
+      bi_variate:              1
+      back_door:               1
+      observed_confounder:     1
+      mediator:                2
+      front_door:              2
+      confounder_mediator:     2
+      instrumental_variable:   3
+      unobserved_confounder:   3

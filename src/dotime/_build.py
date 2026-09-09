@@ -120,6 +120,9 @@ def make_episode(spec: dict):
                 n_max=41,
                 seed=s_seed,
                 pair_mode=spec.get("pair_mode", "interventional"),
+                # Per-structure query offsets (v1.2 protocol). Default (0, 0)
+                # reproduces the v1.0.0 / v1.1.0 builds, which query at onset.
+                query_offset_range=tuple(spec.get("query_offset_range", (0, 0))),
             ).generate_sample(T=t_len)
             zeroed = (
                 float(s["X_int"].abs().max()) == 0.0 or float(s["X_obs_full"].abs().max()) == 0.0
@@ -134,6 +137,7 @@ def make_episode(spec: dict):
                 "tier": spec["tier"],
                 "diverged": zeroed,
                 "pair_mode": spec.get("pair_mode", "interventional"),
+                "query_offset_range": list(spec.get("query_offset_range", (0, 0))),
             },
         )
     if kind == "continuous":
@@ -195,6 +199,9 @@ def episode_specs(cfg: dict, suite_seed: int, scale: float) -> list[dict]:
                         "kind": "identifiability",
                         "pair_mode": cfg.get("pair_mode", "interventional"),
                         "stability_retries": retries,
+                        "query_offset_range": tuple(
+                            cfg.get("query_offsets", {}).get(structure, (0, 0))
+                        ),
                         "idx": i,
                         "seed": episode_seed(suite_seed, i),
                         "T": t_len,

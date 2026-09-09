@@ -146,3 +146,18 @@ def test_identifiability_retry_seed_stays_in_numpy_range():
         s = identifiability_retry_seed(big, attempt)
         assert 0 <= s < 2**31
         assert s != big
+
+
+def test_identifiability_specs_carry_per_structure_query_offsets():
+    from dotime._build import episode_specs
+
+    cfg = {
+        "generator": "identifiability",
+        "T": 40,
+        "episodes_per_structure": 1,
+        "structures": {"back_door": 1, "mediator": 2},
+        "query_offsets": {"mediator": [1, 1]},
+    }
+    specs = {s["structure"]: s for s in episode_specs(cfg, 1, 1.0)}
+    assert specs["back_door"]["query_offset_range"] == (0, 0)  # default: onset
+    assert specs["mediator"]["query_offset_range"] == (1, 1)
