@@ -1,0 +1,97 @@
+{
+  "suite": "dot-Identifiability-v1",
+  "n_episodes": 10800,
+  "rows": [
+    {
+      "baseline": "Zero",
+      "n_episodes": 10800,
+      "n_queries": 10800,
+      "pooled_rmse": 0.7428282499313354,
+      "rmse_ci95": [
+        0.7121197678306792,
+        0.7740584510440744
+      ],
+      "dir_acc": 0.5247339010238647,
+      "dir_n_valid": 3194,
+      "dir_target": "effect"
+    },
+    {
+      "baseline": "Mean",
+      "n_episodes": 10800,
+      "n_queries": 10800,
+      "pooled_rmse": 0.5990480780601501,
+      "rmse_ci95": [
+        0.5722339183690873,
+        0.6246028106890547
+      ],
+      "dir_acc": 0.5344395637512207,
+      "dir_n_valid": 3194,
+      "dir_target": "effect"
+    },
+    {
+      "baseline": "AR1",
+      "n_episodes": 10800,
+      "n_queries": 10800,
+      "pooled_rmse": 0.7224531173706055,
+      "rmse_ci95": [
+        0.6934424710775948,
+        0.7515949889252921
+      ],
+      "dir_acc": 0.5272385478019714,
+      "dir_n_valid": 3194,
+      "dir_target": "effect"
+    },
+    {
+      "baseline": "VAR-OLS",
+      "n_episodes": 10800,
+      "n_queries": 10800,
+      "pooled_rmse": 0.6646943092346191,
+      "rmse_ci95": [
+        0.6300788331317724,
+        0.6993249005070384
+      ],
+      "dir_acc": 0.523481547832489,
+      "dir_n_valid": 3194,
+      "dir_target": "effect"
+    },
+    {
+      "baseline": "BackDoorOLS",
+      "n_episodes": 10800,
+      "n_queries": 10800,
+      "pooled_rmse": 0.5818235874176025,
+      "rmse_ci95": [
+        0.5627491408284837,
+        0.6018031189074871
+      ],
+      "dir_acc": 0.6008140444755554,
+      "dir_n_valid": 3194,
+      "dir_target": "effect"
+    },
+    {
+      "baseline": "IV2SLS",
+      "n_episodes": 10800,
+      "n_queries": 10800,
+      "pooled_rmse": 0.5947726964950562,
+      "rmse_ci95": [
+        0.5690235598917769,
+        0.6201137796255084
+      ],
+      "dir_acc": 0.5547902584075928,
+      "dir_n_valid": 3194,
+      "dir_target": "effect"
+    },
+    {
+      "baseline": "Oracle",
+      "n_episodes": 10800,
+      "n_queries": 10800,
+      "pooled_rmse": 0.0,
+      "rmse_ci95": [
+        0.0,
+        0.0
+      ],
+      "dir_acc": 1.0,
+      "dir_n_valid": 3194,
+      "dir_target": "effect"
+    }
+  ]
+}
