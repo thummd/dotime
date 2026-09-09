@@ -23,6 +23,9 @@ All notable changes to `dotime` are documented here. The format follows
   `dot-Identifiability-v1` 1.1.0 with it (plus `stability_retries`).
 
 ### Changed
+- Documented that the released Identifiability suite (1.0.0 and 1.1.0) queries
+  every episode at offset 0, so under shared-noise targets lagged and mediated
+  effects are exactly zero at the query for three structures (erratum item 8).
 - Documentation and docstrings no longer describe the v1.0.0 discrete suites as
   carrying exact counterfactuals: their two arms are independent noise draws
   (interventional twins). Only the continuous suite, and discrete suites from
