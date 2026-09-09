@@ -25,6 +25,23 @@ def episode_seed(suite_seed: int, idx: int) -> int:
     return (suite_seed * 1_000_003 + idx) & 0x7FFFFFFF
 
 
+def identifiability_retry_seed(seed: int, attempt: int) -> int:
+    """Deterministic seed for the ``attempt``-th resample of an identifiability episode.
+
+    ``ExtendedDoTime`` seeds a ``numpy.random.RandomState``, which only accepts
+    seeds below ``2**32``; the unmasked ``seed * 100003 + attempt`` perturbation
+    used by the torch-only generic/regime branches overflows it.
+
+    Args:
+        seed: The episode's base seed (attempt 0 uses it unchanged).
+        attempt: Resample index, 0 for the first try.
+
+    Returns:
+        ``seed`` for ``attempt == 0``, otherwise a 31-bit perturbation of it.
+    """
+    return seed if attempt == 0 else (seed * 100003 + attempt) & 0x7FFFFFFF
+
+
 def make_episode(spec: dict):
     """Build a single Episode from a spec dict (picklable; runs in a worker)."""
     import warnings as _w
@@ -96,7 +113,7 @@ def make_episode(spec: dict):
         # intervention clamp can keep the interventional arm finite while the
         # observational arm diverges, and such a pair has no valid target.
         for attempt in range(retries + 1):
-            s_seed = seed if attempt == 0 else seed * 100003 + attempt
+            s_seed = identifiability_retry_seed(seed, attempt)
             _torch.manual_seed(s_seed)
             s = ExtendedDoTime(
                 tscm_structure=spec["structure"],

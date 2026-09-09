@@ -133,3 +133,16 @@ def test_stability_retries_removes_divergence():
     assert baseline > 0.10, f"expected sizable v1.0.0 divergence, got {baseline:.2%}"
     # deterministic build (fixed seed): retries=20 fully eliminates divergence.
     assert hardened == 0.0, f"retries should eliminate divergence, got {hardened:.2%}"
+
+
+def test_identifiability_retry_seed_stays_in_numpy_range():
+    # ExtendedDoTime seeds numpy.random.RandomState (< 2**32); the perturbed
+    # resample seed must never overflow it, even from the largest episode seed.
+    from dotime._build import episode_seed, identifiability_retry_seed
+
+    big = episode_seed(20261719, 10_799)
+    assert identifiability_retry_seed(big, 0) == big
+    for attempt in (1, 2, 3):
+        s = identifiability_retry_seed(big, attempt)
+        assert 0 <= s < 2**31
+        assert s != big
