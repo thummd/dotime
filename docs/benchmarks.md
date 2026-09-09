@@ -9,6 +9,8 @@ DoTime ships four versioned, immutable suites for reproducible evaluation. Each 
 - **`dot-Continuous-v1`** — continuous-time intervention windows, multiple query offsets.
 - **`dot-Generic-100k`** — 100 000 trajectories from the full diverse prior. Training-scale.
 
+**`dot-Identifiability-v1` 1.1.0 (2026-09)** regenerates the suite with one exogenous-noise realisation per episode shared across both arms (`pair_mode="counterfactual"`): the arms agree exactly before the intervention onset, `y_true - y_obs` is a per-episode counterfactual effect, the released `x_obs` is canonically aligned with hidden variables zeroed, `y_causal_effect` is correct, and diverged episodes are resampled (0 zeroed episodes, verified on all 10 800 episodes). It is a new artifact with new trajectories and targets. Pin `version="1.0.0"` to load the frozen original.
+
 ## Loader
 
 ```python
@@ -37,6 +39,7 @@ silently patched**. They are fixed in the generator for any v1.1+ build.
 | Generic-100k / Identifiability | diverged episodes are stored as all-zero trajectories with **no flag** (28.7% / 4.6%) | included in RMSE; silently excluded from direction accuracy by the near-zero filter | filter `x_int.abs().max() == 0`; v1.1 adds a `diverged` metadata flag |
 | Continuous | documentation said query offsets `{1,2,3,5,10}`; actual query times are **uniform over [onset, T-1]** (observed offsets 0–138) | protocol description only — data and scoring are self-consistent | none needed |
 | all | reported direction accuracy scores the sign of the **interventional level**, not the causal effect | see the paper erratum; `--dir-target effect` re-scores | `dotime-eval-reference --dir-target effect [--realignment <sidecar>]` |
+| Identifiability / RegimeSwitch / Generic (1.0.0) | the two arms are **independent noise draws** from the same SCM (interventional twins), so `y_int - y_obs` is not a per-episode counterfactual effect | effect-based analyses on these files score a noisy twin difference | Identifiability 1.1.0 shares the noise across arms; the continuous suite always did |
 
 `x_int`, `y_true`, `query_target`, and `intervention_*` are correct and mutually
 consistent in all four v1 suites; `dot-Continuous-v1` and `dot-RegimeSwitch-v1`

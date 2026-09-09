@@ -95,12 +95,18 @@ class SuiteMetadata:
 _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
     "dot-Identifiability-v1": SuiteMetadata(
         name="dot-Identifiability-v1",
-        version="1.0.0",
+        version="1.1.0",
         hf_repo_id="thummd/dot-Identifiability-v1",
-        zenodo_record_id="20919553",
+        zenodo_record_id="20919553",  # updated to the 1.1.0 record once published
         doi="10.5281/zenodo.20846063",  # concept DOI (resolves to latest version)
-        description="Named identification structures with exact interventional targets.",
+        description=(
+            "Named identification structures with exact shared-noise counterfactual "
+            "targets (1.1.0). Version 1.0.0 paired independent noise draws."
+        ),
         n_episodes=10_800,
+        # 1.0.0 stays loadable via load_benchmark(..., version="1.0.0") so the
+        # published numbers remain reproducible from the frozen artifact.
+        prior_versions=(("1.0.0", "20919553"),),
         structures=(
             "back_door",
             "observed_confounder",
