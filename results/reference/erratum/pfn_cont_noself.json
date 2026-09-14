@@ -1,0 +1,74 @@
+{
+  "suite": "dot-Continuous-v1",
+  "exclude_self_queries": true,
+  "PFN_int": {
+    "checkpoint": "/home/dennis/repos/do-over-time-pfn/checkpoints/s9ho_all_causal/do_over_time_pfn_best.pt",
+    "dir_target": "level",
+    "pooled_rmse": 4.864999771118164,
+    "rmse_ci95": [
+      2.4629892554024297,
+      7.035082609783496
+    ],
+    "dir_acc": 0.5105345845222473,
+    "dir_n_valid": 5743,
+    "dir_acc_se": 0.006596357440803504,
+    "dir_acc_level": 0.5105345845222473,
+    "dir_acc_effect": 0.7348287105560303,
+    "n_episodes": 6600,
+    "per_structure": {
+      "back_door": {
+        "rmse": 6.818050861358643,
+        "dir_acc": 0.5084121823310852,
+        "dir_acc_level": 0.5084121823310852,
+        "dir_acc_effect": 0.7297872304916382
+      },
+      "front_door": {
+        "rmse": 2.788022994995117,
+        "dir_acc": 0.4997383654117584,
+        "dir_acc_level": 0.4997383654117584,
+        "dir_acc_effect": 0.7403258681297302
+      },
+      "instrumental_variable": {
+        "rmse": 4.106822967529297,
+        "dir_acc": 0.5233160853385925,
+        "dir_acc_level": 0.5233160853385925,
+        "dir_acc_effect": 0.7341374158859253
+      }
+    }
+  },
+  "PFN_obs": {
+    "checkpoint": "/home/dennis/repos/do-over-time-pfn/checkpoints/s9ho_all_obs/do_over_time_pfn_best.pt",
+    "dir_target": "level",
+    "pooled_rmse": 3.4488365650177,
+    "rmse_ci95": [
+      1.7572110207487672,
+      5.359628145467215
+    ],
+    "dir_acc": 0.48894307017326355,
+    "dir_n_valid": 5743,
+    "dir_acc_se": 0.006596208582623215,
+    "dir_acc_level": 0.48894307017326355,
+    "dir_acc_effect": 0.737784743309021,
+    "n_episodes": 6600,
+    "per_structure": {
+      "back_door": {
+        "rmse": 2.2987961769104004,
+        "dir_acc": 0.4873816967010498,
+        "dir_acc_level": 0.4873816967010498,
+        "dir_acc_effect": 0.7537233829498291
+      },
+      "front_door": {
+        "rmse": 2.3950271606445312,
+        "dir_acc": 0.49764519929885864,
+        "dir_acc_level": 0.49764519929885864,
+        "dir_acc_effect": 0.7270875573158264
+      },
+      "instrumental_variable": {
+        "rmse": 4.947016716003418,
+        "dir_acc": 0.4818652868270874,
+        "dir_acc_level": 0.4818652868270874,
+        "dir_acc_effect": 0.7330886125564575
+      }
+    }
+  }
+}
