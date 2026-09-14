@@ -195,6 +195,7 @@ def main(argv: list[str] | None = None) -> int:
             extra_manifest={
                 "generator": cfg["generator"],
                 "pair_mode": cfg.get("pair_mode", "interventional"),
+                "stability_retries": int(cfg.get("stability_retries", 0)),
                 "config_hash": config_hash,
                 "scale": args.scale,
                 "scheme": "perepisode",
