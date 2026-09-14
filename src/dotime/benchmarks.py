@@ -204,6 +204,25 @@ class Episode:
     def length(self) -> int:
         return int(self.x_obs.shape[0])
 
+    @property
+    def is_self_query(self) -> bool:
+        """Whether the queried variable is the intervened variable itself.
+
+        Self-queries arise in the continuous suite because its query target is
+        drawn uniformly over the observable variables, treatment included, so
+        about one third of its queries ask for the treated variable. Inside the
+        intervention window of a hard intervention the answer is the do-value,
+        which any intervention-aware model receives as an input, so evaluators
+        should report whether self-queries are included. Structure-defined
+        suites (identifiability) never produce them.
+
+        Returns:
+            ``True`` when every query targets one of the intervention targets.
+        """
+        targets = set(int(t) for t in self.intervention.targets)
+        qts = [int(q) for q in self.query_target.reshape(-1).tolist()]
+        return bool(qts) and all(q in targets for q in qts)
+
 
 class BenchmarkSuite:
     """A named, versioned, immutable collection of :class:`Episode` objects."""

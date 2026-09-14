@@ -150,9 +150,20 @@ def make_episode(spec: dict):
         if "intervention_time_start" in s and "intervention_time_end" in s:
             frac = float(s["intervention_time_end"] - s["intervention_time_start"])
             tier = 1 if frac < 0.15 else (2 if frac < 0.3 else 3)
-        return episode_from_sample(
-            s, structure=spec["structure"], scm_id=idx, metadata={"tier": tier}
-        )
+        # Tag rather than drop self-queries (query on the treated variable): they
+        # are ~1/3 of continuous queries by construction (uniform target draw
+        # over three observable variables). Inside the window of a hard
+        # intervention the target equals the do-value, so evaluators need the
+        # flag to report with/without them. The window end is recorded because
+        # the released InterventionSpec carries only the onset.
+        q_abs = float(_torch.as_tensor(s["t_query"]).reshape(-1)[0])
+        meta = {
+            "tier": tier,
+            "self_query": int(s["query_target"].reshape(-1)[0]) == int(s["intervention_target"]),
+            "query_in_window": bool(float(s["t_int_start"]) <= q_abs <= float(s["t_int_end"])),
+            "window_end_idx": int((s["times"] <= float(s["t_int_end"])).sum().item()) - 1,
+        }
+        return episode_from_sample(s, structure=spec["structure"], scm_id=idx, metadata=meta)
     raise ValueError(f"unknown spec kind {kind!r}")
 
 

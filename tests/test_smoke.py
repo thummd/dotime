@@ -340,3 +340,31 @@ def test_load_benchmark_pins_prior_versions(tmp_path, monkeypatch):
     _seed_local_suite(tmp_path, "dot-Identifiability-v1")  # writes <name>-<registered version>
     suite = B.load_benchmark("dot-Identifiability-v1", version=base.version, cache_dir=tmp_path)
     assert suite.meta.version == base.version
+
+
+def test_episode_is_self_query_flag():
+    from dotime.benchmarks import Episode
+    from dotime.interventions import InterventionSpec, InterventionType
+
+    x = torch.zeros(10, 3)
+    iv = InterventionSpec(
+        targets=[1], times=[4], intervention_type=InterventionType.HARD, values=0.5
+    )
+    on = Episode(
+        x_obs=x,
+        x_int=x,
+        intervention=iv,
+        y_true=torch.tensor([0.5]),
+        query_target=torch.tensor([1]),
+        query_time=torch.tensor([0.6]),
+    )
+    off = Episode(
+        x_obs=x,
+        x_int=x,
+        intervention=iv,
+        y_true=torch.tensor([0.5]),
+        query_target=torch.tensor([2]),
+        query_time=torch.tensor([0.6]),
+    )
+    assert on.is_self_query
+    assert not off.is_self_query

@@ -220,6 +220,12 @@ def main():
         "causal effect y_true - y_obs.",
     )
     ap.add_argument(
+        "--exclude-self-queries",
+        action="store_true",
+        help="Drop episodes whose query targets the intervened variable (continuous "
+        "suite: ~1/3 of episodes; in-window hard self-queries equal the do-value).",
+    )
+    ap.add_argument(
         "--realignment",
         type=Path,
         default=None,
@@ -235,6 +241,10 @@ def main():
                 realignment[int(row["idx"])] = row
 
     episodes = list(load_benchmark(args.suite))
+    if args.exclude_self_queries:
+        n0 = len(episodes)
+        episodes = [ep for ep in episodes if not ep.is_self_query]
+        print(f"[{args.suite}] excluded {n0 - len(episodes)} self-query episodes")
     if realignment is not None:
         episodes = [
             realign_episode(
@@ -255,7 +265,7 @@ def main():
         episodes = [e for eps in byst.values() for e in eps[: args.per_structure]]
     print(f"[{args.suite}] evaluating {len(episodes)} episodes")
 
-    out = {"suite": args.suite}
+    out = {"suite": args.suite, "exclude_self_queries": args.exclude_self_queries}
     for tag, ck, obs in [("PFN_int", args.ckpt_int, False), ("PFN_obs", args.ckpt_obs, True)]:
         t0 = time.time()
         model = PFNRef(ck, device=args.device, observational=obs)

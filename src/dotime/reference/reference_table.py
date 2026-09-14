@@ -113,6 +113,12 @@ def main():
         "level (v1 paper protocol) or the causal effect y_true - y_obs.",
     )
     ap.add_argument(
+        "--exclude-self-queries",
+        action="store_true",
+        help="Drop episodes whose query targets the intervened variable (continuous "
+        "suite: ~1/3 of episodes; in-window hard self-queries equal the do-value).",
+    )
+    ap.add_argument(
         "--realignment",
         type=Path,
         default=None,
@@ -131,6 +137,10 @@ def main():
     t0 = time.time()
     episodes = list(load_benchmark(args.suite))
     print(f"[{args.suite}] loaded {len(episodes)} episodes in {time.time() - t0:.1f}s")
+    if args.exclude_self_queries:
+        n0 = len(episodes)
+        episodes = [ep for ep in episodes if not ep.is_self_query]
+        print(f"[{args.suite}] excluded {n0 - len(episodes)} self-query episodes")
     if realignment is not None:
         # Repair the archived x_obs (column order + hidden zeroing) so
         # baselines read the variable they claim to read.
@@ -172,7 +182,12 @@ def main():
             f"dir_acc={row['dir_acc']:.3f}  ({time.time() - t:.1f}s)"
         )
 
-    out = {"suite": args.suite, "n_episodes": len(episodes), "rows": rows}
+    out = {
+        "suite": args.suite,
+        "n_episodes": len(episodes),
+        "exclude_self_queries": args.exclude_self_queries,
+        "rows": rows,
+    }
     if args.out:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(json.dumps(out, indent=2))
