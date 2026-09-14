@@ -23,6 +23,12 @@ All notable changes to `dotime` are documented here. The format follows
   `dot-Identifiability-v1` 1.1.0 with it (plus `stability_retries`).
 
 ### Changed
+- Documented that 34.0% of `dot-Continuous-v1` queries are self-queries (query on
+  the intervened variable; 33.7% of in-window queries), that the published
+  Continuous rows include them, and that in-window ones equal the do-value.
+  `Episode.is_self_query`, `--exclude-self-queries`, a per-episode query
+  sidecar for the frozen files, and `self_query`/`query_in_window` metadata in
+  new builds make the split explicit.
 - Documented that the released Identifiability suite (1.0.0 and 1.1.0) queries
   every episode at offset 0, so under shared-noise targets lagged and mediated
   effects are exactly zero at the query for three structures (erratum item 8).
