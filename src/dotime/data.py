@@ -7,9 +7,11 @@ Supports background prefetching to overlap data generation with GPU compute.
 """
 
 import random
+import sys
 from collections.abc import Iterator
-from queue import Queue
-from threading import Thread
+from dataclasses import dataclass
+from queue import Full, Queue
+from threading import Event, Thread
 
 import torch
 
@@ -24,6 +26,27 @@ PER_STRUCT_OFFSET_RANGE: dict[str, tuple[int, int]] = {
     "front_door": (1, 5),
     "instrumental_variable": (0, 5),
 }
+
+# How often a producer parked on a full queue re-checks whether the consumer has
+# gone. Far below the 5 s join in _iter_prefetch, so an abandoned producer exits
+# before the consumer stops waiting for it. A put with room returns at once, so
+# this costs one wakeup per interval, and only while the producer is ahead.
+_PUT_POLL_S = 0.1
+
+
+@dataclass(frozen=True)
+class _PrefetchError:
+    """Carries an exception from the prefetch producer thread to the consumer.
+
+    A dedicated envelope, rather than the bare exception, keeps the queue
+    protocol explicit: the consumer re-raises only what the producer caught.
+
+    Args:
+        exc: The exception raised while generating a batch. The consumer
+            re-raises this object unchanged.
+    """
+
+    exc: BaseException
 
 
 class TemporalInterventionDataLoader:
@@ -138,26 +161,96 @@ class TemporalInterventionDataLoader:
                 yield self._generate_batch()
 
     def _iter_prefetch(self) -> Iterator[dict[str, torch.Tensor]]:
-        """Generate batches with background prefetching."""
+        """Yield batches generated ahead of time by a background producer thread.
+
+        The producer fills a queue of depth ``self.prefetch`` so generation
+        overlaps the consumer's compute, then ends the stream with a sentinel.
+        If generation raises, the producer queues the exception in place of the
+        sentinel, and the consumer re-raises it after the batches generated
+        before it, exactly as the synchronous path would. If the consumer stops
+        early (``break``, ``close()``, garbage collection or its own exception),
+        a stop event makes the producer drop its pending batch and exit instead
+        of blocking forever on a full queue.
+
+        Yields:
+            Batches in generation order, identical to the synchronous path.
+
+        Raises:
+            BaseException: Whatever ``_generate_batch`` raised in the producer
+                thread, re-raised as the same object so callers can handle it
+                exactly as with ``prefetch=0``.
+        """
         queue: Queue = Queue(maxsize=self.prefetch)
         sentinel = object()
+        stop = Event()
 
-        def _fill():
-            for _ in range(self.num_steps):
-                batch = self._generate_batch()
-                queue.put(batch)
-            queue.put(sentinel)
+        def _put(item: object) -> bool:
+            """Block until ``item`` is queued, unless the consumer stops first.
+
+            Args:
+                item: A batch, the sentinel, or a ``_PrefetchError``.
+
+            Returns:
+                True if the item was queued, False if the consumer stopped.
+
+            Raises:
+                Nothing. A timed-out attempt (``queue.Full``) is retried.
+            """
+            # A plain blocking put() never returns once the consumer is gone;
+            # timed attempts give the producer a chance to see the stop event.
+            while not stop.is_set():
+                try:
+                    queue.put(item, timeout=_PUT_POLL_S)
+                except Full:
+                    continue
+                return True
+            return False
+
+        def _fill() -> None:
+            """Producer loop: queue ``num_steps`` batches, then the sentinel.
+
+            Returns:
+                None. Batches and the terminal item travel through the queue.
+
+            Raises:
+                Nothing. An exception from ``_generate_batch`` is queued for the
+                consumer instead of escaping, because a thread that dies without
+                a terminal item leaves the consumer blocked on ``get()`` forever.
+            """
+            try:
+                for _ in range(self.num_steps):
+                    if not _put(self._generate_batch()):
+                        return
+            # BaseException, not Exception: anything that ends this thread without
+            # a terminal item strands the consumer, including SystemExit, which
+            # the threading module swallows silently.
+            except BaseException as exc:
+                _put(_PrefetchError(exc))
+                return
+            _put(sentinel)
 
         thread = Thread(target=_fill, daemon=True)
         thread.start()
 
-        while True:
-            item = queue.get()
-            if item is sentinel:
-                break
-            yield item
-
-        thread.join(timeout=5)
+        try:
+            while True:
+                item = queue.get()
+                if item is sentinel:
+                    break
+                if isinstance(item, _PrefetchError):
+                    # The original object keeps its type and its traceback into
+                    # the producer frames, so a wrapper would only hide the cause.
+                    raise item.exc
+                yield item
+        finally:
+            # Also runs when the consumer abandons the generator mid-epoch
+            # (GeneratorExit at the yield), which is what releases the producer.
+            stop.set()
+            # A generator still alive at interpreter shutdown is finalized after
+            # daemon threads are frozen. Joining then cannot succeed, and on
+            # Python 3.13 it stalls exit for the full timeout.
+            if not sys.is_finalizing():
+                thread.join(timeout=5)
 
     def _generate_batch(self) -> dict[str, torch.Tensor]:
         """Generate a single batch."""

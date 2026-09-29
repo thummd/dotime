@@ -187,6 +187,15 @@ All notable changes to `dotime` are documented here. The format follows
   and were computed on the 1.0.0 files, whose `x_obs` is in topological order.
   `tabpfn_generic.json` is unaffected, since no Generic episode reaches an
   adjustment branch.
+- `TemporalInterventionDataLoader` no longer hangs when batch generation fails
+  on the default prefetch path (`prefetch > 0`). The exception used to kill the
+  background thread before it queued the end-of-stream sentinel, leaving the
+  consumer blocked in `queue.get()` forever with only a thread traceback on
+  stderr. It is now re-raised in the consumer as the same exception object,
+  after the batches generated before it, exactly as with `prefetch=0`. A
+  consumer that stops early (`break`, `close()`) also releases the producer
+  thread instead of leaving it blocked on a full queue. Batches are
+  bit-identical for fixed seeds.
 
 ### Added
 - `dotime-eval-pfn` reports both `dir_acc_level` and `dir_acc_effect` (pooled and
