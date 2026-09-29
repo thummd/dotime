@@ -24,14 +24,71 @@ INTERVENTION_TYPE_MAP = {
     InterventionType.TIME_VARYING: 2,
 }
 
+# Intervention-value modes implemented by ExtendedDoTime.generate_sample (see the
+# mode table there). "observed" is also accepted, as the legacy alias of
+# "observed_discrete".
+INTERVENTION_SOURCES = (
+    "prior",
+    "positivity_aware",
+    "observed_discrete",
+    "observed_normal",
+    "observed_uniform",
+)
+
+
+def _validate_intervention_source(intervention_source: str) -> None:
+    """Reject an ``intervention_source`` that ExtendedDoTime does not implement.
+
+    ``generate_sample`` dispatches on the mode with an if/elif chain that has no
+    final ``else``, so an unknown string (a typo such as ``"observed_normla"``)
+    used to fall through and behave exactly like ``"prior"``.
+
+    Args:
+        intervention_source: The requested intervention-value mode.
+
+    Returns:
+        None.
+
+    Raises:
+        ValueError: If ``intervention_source`` is neither one of
+            :data:`INTERVENTION_SOURCES` nor the legacy alias ``"observed"``.
+    """
+    if intervention_source in INTERVENTION_SOURCES or intervention_source == "observed":
+        return
+    valid = ", ".join(repr(s) for s in INTERVENTION_SOURCES)
+    raise ValueError(
+        f"intervention_source must be one of {valid} (or 'observed', the legacy alias "
+        f"of 'observed_discrete'), got {intervention_source!r}"
+    )
+
 
 def pad_to_max_nodes(X: torch.Tensor, max_nodes: int) -> torch.Tensor:
-    """Pad time series to have max_nodes variables."""
+    """Right-pad a ``(T, N)`` trajectory with zero columns to ``max_nodes`` variables.
+
+    Args:
+        X: Trajectory of shape ``(T, N)``.
+        max_nodes: Padded width, i.e. ``ExtendedDoTime.n_max``.
+
+    Returns:
+        A ``(T, max_nodes)`` tensor whose first ``N`` columns are ``X``. When
+        ``N == max_nodes``, ``X`` itself is returned.
+
+    Raises:
+        ValueError: If ``N > max_nodes``. Truncating instead would silently drop
+            the trailing variables, and a query on one of them would later fail
+            with an opaque ``IndexError``.
+    """
     T, N = X.shape
+    if max_nodes < N:
+        raise ValueError(
+            f"trajectory has {N} variables but the padded width is {max_nodes}: "
+            f"the last {N - max_nodes} would be dropped. Raise n_max to at least {N} "
+            "(for the generic prior, keep n_max_prior <= n_max)."
+        )
     if max_nodes > N:
         padding = torch.zeros(T, max_nodes - N, dtype=X.dtype, device=X.device)
         return torch.cat([X, padding], dim=1)
-    return X[:, :max_nodes]
+    return X
 
 
 def _apply_hidden_mask(
@@ -175,7 +232,18 @@ class TSCMPrior:
 
 
 class ExtendedDoTime:
-    """CTP wrapper that produces model-ready dicts for Do-Over-Time-PFN."""
+    """CTP wrapper that produces model-ready dicts for Do-Over-Time-PFN.
+
+    Raises:
+        ValueError: At construction, if ``intervention_source`` is not one of
+            :data:`INTERVENTION_SOURCES` (or the alias ``"observed"``), if
+            ``pair_mode`` is unknown, if the generic prior's ``n_max_prior``
+            exceeds ``n_max``, or if ``hardening`` has unknown keys. During
+            generation, if a sampled SCM is wider than ``n_max`` (see
+            :func:`pad_to_max_nodes`).
+        NotImplementedError: If ``pair_mode="counterfactual"`` is requested for
+            the generic prior (``tscm_structure=None``).
+    """
 
     def __init__(
         self,
@@ -199,6 +267,15 @@ class ExtendedDoTime:
         hardening: dict | None = None,
         pair_mode: str = "interventional",
     ):
+        # Validated before any sampling state exists, so a bad config fails at
+        # construction instead of partway through a training or build run.
+        _validate_intervention_source(intervention_source)
+        if tscm_structure is None and n_max_prior > n_max:
+            raise ValueError(
+                f"n_max_prior={n_max_prior} exceeds n_max={n_max}: SCMs wider than n_max "
+                "cannot be padded without dropping variables. Raise n_max to at least "
+                "n_max_prior."
+            )
         self.n_max = n_max
         self.t_range = t_range
         self.downstream_prob = downstream_prob

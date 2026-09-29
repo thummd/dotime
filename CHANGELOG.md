@@ -54,6 +54,45 @@ All notable changes to `dotime` are documented here. The format follows
   unchanged. `DEFAULT_CONFIG` is annotated `dict[str, Any]`. `PFNRef.predict`
   now names the problem when a checkpoint has neither a `quantile_head` nor a
   `bar_head`, instead of failing on `NoneType`.
+- `unobserved_confounder` is documented as a null-effect control, not as a
+  non-identifiable structure. It has only U→A and U→Y, with no A→Y edge at any
+  lag, so its effect is identified and equals zero (`TSCMStructure` docstrings,
+  `docs/benchmarks.md`, and the `s9ho_extra` note in
+  `results/reference/structure_matched/README.md`, whose numbers are unchanged).
+  A test now pins the exactly-zero effect under shared-noise pairing.
+- The erratum and v1.1 PFN reference results (`results/reference/erratum/*.json`,
+  `results/reference/v1_1/pfn_ident_dual.json`) record their checkpoints as
+  `hf://thummd/do-over-time-pfn/<tag>/do_over_time_pfn_best.pt` instead of
+  machine-local paths. Only the ten path strings changed. The local and hosted
+  checkpoint files have identical SHA-256 hashes. A test now rejects any
+  non-Hub checkpoint path under `results/reference/`.
+- `build_release.py --stability-retries` help and the `dotime._build` comment
+  now say that identifiability episodes are resampled too (when either arm is
+  zeroed) and that continuous episodes are not. The comment no longer claims
+  that `ExtendedDoTime` retries zeroed episodes internally: its retry only
+  rejects NaN or `|x| >= 10`.
+- `test_scale_beyond_default_bounds` asserted only shapes, although most
+  N_max=60/K_max=8 pairs diverge to all-zero. It now seeds the global torch RNG
+  per pair as the release build does, asserts finite output, and requires at
+  least one non-diverged pair with N > 10.
+
+### Fixed
+- `dotime-generate --intervention-source` was listed in `--help` in every
+  release but never applied, so each generated file used the prior's own
+  intervention values whatever mode was chosen. The flag is no longer listed.
+  `prior` is still accepted, and any other value now exits with an error that
+  points to `ExtendedDoTime(intervention_source=...)` and
+  `TemporalInterventionDataLoader(intervention_source=...)`. Generated files are
+  unchanged.
+- `ExtendedDoTime` raises a `ValueError` listing the valid modes when
+  `intervention_source` is not recognized. An unknown string (a typo such as
+  `"observed_normla"`) used to fall through `generate_sample` and behave
+  exactly like `"prior"`.
+- `ExtendedDoTime` no longer drops variables beyond `n_max` (default 41).
+  `pad_to_max_nodes` used to truncate a wider SCM to its first `n_max` columns
+  without warning. It now raises a `ValueError`, and a generic prior with
+  `n_max_prior > n_max` is rejected at construction. Configurations that fit
+  within `n_max` produce bit-identical output.
 - `ExtendedDoTime.generate_sample`/`generate_batch`: the released (unmasked)
   observational tensor now receives the same canonical column permutation and
   hidden-variable zeroing as `X_int` — v1.0.0 `dot-Identifiability-v1` shipped

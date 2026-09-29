@@ -23,10 +23,12 @@ Three-seed gap = combine `s9ho_scale` (seed 42) with the two seeds in
 ## Exploratory: two more identification structures (reviewer follow-up)
 
 `s9ho_extra/extra_eval.json` — int-vs-obs gap for `observed_confounder`
-(identified, back-door family) and `unobserved_confounder` (non-identifiable by
-design), seed 42, T=200, n_batches=60, offset (0,0). Finding: the gap is small
-and similar on both (+0.028±0.028 and +0.032±0.024) — it does **not** vanish
-under non-identifiability. Both structures are near-saturated in direction
+(identified, back-door family) and `unobserved_confounder`, seed 42, T=200,
+n_batches=60, offset (0,0). Neither structure has an A→Y edge at any lag, so
+both are null-effect controls whose effect is identified and equals zero.
+Finding: the gap is small and similar on both (+0.028±0.028 and +0.032±0.024).
+This says nothing about behaviour under non-identifiability, because neither
+structure is non-identifiable. Both structures are near-saturated in direction
 accuracy (int/obs ≈ 0.89–0.92), which compresses the achievable gap.
 
 ## Lagged replication (reviewer follow-up)

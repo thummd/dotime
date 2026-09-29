@@ -53,11 +53,13 @@ def make_episode(spec: dict):
     from dotime.benchmarks import episode_from_pair, episode_from_sample
 
     kind, seed, idx, t_len = spec["kind"], spec["seed"], spec["idx"], spec["T"]
-    # ``stability_retries``: on a diverged (all-zero) generic/regime episode,
-    # resample with a deterministic seed perturbation up to this many times.
-    # Default 0 preserves the exact v1.0.0 output; the hardened build sets it
-    # >0 so the generic prior no longer ships ~30% zeroed episodes (the
-    # identifiability path already retries internally, hence its ~5% residual).
+    # ``stability_retries``: on a diverged (zeroed) generic, regime or
+    # identifiability episode, resample with a deterministic seed perturbation
+    # up to this many times (the continuous branch does not retry). Default 0
+    # preserves the exact v1.0.0 output. Hardened builds set it >0: otherwise the
+    # generic prior ships ~30% zeroed episodes and identifiability ~5%, because
+    # ExtendedDoTime's internal retry only rejects NaN or |x| >= 10, which a
+    # zeroed arm passes.
     retries = int(spec.get("stability_retries", 0))
     # Seed the GLOBAL torch RNG per episode too: parts of the prior (e.g. the
     # Beta edge-probability draw) use the global generator rather than the

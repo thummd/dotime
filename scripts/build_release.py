@@ -143,10 +143,13 @@ def main(argv: list[str] | None = None) -> int:
         "--stability-retries",
         type=int,
         default=None,
-        help="Override each suite's stability_retries. On a diverged (all-zero) "
-        "generic/regime episode, resample it deterministically up to this many "
-        "times instead of releasing the zeroed episode. 0 reproduces the frozen "
-        "v1 suites; ~20 drives the divergence rate to zero.",
+        help="Override each suite's stability_retries. On a diverged (zeroed) "
+        "generic, regime or identifiability episode (identifiability: either arm "
+        "zeroed), resample it deterministically up to this many times instead of "
+        "releasing the zeroed episode. Continuous episodes are never resampled. "
+        "0 reproduces the 1.0.0 suites. Omit the flag to keep each config's own "
+        "value (release_config_v1_1.yaml uses 3). ~20 drives the divergence rate "
+        "to zero.",
     )
     args = parser.parse_args(argv)
     workers = args.workers if args.workers > 0 else max(1, (os.cpu_count() or 2) - 1)

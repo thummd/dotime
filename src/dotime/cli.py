@@ -28,13 +28,6 @@ _AVAILABLE_SUITES = (
     "dot-Generic-100k",
 )
 
-_INTERVENTION_SOURCES = (
-    "prior",
-    "observed_discrete",
-    "observed_normal",
-    "observed_uniform",
-)
-
 
 def _add_common(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--seed", type=int, default=42, help="RNG seed (default: 42).")
@@ -70,26 +63,54 @@ def _build_generate_parser() -> argparse.ArgumentParser:
         required=True,
         help="Output file. Extension selects the format: .pt (torch) or .parquet.",
     )
-    p.add_argument(
-        "--intervention-source",
-        choices=_INTERVENTION_SOURCES,
-        default="prior",
-        help="Counterfactual sampling mode for intervention values (default: prior).",
-    )
+    # Hidden from --help: up to 0.1.3 this flag was advertised but never applied,
+    # so every file was generated with the prior's own intervention values. It is
+    # still parsed so that old invocations fail with a pointer to the library API
+    # instead of argparse's bare "unrecognized arguments".
+    p.add_argument("--intervention-source", default="prior", help=argparse.SUPPRESS)
     _add_common(p)
     return p
+
+
+def _reject_intervention_source(source: str) -> None:
+    """Fail fast on an ``--intervention-source`` that ``dotime-generate`` cannot honour.
+
+    ``dotime-generate`` samples the generic :class:`dotime.DoTime` prior, whose
+    interventions (1 or 2 targets, a window, hard, soft or time-varying) carry
+    their own sampled values. The observed-support and positivity modes resample
+    a single hard value from the treated variable's history, which is only
+    defined in :class:`dotime.extended.ExtendedDoTime`.
+
+    Args:
+        source: The value passed to ``--intervention-source``.
+
+    Returns:
+        None. ``"prior"`` describes what the command already does and is accepted.
+
+    Raises:
+        SystemExit: For any other value, before anything is sampled or written.
+    """
+    if source == "prior":
+        return
+    raise SystemExit(
+        f"error: --intervention-source {source!r} is not supported by dotime-generate, "
+        "which always uses the intervention values sampled by the generic DoTime prior. "
+        "The positivity_aware and observed_* modes are available from Python via "
+        "dotime.extended.ExtendedDoTime(intervention_source=...) or "
+        "dotime.data.TemporalInterventionDataLoader(intervention_source=...)."
+    )
 
 
 def generate_main(argv: list[str] | None = None) -> int:
     """Entry point for ``dotime-generate``."""
     args = _build_generate_parser().parse_args(argv)
+    _reject_intervention_source(args.intervention_source)
 
     from dotime import DoTime
 
     if args.verbose:
         print(
-            f"[dotime-generate] sampling {args.n_scms} SCMs at T={args.length} "
-            f"(seed={args.seed}, source={args.intervention_source})",
+            f"[dotime-generate] sampling {args.n_scms} SCMs at T={args.length} (seed={args.seed})",
             file=sys.stderr,
         )
 

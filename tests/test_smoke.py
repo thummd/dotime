@@ -188,7 +188,11 @@ def test_scale_beyond_default_bounds():
     """N_max/K_max are config bounds, not architectural limits.
 
     Backs the Limitations claim that the generator scales past the frozen
-    suites' DEFAULT_CONFIG (N<=10, K<=3) via a config override.
+    suites' DEFAULT_CONFIG (N<=10, K<=3) via a config override. Shapes alone do
+    not back it: at N_max=60/K_max=8 most pairs diverge and are zeroed (both
+    arms in 65% of 1,000 episodes at T=200, in
+    results/reference/audit_2026-09/scaling_lag.json), so the test also requires
+    finite output and at least one non-diverged pair wider than the default cap.
     """
     import warnings
 
@@ -196,16 +200,30 @@ def test_scale_beyond_default_bounds():
     from dotime.utils import DEFAULT_CONFIG
 
     cfg = {**DEFAULT_CONFIG, "N_max": 60, "K_max": 8}
-    sizes = []
-    for seed in range(8):
+    sizes, wide_ok = [], []
+    # A fixed window: with the global RNG seeded, seeds 0-7 hold no non-diverged
+    # pair with N > 10, while 40-47 hold two (N=14 plain, N=41 regime-switching)
+    # next to four zeroed wide pairs.
+    for seed in range(40, 48):
+        # The Beta edge-probability draw and the noise use the global torch RNG,
+        # so seed it per pair as dotime._build.make_episode does. Otherwise the
+        # outcome depends on whichever tests ran earlier in the session.
+        torch.manual_seed(seed)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
             x_obs, x_int, _, _ = DoTime(config=cfg, seed=seed).generate_pair(T=40)
         assert x_obs.shape[0] == 40
         assert x_obs.shape == x_int.shape
+        # Divergence is handled by zeroing, so no pair may carry NaN or inf.
+        assert torch.isfinite(x_obs).all()
+        assert torch.isfinite(x_int).all()
         sizes.append(x_obs.shape[1])
-    # the override actually widens the sampled graph beyond the default cap
+        if x_obs.shape[1] > 10 and x_obs.abs().max() > 0 and x_int.abs().max() > 0:
+            wide_ok.append(seed)
+    # the override actually widens the sampled graph beyond the default cap ...
     assert max(sizes) > 10
+    # ... and yields usable wide pairs, not only zeroed (diverged) ones
+    assert wide_ok, f"every pair with N > 10 diverged (sizes {sizes})"
 
 
 def test_version_strings_agree():
@@ -368,3 +386,93 @@ def test_episode_is_self_query_flag():
     )
     assert on.is_self_query
     assert not off.is_self_query
+
+
+def test_generate_cli_rejects_unapplied_intervention_source(tmp_path):
+    """Regression: ``dotime-generate --intervention-source`` was listed in --help
+    but never applied, so every file used the prior's own intervention values.
+    The flag is now hidden, ``prior`` (what the command does) is accepted, and
+    any other value fails before anything is sampled or written."""
+    from dotime.cli import _build_generate_parser, generate_main
+
+    out = tmp_path / "gen.pt"
+    base = ["-n", "1", "-T", "30", "-o", str(out), "--intervention-source"]
+    for source in ("observed_normal", "positivity_aware", "bogus"):
+        with pytest.raises(SystemExit, match="ExtendedDoTime"):
+            generate_main([*base, source])
+    assert not out.exists()
+    assert "--intervention-source" not in _build_generate_parser().format_help()
+    torch.manual_seed(0)
+    assert generate_main([*base, "prior"]) == 0
+    assert out.exists()
+
+
+def test_extended_prior_rejects_unknown_intervention_source():
+    """Regression: a mode string that generate_sample does not dispatch on (e.g.
+    a typo) fell through its if/elif chain and behaved exactly like "prior"."""
+    from dotime.extended import INTERVENTION_SOURCES, ExtendedDoTime
+
+    with pytest.raises(ValueError, match="observed_normla") as exc:
+        ExtendedDoTime(tscm_structure="back_door", intervention_source="observed_normla")
+    for mode in INTERVENTION_SOURCES:
+        assert repr(mode) in str(exc.value)
+    with pytest.raises(ValueError, match="intervention_source"):
+        ExtendedDoTime(intervention_source="observed_normla")  # generic prior too
+    for mode in (*INTERVENTION_SOURCES, "observed"):
+        ExtendedDoTime(tscm_structure="back_door", intervention_source=mode)
+
+
+def test_extended_prior_refuses_to_truncate_wide_scms():
+    """Regression: pad_to_max_nodes truncated an SCM wider than n_max to its
+    first n_max columns, so the extra variables vanished silently (and a query
+    on one of them later died with an opaque IndexError)."""
+    from dotime.extended import ExtendedDoTime, pad_to_max_nodes
+
+    x = torch.randn(5, 4)
+    padded = pad_to_max_nodes(x, 6)
+    assert padded.shape == (5, 6)
+    assert torch.equal(padded[:, :4], x)
+    assert float(padded[:, 4:].abs().max()) == 0.0
+    assert torch.equal(pad_to_max_nodes(x, 4), x)
+    with pytest.raises(ValueError, match="4 variables but the padded width is 3"):
+        pad_to_max_nodes(x, 3)
+    # The generic prior's width bound is known up front, so it fails at construction.
+    with pytest.raises(ValueError, match="n_max_prior=30 exceeds n_max=12"):
+        ExtendedDoTime(seed=0, n_max=12, n_max_prior=30)
+    ExtendedDoTime(seed=0, n_max=12, n_max_prior=12)
+    # Any other overflow surfaces at generation time (back_door has 3 variables).
+    torch.manual_seed(0)
+    with pytest.raises(ValueError, match="padded width is 2"):
+        ExtendedDoTime(tscm_structure="back_door", n_max=2, seed=0).generate_sample(T=40)
+
+
+def test_reference_jsons_record_hub_checkpoints():
+    """Every checkpoint recorded under results/reference/ is a Hugging Face Hub path.
+
+    Regression: the erratum and v1.1 PFN results were committed with
+    machine-local checkpoint paths after 0.1.3 had moved the older files to
+    ``hf://thummd/do-over-time-pfn/<tag>/...``.
+    """
+    import json
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1] / "results" / "reference"
+    if not root.is_dir():
+        pytest.skip("results/reference/ ships with the repository, not the sdist")
+    bad: list[str] = []
+
+    def walk(obj, where):
+        if isinstance(obj, dict):
+            for key, val in obj.items():
+                if key == "checkpoint" and not str(val).startswith("hf://thummd/do-over-time-pfn/"):
+                    bad.append(f"{where}: {val}")
+                walk(val, where)
+        elif isinstance(obj, list):
+            for val in obj:
+                walk(val, where)
+
+    files = sorted(root.rglob("*.json"))
+    assert files
+    for path in files:
+        walk(json.loads(path.read_text()), path.relative_to(root))
+    assert not bad, bad

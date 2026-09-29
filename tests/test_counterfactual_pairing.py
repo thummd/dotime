@@ -5,7 +5,8 @@ The v1.0.0 discrete suites drew independent noise for the two arms
 per episode and shares it, which must (a) leave the default path byte-identical,
 (b) make the arms agree exactly before the intervention onset, (c) keep the
 do-value in the canonical target column, (d) make ``Y_causal_effect`` the exact
-per-episode difference, and (e) stay seed-deterministic.
+per-episode difference, and (e) stay seed-deterministic. It also pins
+``unobserved_confounder`` as a null-effect control (exactly zero effect).
 """
 
 from __future__ import annotations
@@ -44,6 +45,18 @@ def test_counterfactual_effect_and_do_value(struct):
     qti = min(round(float(s["query_time"]) * t_len), t_len - 1)
     expected = float(s["Y_true"]) - float(s["X_obs_full"][qti, qt])
     assert float(s["Y_causal_effect"]) == pytest.approx(expected, abs=1e-5)
+
+
+@pytest.mark.parametrize("seed", [0, 1, 2])
+def test_unobserved_confounder_is_a_null_effect_control(seed):
+    # U -> A and U -> Y only, with no A -> Y edge at any lag, so under shared
+    # noise the outcome cannot move after do(A): the effect is exactly zero at
+    # every step, not merely at the query (it is identified, not unidentifiable).
+    s = _sample("unobserved_confounder", "counterfactual", seed=seed)
+    y = int(s["num_vars"]) - 1  # canonical order puts Y last
+    assert int(s["query_target"]) == y
+    assert torch.equal(s["X_int"][:, y], s["X_obs_full"][:, y])
+    assert float(s["Y_causal_effect"]) == 0.0
 
 
 def test_counterfactual_mode_is_seed_deterministic():

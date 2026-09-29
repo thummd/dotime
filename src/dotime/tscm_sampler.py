@@ -38,14 +38,17 @@ class TSCMStructure(Enum):
       No confounding => p(Y|do(A)) = p(Y|A).
     - IV: INSTRUMENTAL_VARIABLE
       X -> A -> Y with hidden confounding U -> A, U -> Y.
-    - Non-identifiable: UNOBSERVED_CONFOUNDER
-      Hidden confounder, no mediator or instrument. Tests model robustness.
+    - Null-effect control: UNOBSERVED_CONFOUNDER
+      Hidden confounder U -> A, U -> Y and no A -> Y edge at any lag, so A is
+      not an ancestor of Y and p(Y|do(A)) = p(Y): the effect is identified and
+      equals zero. A and Y are associated only through U, so a model that reads
+      that association as causal predicts a spurious effect.
     """
 
     OBSERVED_CONFOUNDER = "observed_confounder"  # X -> A, X -> Y (backdoor)
     MEDIATOR = "mediator"  # A -> M -> Y (frontdoor, trivial)
     CONFOUNDER_MEDIATOR = "confounder_mediator"  # X -> A -> M -> Y, X -> Y (backdoor)
-    UNOBSERVED_CONFOUNDER = "unobserved_confounder"  # U -> A, U -> Y (non-identifiable)
+    UNOBSERVED_CONFOUNDER = "unobserved_confounder"  # U -> A, U -> Y, no A -> Y (null effect)
     BACK_DOOR = "back_door"  # X -> A, X -> Y, A -> Y (backdoor)
     FRONT_DOOR = "front_door"  # A -> M -> Y, U -> A, U -> Y (frontdoor)
     INSTRUMENTAL_VARIABLE = "instrumental_variable"  # X -> A -> Y, U -> A, U -> Y (IV)
@@ -224,7 +227,7 @@ class TSCMSampler:
         return TemporalDAG(G_0, G_lags, self.max_lag, topo)
 
     def _build_unobserved_confounder(self) -> TemporalDAG:
-        """U -> A, U -> Y (inst). U hidden (index 0). Non-identifiable."""
+        """U -> A, U -> Y (inst). U hidden (index 0). No A -> Y edge: null-effect control."""
         G_0 = nx.DiGraph()
         nodes = ["U", "A", "Y"]
         G_0.add_nodes_from(nodes)

@@ -1,7 +1,7 @@
 {
   "suite": "dot-Identifiability-v1",
   "PFN_int": {
-    "checkpoint": "/home/dennis/repos/do-over-time-pfn/checkpoints/s9ho_all_causal/do_over_time_pfn_best.pt",
+    "checkpoint": "hf://thummd/do-over-time-pfn/s9ho_all_causal/do_over_time_pfn_best.pt",
     "dir_target": "effect",
     "pooled_rmse": 0.6395856738090515,
     "rmse_ci95": [
@@ -66,7 +66,7 @@
     }
   },
   "PFN_obs": {
-    "checkpoint": "/home/dennis/repos/do-over-time-pfn/checkpoints/s10ho_all_obs/do_over_time_pfn_best.pt",
+    "checkpoint": "hf://thummd/do-over-time-pfn/s10ho_all_obs/do_over_time_pfn_best.pt",
     "dir_target": "effect",
     "pooled_rmse": 0.5869013667106628,
     "rmse_ci95": [
