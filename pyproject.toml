@@ -127,8 +127,11 @@ dev = [
     "pytest-cov>=4.1",
     "pytest-xdist>=3.5",
     "hypothesis>=6.90",    # property-based tests for SCM invariants
-    "ruff>=0.4",
-    "mypy>=1.8",
+    # Exact pins: new ruff/mypy releases change what passes (ruff 0.16 started
+    # formatting Markdown code blocks, mypy minors add checks), so local runs
+    # and CI must agree. Bump deliberately and fix the fallout in the same PR.
+    "ruff==0.16.7",
+    "mypy==2.3.1",
     "pre-commit>=3.5",
     "build>=1.0",          # for sdist/wheel verification
     "twine>=4.0",

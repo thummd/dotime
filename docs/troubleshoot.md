@@ -33,6 +33,7 @@ Unless you explicitly pass `backend="gdp"`, you never need this.
 
 ```python
 from dotime import baselines
+
 model = baselines.get("DoOverTimePFN", checkpoint="/path/to/best.pt")
 ```
 

@@ -109,17 +109,24 @@ class TemporalSCM:
         through the intervention. The draw goes through the samplers'
         generator-aware path, so a fixed ``generator`` seed reproduces it.
 
-        Args:
-            total_T: Number of simulated steps including burn-in. Must match the
-                ``T + burn_in`` used by the subsequent ``sample_*`` calls, otherwise
-                those calls fall back to drawing fresh noise.
-            generator: RNG for the draw. ``None`` uses the global torch RNG.
+        Parameters
+        ----------
+        total_T : int
+            Number of simulated steps including burn-in. Must match the
+            ``T + burn_in`` used by the subsequent ``sample_*`` calls, otherwise
+            those calls fall back to drawing fresh noise.
+        generator : torch.Generator, optional
+            RNG for the draw. ``None`` uses the global torch RNG.
 
-        Returns:
+        Returns
+        -------
+        dict[str, torch.Tensor]
             The frozen ``{variable: (total_T,) tensor}`` mapping.
 
-        Raises:
-            ValueError: If ``total_T`` is not positive.
+        Raises
+        ------
+        ValueError
+            If ``total_T`` is not positive.
         """
         if total_T <= 0:
             raise ValueError(f"total_T must be positive, got {total_T}")

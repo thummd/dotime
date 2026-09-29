@@ -68,13 +68,15 @@ def run_baseline(
         model = baselines.get(name, checkpoint=checkpoint, device=device)
     else:
         model = baselines.get(name)
-    ep_pred, ep_tgt, ep_obs = [], [], []
+    ep_pred, ep_tgt = [], []
+    ep_obs: list[np.ndarray] = []
     for ep in suite_episodes:
         p = torch.as_tensor(model.predict(ep), dtype=torch.float32).reshape(-1).cpu().numpy()
         t = torch.as_tensor(ep.y_true, dtype=torch.float32).reshape(-1).cpu().numpy()
         ep_pred.append(p)
         ep_tgt.append(t)
-        ep_obs.append(_episode_obs_levels(ep, realignment) if dir_target == "effect" else None)
+        if dir_target == "effect":
+            ep_obs.append(_episode_obs_levels(ep, realignment))
     pred = np.concatenate(ep_pred)
     tgt = np.concatenate(ep_tgt)
     # RMSE is always level-space (subtracting y_obs from both sides would not

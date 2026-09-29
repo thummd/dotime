@@ -72,11 +72,16 @@ _PROFILE_REGISTRY = {
 class InterventionSpec:
     """Specification of an intervention on a temporal SCM.
 
-    Attributes:
-        targets: List of variable indices to intervene on
-        times: List of time indices when intervention is active
-        intervention_type: Type of intervention (hard, soft, time-varying)
-        values: Intervention values (constant, shift, or time-varying function)
+    Attributes
+    ----------
+    targets : list of int
+        List of variable indices to intervene on.
+    times : list of int
+        List of time indices when intervention is active.
+    intervention_type : InterventionType
+        Type of intervention (hard, soft, time-varying).
+    values : float, torch.Tensor or callable
+        Intervention values (constant, shift, or time-varying function).
     """
 
     targets: list[int]

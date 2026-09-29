@@ -129,6 +129,10 @@ class PFNRef:
         batch = episode_to_batch_interp(episode, self.n_max, self.device, self.observational)
         out = self.model(batch)
         head = getattr(self.model, "quantile_head", None) or getattr(self.model, "bar_head", None)
+        if head is None:
+            raise AttributeError(
+                f"{type(self.model).__name__} has neither a quantile_head nor a bar_head"
+            )
         pred_norm = head.predict_mean(out).reshape(-1)
         q = int(episode.query_target[0])
         mean = batch["_norm_means"][0, q]

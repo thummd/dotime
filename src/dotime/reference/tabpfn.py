@@ -140,14 +140,15 @@ def main():
     out = {"suite": args.suite, "n": len(samp)}
     for tag, obs in [("TabPFN_int", False), ("TabPFN_obs", True)]:
         t0 = time.time()
-        preds, tgts = [], []
+        pred_list: list[float] = []
+        tgt_list: list[float] = []
         for i, ep in enumerate(samp):
-            preds.append(predict(ep, observational=obs))
-            tgts.append(float(ep.y_true.reshape(-1)[0]))
+            pred_list.append(predict(ep, observational=obs))
+            tgt_list.append(float(ep.y_true.reshape(-1)[0]))
             if (i + 1) % 100 == 0:
                 print(f"  {tag} {i + 1}/{len(samp)}  ({time.time() - t0:.0f}s)")
-        preds = np.array(preds)
-        tgts = np.array(tgts)
+        preds = np.array(pred_list)
+        tgts = np.array(tgt_list)
         rmse = float(np.sqrt(np.mean((preds - tgts) ** 2)))
         da = direction_accuracy(torch.from_numpy(preds).float(), torch.from_numpy(tgts).float())
         rng = np.random.default_rng(0)

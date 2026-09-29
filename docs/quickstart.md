@@ -11,8 +11,8 @@ prior = DoTime(seed=42)
 
 X_obs, X_int, intervention, scm = prior.generate_pair(T=100)
 
-print(f"Obs:  {tuple(X_obs.shape)}")            # (T, N)
-print(f"Int:  {tuple(X_int.shape)}")            # (T, N)
+print(f"Obs:  {tuple(X_obs.shape)}")  # (T, N)
+print(f"Int:  {tuple(X_int.shape)}")  # (T, N)
 print(f"Type: {intervention.intervention_type}")
 print(f"At:   t = {intervention.times}")
 ```
@@ -62,8 +62,8 @@ from dotime import baselines, evaluation
 
 baseline = baselines.get("VAR-OLS", lag=3)
 results = evaluation.evaluate(baseline, suite)
-print(results.summary())        # pooled + per-structure table
-results.to_dict()               # JSON-serializable
+print(results.summary())  # pooled + per-structure table
+results.to_dict()  # JSON-serializable
 ```
 
 Or from the command line:

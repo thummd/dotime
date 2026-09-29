@@ -1,5 +1,7 @@
 """Utility functions for DoTime."""
 
+from typing import Any
+
 import torch
 import torch.distributions as dist
 
@@ -81,7 +83,9 @@ class LaplaceSampler(DistributionSampler):
 
 # ===== Default Configuration =====
 
-DEFAULT_CONFIG = {
+# Heterogeneous values (ints, floats, torch device/dtype): without the annotation
+# mypy infers dict[str, object], so every typed lookup would need a cast.
+DEFAULT_CONFIG: dict[str, Any] = {
     # Graph parameters
     "N_max": 10,  # Maximum number of variables
     "K_max": 3,  # Maximum number of lags

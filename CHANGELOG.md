@@ -36,8 +36,24 @@ All notable changes to `dotime` are documented here. The format follows
   carrying exact counterfactuals: their two arms are independent noise draws
   (interventional twins). Only the continuous suite, and discrete suites from
   1.1.0 on, share noise across arms.
+- The `dev` extra pins `ruff==0.16.7` and `mypy==2.3.1` (was `ruff>=0.4`,
+  `mypy>=1.8`) so local runs and CI resolve the same versions. Unpinned, ruff
+  0.16 began formatting Python code blocks in Markdown and failed the CI format
+  check, which also kept mypy from running.
 
 ### Fixed
+- Docs build under `-W` (and Read the Docs `fail_on_warning`):
+  `TemporalSCM.freeze_noise` used Google-style sections, which the numpydoc-only
+  napoleon configuration parses as a malformed definition list. It is now
+  numpydoc, as are `SuiteMetadata.for_version`, `Episode.is_self_query` and
+  `InterventionSpec`, which rendered their sections as literal text.
+- Python examples in `docs/custom_data.md`, `docs/quickstart.md` and
+  `docs/troubleshoot.md` are formatted for ruff 0.16.
+- mypy errors in `dotime.reference` (chronos, pfn, reference_table,
+  stationarity, tabpfn): type-only fixes, verified to leave every computed value
+  unchanged. `DEFAULT_CONFIG` is annotated `dict[str, Any]`. `PFNRef.predict`
+  now names the problem when a checkpoint has neither a `quantile_head` nor a
+  `bar_head`, instead of failing on `NoneType`.
 - `ExtendedDoTime.generate_sample`/`generate_batch`: the released (unmasked)
   observational tensor now receives the same canonical column permutation and
   hidden-variable zeroing as `X_int` — v1.0.0 `dot-Identifiability-v1` shipped

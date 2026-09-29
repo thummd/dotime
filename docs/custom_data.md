@@ -35,14 +35,14 @@ episode = Episode(
     x_obs=x_obs,
     x_int=x_obs,  # not used at predict time; pass ground truth here if you have it
     intervention=InterventionSpec(
-        targets=[2],                                # intervened variable index
-        times=[50],                                 # onset step
-        intervention_type=InterventionType.HARD,    # do(X_2 := 1.5)
+        targets=[2],  # intervened variable index
+        times=[50],  # onset step
+        intervention_type=InterventionType.HARD,  # do(X_2 := 1.5)
         values=1.5,
     ),
-    y_true=torch.tensor([observed_outcome]),        # required for metrics
-    query_target=torch.tensor([4]),                 # variable to predict
-    query_time=torch.tensor([60.0]),                # step to predict at
+    y_true=torch.tensor([observed_outcome]),  # required for metrics
+    query_target=torch.tensor([4]),  # variable to predict
+    query_time=torch.tensor([60.0]),  # step to predict at
 )
 ```
 
@@ -77,8 +77,12 @@ from dotime.benchmarks import BenchmarkSuite, SuiteMetadata
 from dotime.evaluation import evaluate
 
 meta = SuiteMetadata(
-    name="my-dataset", version="1.0.0", zenodo_record_id="", doi="",
-    description="in-house evaluation", n_episodes=len(my_episodes),
+    name="my-dataset",
+    version="1.0.0",
+    zenodo_record_id="",
+    doi="",
+    description="in-house evaluation",
+    n_episodes=len(my_episodes),
 )
 suite = BenchmarkSuite(meta, my_episodes)
 
@@ -116,18 +120,19 @@ benchmark generalizes). Slice it per event:
   counterfactual — and the model is not asked to predict that.
 
 ```python
-onset, t_query = 480, 520   # event at step 480, evaluate 40 steps later
-j, k = 2, 4                 # intervened variable, outcome variable
+onset, t_query = 480, 520  # event at step 480, evaluate 40 steps later
+j, k = 2, 4  # intervened variable, outcome variable
 
 episode = Episode(
-    x_obs=stream,           # (T, N); masked from `onset` internally
+    x_obs=stream,  # (T, N); masked from `onset` internally
     x_int=stream,
     intervention=InterventionSpec(
-        targets=[j], times=[onset],
+        targets=[j],
+        times=[onset],
         intervention_type=InterventionType.HARD,
-        values=float(stream[onset, j]),      # the level the event imposed
+        values=float(stream[onset, j]),  # the level the event imposed
     ),
-    y_true=stream[t_query, k].reshape(1),    # what actually happened
+    y_true=stream[t_query, k].reshape(1),  # what actually happened
     query_target=torch.tensor([k]),
     query_time=torch.tensor([float(t_query)]),
 )

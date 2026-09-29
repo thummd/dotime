@@ -66,16 +66,22 @@ class SuiteMetadata:
     def for_version(self, version: str) -> SuiteMetadata:
         """Return the metadata for a specific released version of this suite.
 
-        Args:
-            version: ``"latest"``, the registered version, or one of the
-                ``prior_versions``.
+        Parameters
+        ----------
+        version : str
+            ``"latest"``, the registered version, or one of the
+            ``prior_versions``.
 
-        Returns:
+        Returns
+        -------
+        SuiteMetadata
             ``self`` for the registered version, otherwise a copy whose
             ``version`` and ``zenodo_record_id`` point at the pinned release.
 
-        Raises:
-            ValueError: If ``version`` was never released for this suite.
+        Raises
+        ------
+        ValueError
+            If ``version`` was never released for this suite.
         """
         if version in ("latest", self.version):
             return self
@@ -216,7 +222,9 @@ class Episode:
         should report whether self-queries are included. Structure-defined
         suites (identifiability) never produce them.
 
-        Returns:
+        Returns
+        -------
+        bool
             ``True`` when every query targets one of the intervention targets.
         """
         targets = set(int(t) for t in self.intervention.targets)

@@ -136,14 +136,14 @@ def diagnose(
             x_obs, x_int, _iv, scm = prior.generate_pair(T=t_len)
 
         # A diverged episode is returned as all zeros in both arms.
-        div = float(x_obs.abs().max()) == 0.0 and float(x_int.abs().max()) == 0.0
-        diverged.append(div)
+        ep_diverged = float(x_obs.abs().max()) == 0.0 and float(x_int.abs().max()) == 0.0
+        diverged.append(ep_diverged)
 
         r, acts = companion_rho(scm)
         rhos.append(np.nan if r is None else r)
-        all_linear.append(bool(acts) and all(a == "Identity" for a in acts))
+        all_linear.append(bool(acts and all(a == "Identity" for a in acts)))
 
-        if not div:
+        if not ep_diverged:
             # x_obs is the intervention-free arm and is already post-burn-in,
             # so these windows probe *residual* non-stationarity.
             x = x_obs.detach().cpu().numpy()
