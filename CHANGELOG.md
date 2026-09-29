@@ -71,6 +71,18 @@ All notable changes to `dotime` are documented here. The format follows
   `BatchedTSCMSimulator.generate_pairs` gains `int_time`, `shared_noise` and
   `check_recorded_window`. All are off by default, which keeps its output
   unchanged.
+- `dotime-eval-pfn` reports both `dir_acc_level` and `dir_acc_effect` (pooled and
+  per structure) from a single prediction pass, whichever `--dir-target` is
+  selected for the headline `dir_acc`.
+- `evaluation.query_obs_levels` and a `--dir-target {level,effect}` /
+  `--realignment` option on `dotime-eval-reference` and `dotime-eval-pfn`:
+  score direction accuracy on the causal effect instead of the interventional
+  level (the v1 paper protocol scored levels).
+- `dotime._build` flags diverged (zeroed) episodes with a `diverged`
+  metadata key (v1.0.0 shipped them unflagged: both arms zeroed in 28.7% of
+  Generic-100k and 4.6% of Identifiability, either arm in 30.1% and 4.7%).
+- Datasheet erratum section in `docs/benchmarks.md` documenting v1.0.0 field
+  semantics, column alignment, and the realignment sidecar.
 
 ### Changed
 - Documented that 34.0% of `dot-Continuous-v1` queries are self-queries (query on
@@ -90,20 +102,6 @@ All notable changes to `dotime` are documented here. The format follows
   `mypy>=1.8`) so local runs and CI resolve the same versions. Unpinned, ruff
   0.16 began formatting Python code blocks in Markdown and failed the CI format
   check, which also kept mypy from running.
-
-### Fixed
-- Docs build under `-W` (and Read the Docs `fail_on_warning`):
-  `TemporalSCM.freeze_noise` used Google-style sections, which the numpydoc-only
-  napoleon configuration parses as a malformed definition list. It is now
-  numpydoc, as are `SuiteMetadata.for_version`, `Episode.is_self_query` and
-  `InterventionSpec`, which rendered their sections as literal text.
-- Python examples in `docs/custom_data.md`, `docs/quickstart.md` and
-  `docs/troubleshoot.md` are formatted for ruff 0.16.
-- mypy errors in `dotime.reference` (chronos, pfn, reference_table,
-  stationarity, tabpfn): type-only fixes, verified to leave every computed value
-  unchanged. `DEFAULT_CONFIG` is annotated `dict[str, Any]`. `PFNRef.predict`
-  now names the problem when a checkpoint has neither a `quantile_head` nor a
-  `bar_head`, instead of failing on `NoneType`.
 - `unobserved_confounder` is documented as a null-effect control, not as a
   non-identifiable structure. It has only U→A and U→Y, with no A→Y edge at any
   lag, so its effect is identified and equals zero (`TSCMStructure` docstrings,
@@ -125,8 +123,26 @@ All notable changes to `dotime` are documented here. The format follows
   N_max=60/K_max=8 pairs diverge to all-zero. It now seeds the global torch RNG
   per pair as the release build does, asserts finite output, and requires at
   least one non-diverged pair with N > 10.
+- `dot-Continuous-v1` registry description states the actual query protocol
+  (uniform over [onset, T-1]); the dead `query_offsets` key was removed from
+  `release_config.yaml`.
 
 ### Fixed
+- Docs build under `-W` (and Read the Docs `fail_on_warning`) and the API
+  reference: `docs/conf.py` parsed NumPy sections only, so Google-style
+  `Args:`/`Returns:`/`Raises:` sections fell through as raw definition lists,
+  and the multi-line entry in `TemporalSCM.freeze_noise` failed the `-W` build.
+  napoleon's Google parser is now enabled next to the NumPy one. `freeze_noise`,
+  `SuiteMetadata.for_version`, `Episode.is_self_query` and `InterventionSpec`,
+  which rendered their sections as literal text, are numpydoc like the rest of
+  their modules.
+- Python examples in `docs/custom_data.md`, `docs/quickstart.md` and
+  `docs/troubleshoot.md` are formatted for ruff 0.16.
+- mypy errors in `dotime.reference` (chronos, pfn, reference_table,
+  stationarity, tabpfn): type-only fixes, verified to leave every computed value
+  unchanged. `DEFAULT_CONFIG` is annotated `dict[str, Any]`. `PFNRef.predict`
+  now names the problem when a checkpoint has neither a `quantile_head` nor a
+  `bar_head`, instead of failing on `NoneType`.
 - `dotime-generate --intervention-source` was listed in `--help` in every
   release but never applied, so each generated file used the prior's own
   intervention values whatever mode was chosen. The flag is no longer listed.
@@ -224,11 +240,6 @@ All notable changes to `dotime` are documented here. The format follows
   trajectory; the causally-masked tensor is zero at every post-onset query, so
   v1 metadata stored the interventional level instead of the effect. RNG
   streams and all other fixed-seed outputs are bit-identical.
-- API reference: Google-style `Args:`/`Returns:`/`Raises:` sections render as
-  parameter, return and exception fields. `docs/conf.py` now enables napoleon's
-  Google parser next to the NumPy one. Before, these sections fell through as raw
-  definition lists, and the multi-line entry in `TemporalSCM.freeze_noise` failed
-  the `-W` docs build.
 - `dotime-eval-tabpfn` chose its adjustment columns by position. The back-door
   branch adjusted for every column other than the treatment and the outcome.
   On `confounder_mediator` (columns A, X, M, Y) that set includes the mediator
@@ -274,27 +285,6 @@ All notable changes to `dotime` are documented here. The format follows
   samples lack, and the collate step takes its keys from the first sample. With
   the default prefetching, `TemporalInterventionDataLoader` turned the error into
   a hang. Batches that did not crash, and all RNG streams, are bit-identical.
-
-### Added
-- `dotime-eval-pfn` reports both `dir_acc_level` and `dir_acc_effect` (pooled and
-  per structure) from a single prediction pass, whichever `--dir-target` is
-  selected for the headline `dir_acc`.
-- `evaluation.query_obs_levels` and a `--dir-target {level,effect}` /
-  `--realignment` option on `dotime-eval-reference` and `dotime-eval-pfn`:
-  score direction accuracy on the causal effect instead of the interventional
-  level (the v1 paper protocol scored levels).
-- `dotime._build` flags diverged (zeroed) episodes with a `diverged`
-  metadata key (v1.0.0 shipped them unflagged: both arms zeroed in 28.7% of
-  Generic-100k and 4.6% of Identifiability, either arm in 30.1% and 4.7%).
-- Datasheet erratum section in `docs/benchmarks.md` documenting v1.0.0 field
-  semantics, column alignment, and the realignment sidecar.
-
-### Changed
-- `dot-Continuous-v1` registry description states the actual query protocol
-  (uniform over [onset, T-1]); the dead `query_offsets` key was removed from
-  `release_config.yaml`.
-
-### Fixed
 - `InterventionSampler` (generic discrete prior) now raises a clear `ValueError`
   when `T < 2 * min_intervention_length` (default: `T < 20`) instead of failing
   inside `torch.randint` with an opaque range error. Only previously-crashing
