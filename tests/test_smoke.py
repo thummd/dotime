@@ -169,6 +169,68 @@ def test_results_report_direction_accuracy_uncertainty(tmp_path):
     assert "dir_acc_se" in results.to_dict()["pooled"]
 
 
+def _seed_local_suite_version(cache_dir, name, version, n=8):
+    """Like :func:`_seed_local_suite`, for a pinned earlier release."""
+    pytest.importorskip("pyarrow")
+    from dotime import _release_io
+    from dotime.benchmarks import _SUITE_REGISTRY, episode_from_pair
+
+    meta = _SUITE_REGISTRY[name].for_version(version)
+    prior = ctp.DoTime(seed=0)
+    eps = [episode_from_pair(*prior.generate_pair(T=60)[:3], scm_id=i) for i in range(n)]
+    _release_io.write_suite(
+        meta, eps, cache_dir / f"{name}-{meta.version}", package_version="test", seed=0
+    )
+
+
+def test_effect_scored_direction_accuracy(tmp_path):
+    """dir_target="effect" scores sign(pred - y_obs) against sign(y - y_obs).
+
+    Subtracting the same observational level from both sides changes only what
+    the sign test sees: every level metric must be identical to the level run.
+    """
+    from dotime.evaluation import direction_accuracy, query_obs_levels
+
+    _seed_local_suite(tmp_path, "dot-Generic-100k", n=16)
+    suite = ctp.benchmarks.load_benchmark("dot-Generic-100k", cache_dir=tmp_path)
+    model = ctp.baselines.get("Mean")
+    level = ctp.evaluation.evaluate(model, suite)
+    effect = ctp.evaluation.evaluate(model, suite, dir_target="effect")
+
+    for key in ("rmse", "mae", "nmse", "r2"):
+        assert effect.pooled[key] == pytest.approx(level.pooled[key])
+    assert (level.dir_target, effect.dir_target) == ("level", "effect")
+    assert effect.to_dict()["dir_target"] == "effect"
+    assert "sign of the effect" in effect.summary()
+
+    preds = torch.cat([torch.as_tensor(model.predict(ep)).float().reshape(-1) for ep in suite])
+    tgts = torch.cat([ep.y_true.float().reshape(-1) for ep in suite])
+    obs = torch.cat([query_obs_levels(ep).reshape(-1) for ep in suite])
+    expected = direction_accuracy(preds - obs, tgts - obs)
+    assert effect.pooled["dir_n_valid"] == expected["n_valid"]
+    if expected["n_valid"] > 0:
+        assert effect.pooled["dir_acc"] == pytest.approx(expected["accuracy"])
+
+    oracle = ctp.evaluation.evaluate(ctp.baselines.get("Oracle"), suite, dir_target="effect")
+    if oracle.pooled["dir_n_valid"] > 0:
+        assert oracle.pooled["dir_acc"] == pytest.approx(1.0)
+
+    with pytest.raises(ValueError, match="dir_target"):
+        ctp.evaluation.evaluate(model, suite, dir_target="sign")
+
+
+def test_effect_scoring_refuses_misaligned_identifiability_v1_0(tmp_path):
+    # The archived 1.0.0 x_obs is in topological order, so reading y_obs from it
+    # would score the wrong variable on 6 of 8 structures.
+    _seed_local_suite_version(tmp_path, "dot-Identifiability-v1", "1.0.0")
+    suite = ctp.benchmarks.load_benchmark(
+        "dot-Identifiability-v1", version="1.0.0", cache_dir=tmp_path
+    )
+    ctp.evaluation.evaluate(ctp.baselines.get("Mean"), suite)  # level scoring still works
+    with pytest.raises(ValueError, match="realignment"):
+        ctp.evaluation.evaluate(ctp.baselines.get("Mean"), suite, dir_target="effect")
+
+
 def test_reference_harness_imports_without_optional_extras():
     """`dotime.reference` must stay importable without tabpfn/chronos installed.
 

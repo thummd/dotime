@@ -7,6 +7,20 @@ All notable changes to `dotime` are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- `TSCMStructure.BOW_GRAPH` (`"bow_graph"`), a structure whose effect is not
+  identifiable: hidden U -> A, U -> Y and a causal edge A -> Y. It is
+  `unobserved_confounder` plus A -> Y, so it takes over the role the paper gave
+  `unobserved_confounder` (non-identifiable by design), which has no A -> Y
+  edge and is a null-effect control. U is zeroed in both released arms, and the
+  DAG-derived back-door adjustment set is empty. The generator builds it; no
+  frozen suite contains it yet.
+- `evaluate(..., dir_target="effect")` and `--dir-target {level,effect}` on
+  `dotime-benchmark` and `dotime-eval-submission`: score direction accuracy on
+  the sign of the causal effect `y - y_obs` at the query instead of the sign of
+  the interventional level. The level metrics are unchanged. `Results` records
+  `dir_target`, and `summary()` states it. The default stays `"level"`, so
+  existing calls return the same numbers. Effect scoring refuses the archived
+  `dot-Identifiability-v1` 1.0.0 files, whose `x_obs` is misaligned.
 - `dotime-eval-reference` logs and asserts per-arm target statistics (nonzero
   fraction, mean and variance of the observational level, the interventional
   level and their difference) before scoring. It refuses to score a level arm

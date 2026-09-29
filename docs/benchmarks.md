@@ -11,6 +11,17 @@ DoTime ships four versioned, immutable suites for reproducible evaluation. Each 
 
 **`dot-Identifiability-v1` 1.1.0 (2026-09)** regenerates the suite with one exogenous-noise realisation per episode shared across both arms (`pair_mode="counterfactual"`): the arms agree exactly before the intervention onset, `y_true - y_obs` is a per-episode counterfactual effect, the released `x_obs` is canonically aligned with hidden variables zeroed, `y_causal_effect` is correct, and diverged episodes are resampled (0 zeroed episodes, verified on all 10 800 episodes). It is a new artifact with new trajectories and targets. Pin `version="1.0.0"` to load the frozen original.
 
+The generator also builds a ninth structure that no frozen suite contains yet,
+`bow_graph`: a hidden U drives A and Y, and A drives Y. It is
+`unobserved_confounder` plus the causal edge A→Y, and it is the structure that
+is **not identifiable**. Nothing observed blocks the back-door path A←U→Y and
+there is no mediator, so two SCMs can agree on every observational
+distribution and still differ in the effect of `do(A)`.
+
+```python
+ExtendedDoTime(tscm_structure="bow_graph", pair_mode="counterfactual")
+```
+
 ## Loader
 
 ```python
@@ -83,8 +94,22 @@ The default evaluation reports RMSE, NMSE, MAE, direction accuracy, lift-over-na
 ```python
 from dotime.evaluation import evaluate
 
-results = evaluate(model, suite)
+results = evaluate(model, suite)  # sign of the interventional level (v1)
+results = evaluate(model, suite, dir_target="effect")  # sign of the causal effect y - y_obs
 ```
+
+Direction accuracy asks whether a model gets the direction of the
+intervention right. With `dir_target="level"` (the v1 protocol and the
+default) it compares the sign of the predicted and true interventional
+level, which a positive baseline can make positive whatever the intervention
+did. With `dir_target="effect"` it compares the sign of `y_pred - y_obs` and
+`y_true - y_obs` at the query, which is the direction of the intervention's
+effect. On `dot-Identifiability-v1` 1.1.0 the two signs disagree on 22% of the
+episodes where both are scoreable. RMSE, MAE, NMSE and R² are level metrics
+and are the same either way. `dotime-benchmark` and `dotime-eval-submission`
+take the same choice as `--dir-target`. Effect scoring refuses the archived
+`dot-Identifiability-v1` 1.0.0 files, whose `x_obs` is misaligned; score them
+with `dotime-eval-reference --dir-target effect --realignment <sidecar>`.
 
 See the {doc}`api` reference for the full `benchmarks`, `baselines`, and
 `evaluation` module documentation.

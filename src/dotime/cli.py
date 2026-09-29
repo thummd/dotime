@@ -201,6 +201,13 @@ def _build_benchmark_parser() -> argparse.ArgumentParser:
         help="Baseline name (see --list-baselines). Default: VAR-OLS.",
     )
     p.add_argument(
+        "--dir-target",
+        choices=["level", "effect"],
+        default="level",
+        help="What direction accuracy scores: the sign of the interventional level "
+        "(v1 protocol, default) or of the causal effect y - y_obs.",
+    )
+    p.add_argument(
         "--json-out", type=Path, default=None, help="Write the full results dict to this JSON path."
     )
     _add_common(p)
@@ -244,7 +251,7 @@ def benchmark_main(argv: list[str] | None = None) -> int:
 
     # TODO(api): expose `baselines.get(name)` returning an instantiated baseline.
     model = _baselines.get(args.baseline)
-    results = evaluate(model, suite)
+    results = evaluate(model, suite, dir_target=args.dir_target)
 
     # Results objects are expected to provide `.summary()` (human-readable) and
     # `.to_dict()` (serializable); fall back to repr if not yet implemented.

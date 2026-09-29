@@ -16,7 +16,13 @@ import torch
 
 from dotime.extended import ExtendedDoTime
 
-STRUCTS = ("back_door", "front_door", "instrumental_variable", "unobserved_confounder")
+STRUCTS = (
+    "back_door",
+    "front_door",
+    "instrumental_variable",
+    "unobserved_confounder",
+    "bow_graph",
+)
 
 
 def _sample(struct, pair_mode, seed=11, t_len=120):
@@ -57,6 +63,28 @@ def test_unobserved_confounder_is_a_null_effect_control(seed):
     assert int(s["query_target"]) == y
     assert torch.equal(s["X_int"][:, y], s["X_obs_full"][:, y])
     assert float(s["Y_causal_effect"]) == 0.0
+
+
+def test_bow_graph_has_a_hidden_confounded_nonzero_effect():
+    # The bow graph is unobserved_confounder plus A -> Y: the same hidden U
+    # confounds A and Y, but now A moves Y, so the effect is not zero. U must be
+    # zeroed in both released arms, since a readable U would make the effect
+    # identifiable by back-door adjustment.
+    from dotime.baselines import _back_door_columns, _canonical_summary_graph
+
+    names, summary, hidden = _canonical_summary_graph("bow_graph")
+    assert hidden == {"U"}
+    assert set(summary.edges) == {("U", "A"), ("U", "Y"), ("A", "Y")}
+    assert _back_door_columns("bow_graph")[3] == ()  # nothing observed blocks A <- U -> Y
+
+    effects = []
+    for seed in range(6):
+        s = _sample("bow_graph", "counterfactual", seed=seed)
+        u = names.index("U")
+        assert not s["X_obs_full"][:, u].any()
+        assert not s["X_int"][:, u].any()
+        effects.append(abs(float(s["Y_causal_effect"])))
+    assert max(effects) >= 0.1
 
 
 def test_counterfactual_mode_is_seed_deterministic():

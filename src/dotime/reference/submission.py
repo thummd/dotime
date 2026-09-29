@@ -50,11 +50,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--model", default=None, help="Custom model as 'module:attr'.")
     parser.add_argument("--name", default=None, help="Display name for the leaderboard.")
     parser.add_argument("--out", type=Path, default=Path("submission.json"))
+    parser.add_argument(
+        "--dir-target",
+        choices=["level", "effect"],
+        default="level",
+        help="What direction accuracy scores: the sign of the interventional level "
+        "(v1 protocol, default) or of the causal effect y - y_obs.",
+    )
     args = parser.parse_args(argv)
 
     model, name = _load_model(args.model, args.baseline, args.name)
     suite = load_benchmark(args.suite)
-    results = evaluation.evaluate(model, suite)
+    results = evaluation.evaluate(model, suite, dir_target=args.dir_target)
 
     payload = results.to_dict()
     payload["model"] = name
