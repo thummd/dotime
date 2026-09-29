@@ -6,8 +6,14 @@ the 1.1.0 shared-noise counterfactual targets, plus level/effect sign agreement.
 Validity: invariant pass rates and per-arm target statistics for 1.0.0 (after
 sidecar realignment) and 1.1.0.
 
-The pooled numbers must reproduce ``results/reference/v1_1/ident_cpu_*.json``
-exactly before any per-structure number is trusted (gate asserted below).
+The pooled numbers must reproduce the reference rows given by ``--ref-effect``
+and ``--ref-level`` exactly before any per-structure number is trusted (gate
+asserted below). They default to ``results/reference/v1_1/ident_cpu_*_backdoor_fix.json``,
+recomputed after BackDoorOLS stopped adjusting for the mediator M of
+confounder_mediator. The released ``ident_cpu_*.json`` rows and
+``ident_v1_1_per_structure.json`` predate that fix. To regenerate them, run the
+pre-fix package with those two JSONs as references and
+``--per-structure-out ident_v1_1_per_structure.json``.
 """
 
 from __future__ import annotations
@@ -129,6 +135,14 @@ def main() -> None:
         "--sidecar", default="results/reference/dot-Identifiability-v1.0.0_realignment.jsonl"
     )
     ap.add_argument("--out-dir", type=Path, default=Path("results/reference/audit_2026-09"))
+    ap.add_argument(
+        "--ref-effect", default="results/reference/v1_1/ident_cpu_effect_backdoor_fix.json"
+    )
+    ap.add_argument(
+        "--ref-level", default="results/reference/v1_1/ident_cpu_level_backdoor_fix.json"
+    )
+    # A new name by default, so a rerun never overwrites the pre-fix breakdown.
+    ap.add_argument("--per-structure-out", default="ident_v1_1_per_structure_backdoor_fix.json")
     args = ap.parse_args()
     args.out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -159,16 +173,8 @@ def main() -> None:
         assert st["nonzero_frac"] >= 0.5, f"v1.1 {arm} nonzero_frac {st['nonzero_frac']}"
     print(f"[v1.1 target QA] effect: {val11['arms']['effect']}")
 
-    ref_eff = {
-        r["baseline"]: r
-        for r in json.loads(Path("results/reference/v1_1/ident_cpu_effect.json").read_text())[
-            "rows"
-        ]
-    }
-    ref_lvl = {
-        r["baseline"]: r
-        for r in json.loads(Path("results/reference/v1_1/ident_cpu_level.json").read_text())["rows"]
-    }
+    ref_eff = {r["baseline"]: r for r in json.loads(Path(args.ref_effect).read_text())["rows"]}
+    ref_lvl = {r["baseline"]: r for r in json.loads(Path(args.ref_level).read_text())["rows"]}
     struct = np.array([ep.structure for ep in eps11])
     ytrue = np.array([float(ep.y_true.reshape(-1)[0]) for ep in eps11])
     out_rows = {}
@@ -258,14 +264,15 @@ def main() -> None:
         {k: round(v, 3) for k, v in exact_zero_effect.items()},
     )
 
-    (args.out_dir / "ident_v1_1_per_structure.json").write_text(
+    (args.out_dir / args.per_structure_out).write_text(
         json.dumps(
             {
                 "suite": "dot-Identifiability-v1",
                 "version": "1.1.0",
                 "source": args.v11_cache,
                 "dir_eps": EPS,
-                "gate": "pooled effect/level dir_acc and n_valid reproduce results/reference/v1_1/ident_cpu_{effect,level}.json exactly",
+                "gate": f"pooled effect/level dir_acc and n_valid reproduce {args.ref_effect} "
+                f"and {args.ref_level} exactly",
                 "baselines": out_rows,
                 "level_effect_sign_agreement": agree,
                 "exactly_zero_effect_frac_by_structure": exact_zero_effect,
