@@ -42,6 +42,26 @@ def identifiability_retry_seed(seed: int, attempt: int) -> int:
     return seed if attempt == 0 else (seed * 100003 + attempt) & 0x7FFFFFFF
 
 
+def arms_zeroed(*arms) -> bool:
+    """Whether any arm of a generated pair came back all-zero (diverged).
+
+    The generators replace a diverged simulation with zeros, and the
+    observational and interventional arms are separate simulation calls, so one
+    arm can diverge while the other survives. Such a half-diverged pair has no
+    valid target: a zeroed interventional arm stores ``y_true == 0``, and a
+    zeroed observational arm gives every history-based model an all-zero input
+    against a nonzero target. Every branch of :func:`make_episode` (and the
+    ``dotime-generate`` parquet writer) flags and resamples on this one rule.
+
+    Args:
+        *arms: The episode's trajectory tensors, e.g. ``(x_obs, x_int)``.
+
+    Returns:
+        ``True`` if at least one arm has no nonzero entry.
+    """
+    return any(float(arm.abs().max()) == 0.0 for arm in arms)
+
+
 def make_episode(spec: dict):
     """Build a single Episode from a spec dict (picklable; runs in a worker)."""
     import warnings as _w
@@ -53,22 +73,20 @@ def make_episode(spec: dict):
     from dotime.benchmarks import episode_from_pair, episode_from_sample
 
     kind, seed, idx, t_len = spec["kind"], spec["seed"], spec["idx"], spec["T"]
-    # ``stability_retries``: on a diverged (zeroed) generic, regime or
-    # identifiability episode, resample with a deterministic seed perturbation
-    # up to this many times (the continuous branch does not retry). Default 0
-    # preserves the exact v1.0.0 output. Hardened builds set it >0: otherwise the
-    # generic prior ships ~30% zeroed episodes and identifiability ~5%, because
-    # ExtendedDoTime's internal retry only rejects NaN or |x| >= 10, which a
-    # zeroed arm passes.
+    # ``stability_retries``: when either arm of a generic, regime or
+    # identifiability episode comes back zeroed (diverged), resample with a
+    # deterministic seed perturbation up to this many times (the continuous
+    # branch does not retry). Default 0 makes a single attempt whatever the
+    # rule, so it preserves the exact v1.0.0 tensors. Hardened builds set it >0:
+    # otherwise the generic prior ships ~30% zeroed episodes and identifiability
+    # ~5%, because ExtendedDoTime's internal retry only rejects NaN or
+    # |x| >= 10, which a zeroed arm passes.
     retries = int(spec.get("stability_retries", 0))
     # Seed the GLOBAL torch RNG per episode too: parts of the prior (e.g. the
     # Beta edge-probability draw) use the global generator rather than the
     # instance one, so this is what makes the v2 output independent of worker
     # count / processing order.
     _torch.manual_seed(seed)
-
-    def _diverged(xo, xi):
-        return float(xo.abs().max()) == 0.0 and float(xi.abs().max()) == 0.0
 
     if kind == "generic":
         from dotime import DoTime
@@ -77,17 +95,19 @@ def make_episode(spec: dict):
             s = seed if attempt == 0 else seed * 100003 + attempt
             _torch.manual_seed(s)
             x_obs, x_int, iv, _ = DoTime(seed=s).generate_pair(T=t_len)
-            if attempt == retries or not _diverged(x_obs, x_int):
+            if attempt == retries or not arms_zeroed(x_obs, x_int):
                 break
         # Flag zeroed (diverged) episodes explicitly: v1.0.0 shipped them
-        # unflagged, which the datasheet erratum documents. Tensors and RNG
-        # streams are unchanged; only metadata_json gains the key (v1.1+).
+        # unflagged, which the datasheet erratum documents. A pair with only
+        # one arm zeroed counts too (about 1.4% of v1.0.0 Generic episodes).
+        # Tensors and RNG streams are unchanged; only metadata_json gains the
+        # key (v1.1+).
         return episode_from_pair(
             x_obs,
             x_int,
             iv,
             scm_id=idx,
-            metadata={"tier": 1, "diverged": _diverged(x_obs, x_int)},
+            metadata={"tier": 1, "diverged": arms_zeroed(x_obs, x_int)},
         )
     if kind == "regime":
         from dotime import DoTime
@@ -97,7 +117,7 @@ def make_episode(spec: dict):
             s = seed if attempt == 0 else seed * 100003 + attempt
             _torch.manual_seed(s)
             x_obs, x_int, iv, _ = DoTime(seed=s).generate_regime_pair(T=t_len, num_regimes=d)
-            if attempt == retries or not _diverged(x_obs, x_int):
+            if attempt == retries or not arms_zeroed(x_obs, x_int):
                 break
         return episode_from_pair(
             x_obs,
@@ -105,15 +125,15 @@ def make_episode(spec: dict):
             iv,
             structure=f"regime_{d}",
             scm_id=idx,
-            metadata={"tier": spec["tier"], "n_regimes": d, "diverged": _diverged(x_obs, x_int)},
+            metadata={"tier": spec["tier"], "n_regimes": d, "diverged": arms_zeroed(x_obs, x_int)},
         )
     if kind == "identifiability":
         from dotime.extended import ExtendedDoTime
 
-        # Same deterministic resampling as the generic/regime branches. A pair
-        # counts as diverged if EITHER arm was zeroed: with shared noise the
-        # intervention clamp can keep the interventional arm finite while the
-        # observational arm diverges, and such a pair has no valid target.
+        # Same deterministic resampling and either-arm rule as the
+        # generic/regime branches: with shared noise the intervention clamp can
+        # keep the interventional arm finite while the observational arm
+        # diverges, and such a pair has no valid target.
         for attempt in range(retries + 1):
             s_seed = identifiability_retry_seed(seed, attempt)
             _torch.manual_seed(s_seed)
@@ -126,9 +146,7 @@ def make_episode(spec: dict):
                 # reproduces the v1.0.0 / v1.1.0 builds, which query at onset.
                 query_offset_range=tuple(spec.get("query_offset_range", (0, 0))),
             ).generate_sample(T=t_len)
-            zeroed = (
-                float(s["X_int"].abs().max()) == 0.0 or float(s["X_obs_full"].abs().max()) == 0.0
-            )
+            zeroed = arms_zeroed(s["X_int"], s["X_obs_full"])
             if attempt == retries or not zeroed:
                 break
         return episode_from_sample(

@@ -97,6 +97,26 @@ def test_oracle_exact_on_reloaded_suite(tmp_path):
     assert results.pooled["rmse"] == pytest.approx(0.0, abs=1e-5)
 
 
+def test_generate_cli_parquet_flags_zeroed_arms(tmp_path):
+    """``dotime-generate`` parquet output flags pairs with either arm zeroed."""
+    from dotime._build import arms_zeroed
+    from dotime.cli import generate_main
+
+    # The legacy noise path draws from the global torch RNG, so pin it: with
+    # this seed, 6 of the 12 pairs come back zeroed.
+    torch.manual_seed(0)
+    out = tmp_path / "gen.parquet"
+    assert generate_main(["-n", "12", "-T", "60", "-o", str(out), "--seed", "0"]) == 0
+    meta = SuiteMetadata(
+        name="gen", version="0.0.0", zenodo_record_id="LOCAL", doi="", description="", n_episodes=12
+    )
+    suite = _release_io.read_suite(meta, tmp_path / "gen")
+    flags = [ep.metadata["diverged"] for ep in suite]
+    assert flags == [arms_zeroed(ep.x_obs, ep.x_int) for ep in suite]
+    assert any(flags)
+    assert not all(flags)
+
+
 def test_checksum_mismatch_detected(tmp_path):
     meta, _eps, suite_dir = _make_suite(tmp_path)
     shard = suite_dir / "shard-0000.parquet"

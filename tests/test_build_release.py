@@ -105,34 +105,55 @@ def test_identifiability_covers_all_eight_structures(tmp_path):
 def test_stability_retries_removes_divergence():
     """The opt-in stability_retries flag resamples diverged generic episodes.
 
-    v1.0.0 (retries=0) ships ~30% all-zero (diverged) generic episodes; the
-    hardened build (retries>0) should reduce that to ~0 while leaving the
-    retries=0 output byte-identical to the release.
+    v1.0.0 (retries=0) ships ~30% zeroed (diverged) generic episodes. A pair is
+    diverged when EITHER arm is all-zero: the arms are separate simulations, and
+    about 1.4% of v1.0.0 Generic episodes have only one arm zeroed. The hardened
+    build (retries>0) must remove both kinds, while retries=0 stays the
+    unretried first draw, i.e. byte-identical to the release.
     """
     import warnings
 
+    import torch
+
+    from dotime import DoTime
     from dotime._build import episode_specs, make_episode
 
     cfg = {"generator": "generic", "n_episodes": 300, "T": 200, "seed": 20260714}
 
-    def zeroed_fraction(retries):
+    def zeroed_arms(ep):
+        return float(ep.x_obs.abs().max()) == 0.0, float(ep.x_int.abs().max()) == 0.0
+
+    def build(retries):
         c = {**cfg, "stability_retries": retries}
         specs = episode_specs(c, c["seed"], 1.0)[:200]
         assert specs[0].get("stability_retries") == retries
-        z = 0
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
-            for sp in specs:
-                ep = make_episode(sp)
-                if float(ep.x_obs.abs().max()) == 0 and float(ep.x_int.abs().max()) == 0:
-                    z += 1
-        return z / len(specs)
+            episodes = [make_episode(sp) for sp in specs]
+        for ep in episodes:
+            assert ep.metadata["diverged"] == any(zeroed_arms(ep)), ep.scm_id
+        return specs, episodes
 
-    baseline = zeroed_fraction(0)
-    hardened = zeroed_fraction(20)
-    assert baseline > 0.10, f"expected sizable v1.0.0 divergence, got {baseline:.2%}"
+    specs, baseline = build(0)
+    rate = sum(ep.metadata["diverged"] for ep in baseline) / len(baseline)
+    assert rate > 0.10, f"expected sizable v1.0.0 divergence, got {rate:.2%}"
+    # This config holds both half-diverged kinds (only x_obs zeroed, only x_int
+    # zeroed), so the either-arm rule is exercised, not just the both-arm case.
+    half = [i for i, ep in enumerate(baseline) if sum(zeroed_arms(ep)) == 1]
+    assert {zeroed_arms(baseline[i]) for i in half} == {(True, False), (False, True)}
+    # retries=0 must be the plain first draw of the per-episode seed.
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        for i in half:
+            torch.manual_seed(specs[i]["seed"])
+            x_obs, x_int, _, _ = DoTime(seed=specs[i]["seed"]).generate_pair(T=cfg["T"])
+            assert torch.equal(baseline[i].x_obs, x_obs)
+            assert torch.equal(baseline[i].x_int, x_int)
+
+    _, hardened = build(20)
     # deterministic build (fixed seed): retries=20 fully eliminates divergence.
-    assert hardened == 0.0, f"retries should eliminate divergence, got {hardened:.2%}"
+    zeroed = [ep.scm_id for ep in hardened if any(zeroed_arms(ep))]
+    assert zeroed == [], f"retries should eliminate divergence, still zeroed: {zeroed}"
 
 
 def test_identifiability_retry_seed_stays_in_numpy_range():

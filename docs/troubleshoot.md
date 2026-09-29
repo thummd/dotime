@@ -40,14 +40,22 @@ model = baselines.get("DoOverTimePFN", checkpoint="/path/to/best.pt")
 The `[models]` extra (`pfns`) must be installed for the model to import.
 
 **`RuntimeWarning: SCM diverged ... returning zeros`.** The diverse prior
-occasionally samples an unstable SCM; those trajectories are zeroed and flagged
-rather than dropped. In the released v1.0.0 suites the zeroed fraction is **28.7%
-on `dot-Generic-100k`** and **4.6% on `dot-Identifiability-v1`** (0% on
-RegimeSwitch/Continuous) -- high enough that you should filter on
-`X.abs().max() > 0` rather than ignore it. To build a divergence-free suite
-instead, pass `--stability-retries 20` to `scripts/build_release.py` (opt-in
-deterministic resampling; it produces a *different*, non-v1 suite). The warnings
-themselves are safe to filter with `warnings.simplefilter("ignore")`.
+occasionally samples an unstable SCM. The observational and interventional arms
+are simulated separately and each diverged arm is replaced by zeros, so an
+episode can have one arm or both zeroed. In the released v1.0.0 suites both arms
+are zeroed in **28.7% of `dot-Generic-100k`** (28,734 of 100,000) and **4.6% of
+`dot-Identifiability-v1`** (497 of 10,800). Counting episodes with either arm
+zeroed, the fractions are **30.1%** (30,111) and **4.7%** (504). RegimeSwitch and
+Continuous have no zeroed arm. A zeroed interventional arm stores `y_true == 0`,
+and a zeroed observational arm leaves an all-zero history in front of a nonzero
+target, so filter on **both** arms (`x_obs.abs().max() > 0 and
+x_int.abs().max() > 0`) rather than ignore them. The v1.0.0 files carry no flag;
+suites built with the current generator flag either case with
+`metadata["diverged"]`. To build a divergence-free suite instead, pass
+`--stability-retries 20` to `scripts/build_release.py` (opt-in deterministic
+resampling of any episode with a zeroed arm; it produces a *different*, non-v1
+suite). The warnings themselves are safe to filter with
+`warnings.simplefilter("ignore")`.
 
 ## Benchmark cache
 

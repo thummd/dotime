@@ -93,6 +93,20 @@ All notable changes to `dotime` are documented here. The format follows
   without warning. It now raises a `ValueError`, and a generic prior with
   `n_max_prior > n_max` is rejected at construction. Configurations that fit
   within `n_max` produce bit-identical output.
+- `dotime._build` counts a generic or regime pair as diverged when **either** arm
+  is all-zero, both for the `diverged` metadata flag and for the
+  `stability_retries` resampling gate, as the identifiability branch already did.
+  The arms are separate simulations, and pairs with only one arm zeroed were
+  shipped with `diverged=False` and never resampled, even in hardened builds. In
+  the v1.0.0 files they are 1,377 of 100,000 Generic episodes (682 with only the
+  observational arm zeroed, whose nonzero target sits behind an all-zero history,
+  and 695 with only the interventional arm zeroed, whose `y_true` is 0) and 7 of
+  10,800 Identifiability episodes. The either-arm zeroed fractions are therefore
+  30.1% and 4.7%. The 28.7% and 4.6% stated before count only pairs with both arms
+  zeroed. RegimeSwitch and Continuous have no zeroed arm. With
+  `stability_retries=0` the tensors are unchanged and only the flag value of
+  half-diverged episodes changes. `dotime-generate` parquet output now carries the
+  same flag.
 - `ExtendedDoTime.generate_sample`/`generate_batch`: the released (unmasked)
   observational tensor now receives the same canonical column permutation and
   hidden-variable zeroing as `X_int` — v1.0.0 `dot-Identifiability-v1` shipped
@@ -116,9 +130,9 @@ All notable changes to `dotime` are documented here. The format follows
   `--realignment` option on `dotime-eval-reference` and `dotime-eval-pfn`:
   score direction accuracy on the causal effect instead of the interventional
   level (the v1 paper protocol scored levels).
-- `dotime._build` flags diverged (all-zero) episodes with a `diverged`
-  metadata key (v1.0.0 shipped them unflagged: 28.7% of Generic-100k, 4.6% of
-  Identifiability).
+- `dotime._build` flags diverged (zeroed) episodes with a `diverged`
+  metadata key (v1.0.0 shipped them unflagged: both arms zeroed in 28.7% of
+  Generic-100k and 4.6% of Identifiability, either arm in 30.1% and 4.7%).
 - Datasheet erratum section in `docs/benchmarks.md` documenting v1.0.0 field
   semantics, column alignment, and the realignment sidecar.
 

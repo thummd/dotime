@@ -141,7 +141,9 @@ def _write_parquet(dataset: list, out: Path, *, seed: int) -> None:
     Each ``(X_obs, X_int, intervention)`` tuple becomes one Episode (with a query
     derived from the most intervention-affected variable), written via the
     canonical :mod:`dotime._release_io` schema. ``out``'s ``.parquet``
-    suffix is treated as the suite-directory stem.
+    suffix is treated as the suite-directory stem. Episodes with either arm
+    zeroed by divergence handling carry ``metadata["diverged"] = True``; unlike
+    a suite build, this path does not resample them.
     """
     try:
         import pyarrow  # noqa: F401
@@ -151,10 +153,15 @@ def _write_parquet(dataset: list, out: Path, *, seed: int) -> None:
         ) from exc
 
     from dotime import __version__, _release_io
+    from dotime._build import arms_zeroed
     from dotime.benchmarks import SuiteMetadata, episode_from_pair
 
+    # The release-build predicate, so a locally generated file flags a zeroed
+    # arm exactly as a suite build would.
     episodes = [
-        episode_from_pair(x_obs, x_int, intervention, scm_id=i)
+        episode_from_pair(
+            x_obs, x_int, intervention, scm_id=i, metadata={"diverged": arms_zeroed(x_obs, x_int)}
+        )
         for i, (x_obs, x_int, intervention) in enumerate(dataset)
     ]
     suite_dir = out.with_suffix("") if out.suffix == ".parquet" else out
