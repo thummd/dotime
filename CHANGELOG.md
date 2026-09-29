@@ -36,6 +36,25 @@ All notable changes to `dotime` are documented here. The format follows
   target and `y_true`), so the 1.0.0 sidecar is refused on 1.1.0, whose `x_obs`
   is already canonical. The result JSON records `suite_version`, `realigned` and
   `realignment_sidecar`.
+- `divergence_fallback` on `ExtendedDoTime` and `TemporalInterventionDataLoader`
+  selects how `generate_batch` replaces a diverged sample of a named
+  `tscm_structure`. `"sequential"`, the default for interventional pairs, keeps
+  the per-sample `generate_sample` replacement that released checkpoints were
+  trained with, bit-identical. That replacement comes from a different simulator
+  (noise added after the activation instead of inside it), ignores `hardening`,
+  draws its own intervention time, and 3 to 7 % of replacements are all-zero
+  diverged episodes. `"batched"` redraws diverged samples with the batch's own
+  `BatchedTSCMSimulator` at the batch's intervention time, and also counts a
+  non-finite value or |x| > 10 anywhere in the recorded window as diverged. The
+  simulator's 50-step check misses the tail after the last multiple of 50 and
+  passed 0.07 to 0.9 % of such samples. For front_door under the OSC hardening
+  they inflate `var(Y_true)` by a third. In a fixed-seed scan with batches of 16,
+  3.5 to 6.2 % of samples diverge without hardening (45 to 65 % of batches need a
+  replacement), and 0.6 to 1.8 % under the OSC hardening. Slots that stay valid,
+  and every later batch, are bit-identical to `"sequential"`.
+  `BatchedTSCMSimulator.generate_pairs` gains `int_time`, `shared_noise` and
+  `check_recorded_window`. All are off by default, which keeps its output
+  unchanged.
 
 ### Changed
 - Documented that 34.0% of `dot-Continuous-v1` queries are self-queries (query on
@@ -155,6 +174,16 @@ All notable changes to `dotime` are documented here. The format follows
   `results/reference/v1_1/ident_cpu_{level,effect}_backdoor_fix.json`. The
   released v1.1 rows, the v1.0.0 erratum rows and the v1.0.0 Table 3 row
   (`results/reference/ident.json`) were computed with the old adjustment set.
+- `ExtendedDoTime.generate_batch` honours `pair_mode="counterfactual"` for named
+  structures. The batched simulator now reuses the observational noise draw for
+  the interventional arm, so every slot agrees with its twin before the onset. It
+  used to return independent-noise twins, apart from replaced diverged samples,
+  which were shared-noise counterfactuals from the per-sample simulator.
+  Counterfactual batches redraw diverged samples with the batched simulator by
+  default, and `divergence_fallback="sequential"` is rejected for them. For a
+  fixed seed, observational arms and intervention values are unchanged.
+  `TemporalInterventionDataLoader` accepts `pair_mode`. Interventional batches
+  are bit-identical.
 - `ExtendedDoTime.generate_sample`/`generate_batch`: the released (unmasked)
   observational tensor now receives the same canonical column permutation and
   hidden-variable zeroing as `X_int` — v1.0.0 `dot-Identifiability-v1` shipped

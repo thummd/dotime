@@ -19,6 +19,10 @@ import torch
 
 from dotime.tscm_sampler import TSCMSampler, TSCMStructure
 
+# |x| above this marks a sample as diverged, both in simulate's periodic check and in
+# generate_pairs(check_recorded_window=True).
+DIVERGENCE_THRESHOLD = 10.0
+
 # Activation functions that work on batched tensors
 BATCHED_ACTIVATIONS = [
     torch.nn.Identity(),
@@ -211,7 +215,7 @@ class BatchedTSCMSimulator:
         int_target: int | None = None,
         int_time: int | None = None,
         int_value=None,
-        divergence_threshold: float = 10.0,
+        divergence_threshold: float = DIVERGENCE_THRESHOLD,
         seed: int | None = None,
         mechanisms: dict | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -326,6 +330,9 @@ class BatchedTSCMSimulator:
         intervention_scale: float = 4.0,
         seed: int = 42,
         positivity_clip: bool = False,
+        int_time: int | None = None,
+        shared_noise: bool = False,
+        check_recorded_window: bool = False,
     ) -> dict:
         """Generate B observational + interventional trajectory pairs.
 
@@ -335,6 +342,23 @@ class BatchedTSCMSimulator:
             If True, per-sample clip each int_value to [obs_mu - 3σ, obs_mu + 3σ]
             where (obs_mu, obs_sigma) are computed from the pre-intervention
             observational window of that sample's treatment variable.
+        int_time : int, optional
+            Common intervention time in ``[0, T)`` instead of the drawn one. The
+            random draws for a given ``seed`` stay the same, so only what depends
+            on the onset changes: ``X_int`` from the earlier onset on, and the
+            clipped values when ``positivity_clip`` is set. ``ExtendedDoTime``
+            uses it to redraw diverged samples at their batch's intervention time.
+        shared_noise : bool
+            If True, the interventional arm reuses the observational arm's noise
+            realisation, so the pairs are shared-noise counterfactuals that agree
+            exactly before the intervention. The default draws independent noise
+            for the two arms (interventional twins).
+        check_recorded_window : bool
+            If True, a sample is also invalid when either arm has a non-finite
+            value, or one above ``DIVERGENCE_THRESHOLD`` in absolute value,
+            anywhere in the recorded window. The default flag reflects only the
+            checks ``simulate`` runs every 50 steps, which never see the steps
+            after the last multiple of 50.
 
         Returns a dict with tensors ready for batched processing:
             X_obs: (B, T, N)
@@ -343,7 +367,15 @@ class BatchedTSCMSimulator:
             int_value: (B,) float — intervention values (per-sample)
             int_time: (B,) int — intervention time (single common value for batch)
             valid: (B,) bool — non-diverged samples
+
+        Raises
+        ------
+        ValueError
+            If ``int_time`` is given and lies outside ``[0, T)``, where the
+            intervention would silently never be applied.
         """
+        if int_time is not None and not 0 <= int_time < T:
+            raise ValueError(f"int_time must lie in [0, {T}), got {int_time}")
         int_target_idx = self.topo.index("A")
 
         gen = torch.Generator().manual_seed(seed)
@@ -352,6 +384,10 @@ class BatchedTSCMSimulator:
         # Use a single common int_time for the whole batch (so we can vectorize
         # the interventional simulate() call). Per-sample values are still used.
         common_int_time = int(torch.randint(t_lo, t_hi, (1,), generator=gen).item())
+        if int_time is not None:
+            # Overriding after the draw keeps the value draws below on the same
+            # generator position as a call without the override.
+            common_int_time = int(int_time)
 
         # Per-sample intervention values: N(0, intervention_scale)
         int_values = torch.randn(B, generator=gen) * intervention_scale
@@ -386,8 +422,11 @@ class BatchedTSCMSimulator:
                 hi = mu + 3.0 * sigma
                 int_values = torch.clamp(int_values, min=lo, max=hi)
 
-        # 3) Interventional simulation: SAME mechanisms, DIFFERENT noise (fresh
-        # seed+1 for noise sampling), and the intervention applied.
+        # 3) Interventional simulation: SAME mechanisms and the intervention applied.
+        # simulate() draws its noise first from a generator seeded with `seed`
+        # (mechanisms and values are passed in), so reusing the observational seed
+        # reproduces the observational noise exactly. seed + 1 gives the
+        # independent draw of interventional twins.
         X_int, valid_int = self.simulate(
             B,
             T,
@@ -396,11 +435,15 @@ class BatchedTSCMSimulator:
             int_target=int_target_idx,
             int_time=common_int_time,
             int_value=int_values,
-            seed=seed + 1,
+            seed=seed if shared_noise else seed + 1,
             mechanisms=shared_mechanisms,
         )
 
         valid = valid_obs & valid_int
+        if check_recorded_window:
+            for X in (X_obs, X_int):
+                in_range = X.abs().amax(dim=(1, 2)) <= DIVERGENCE_THRESHOLD
+                valid = valid & torch.isfinite(X).all(dim=(1, 2)) & in_range
 
         return {
             "X_obs": X_obs,

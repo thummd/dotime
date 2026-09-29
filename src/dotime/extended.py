@@ -62,6 +62,40 @@ def _validate_intervention_source(intervention_source: str) -> None:
     )
 
 
+# How ExtendedDoTime.generate_batch replaces a diverged sample of a named structure.
+# "sequential" (the v1 behaviour) builds it with generate_sample, i.e. with TSCMPrior's
+# per-sample simulator. "batched" redraws it with the batch's own BatchedTSCMSimulator.
+DIVERGENCE_FALLBACKS = ("sequential", "batched")
+
+# Matches generate_sample's 20 attempts. Measured per-sample divergence is at most ~6 %,
+# so exhausting 20 rounds means the configuration itself diverges.
+_MAX_REDRAW_ROUNDS = 20
+
+
+def _redraw_seed(batch_seed: int, attempt: int) -> int:
+    """Seed for one round of batched redraws of a batch's diverged samples.
+
+    ``BatchedTSCMSimulator.generate_pairs`` seeds two generators, ``seed`` and
+    ``seed + 1``. An arithmetic perturbation such as
+    ``dotime._build.identifiability_retry_seed`` would therefore hand one round's
+    second seed to the next round as its first. Hashing ``(batch_seed, attempt)``
+    avoids that, and drawing nothing from ``ExtendedDoTime.rng`` keeps every later
+    batch on the stream it has without redraws.
+
+    Args:
+        batch_seed: The seed of the batch's own ``generate_pairs`` call.
+        attempt: The 1-based redraw round.
+
+    Returns:
+        A seed in ``[0, 2**31)``.
+
+    Raises:
+        ValueError: If ``batch_seed`` or ``attempt`` is negative.
+    """
+    state = np.random.SeedSequence((batch_seed, attempt)).generate_state(1)[0]
+    return int(state) & 0x7FFFFFFF
+
+
 def pad_to_max_nodes(X: torch.Tensor, max_nodes: int) -> torch.Tensor:
     """Right-pad a ``(T, N)`` trajectory with zero columns to ``max_nodes`` variables.
 
@@ -305,6 +339,7 @@ class ExtendedDoTime:
         query_offset_range: tuple = (0, 0),
         hardening: dict | None = None,
         pair_mode: str = "interventional",
+        divergence_fallback: str | None = None,
     ):
         # Validated before any sampling state exists, so a bad config fails at
         # construction instead of partway through a training or build run.
@@ -339,9 +374,32 @@ class ExtendedDoTime:
                 "counterfactual pairing is implemented for the named TSCM structures; "
                 "the generic/regime priors keep independent-noise interventional twins"
             )
-        # Applies to generate_sample / generate_pair (the release path). generate_batch
-        # uses the batched simulator and keeps interventional-twin semantics.
+        # Applies to both paths: generate_sample freezes one TemporalSCM noise
+        # realisation per episode, and generate_batch has the batched simulator reuse
+        # the observational noise draw (generate_pairs(shared_noise=True)).
         self.pair_mode = pair_mode
+
+        if divergence_fallback is not None and divergence_fallback not in DIVERGENCE_FALLBACKS:
+            raise ValueError(
+                f"divergence_fallback must be one of {DIVERGENCE_FALLBACKS} or None, "
+                f"got {divergence_fallback!r}"
+            )
+        if divergence_fallback == "batched" and tscm_structure is None:
+            raise NotImplementedError(
+                "divergence_fallback='batched' redraws with the batched simulator of a named "
+                "TSCM structure; the generic/regime priors build every sample with generate_sample"
+            )
+        if divergence_fallback == "sequential" and pair_mode == "counterfactual":
+            raise ValueError(
+                "divergence_fallback='sequential' would mix per-sample TSCMPrior replacements "
+                "into batched counterfactual batches; use 'batched', the default for this pair_mode"
+            )
+        # None keeps what released checkpoints trained on: interventional batches keep the
+        # per-sample replacement byte-identical unless "batched" is requested. Counterfactual
+        # batches have no such history, so they get a consistent batch by default.
+        if divergence_fallback is None:
+            divergence_fallback = "batched" if pair_mode == "counterfactual" else "sequential"
+        self.divergence_fallback = divergence_fallback
 
         if tscm_structure is not None:
             structure_enum = TSCMStructure(tscm_structure)
@@ -703,6 +761,12 @@ class ExtendedDoTime:
         Multi-query batches include a '_traj_idx' field that maps each query
         to its source trajectory (for encoder caching).
 
+        For a named ``tscm_structure`` the batch comes from the vectorized
+        simulator, and ``divergence_fallback`` decides how a diverged sample is
+        replaced: ``"sequential"`` calls ``generate_sample`` (a different
+        simulator that ignores ``hardening`` and draws its own intervention
+        time), ``"batched"`` redraws it with the batch's own simulator.
+
         Parameters
         ----------
         query_mode : "single" (random queries) or "all_pairs" (all outcome vars)
@@ -718,6 +782,9 @@ class ExtendedDoTime:
             If ``tscm_structure`` is set and ``intervention_source`` is not in
             :data:`BATCHED_INTERVENTION_SOURCES` (see
             :func:`check_batched_intervention_source`).
+        RuntimeError
+            With ``divergence_fallback="batched"``, if a sample is still
+            diverged after ``_MAX_REDRAW_ROUNDS`` redraws.
         """
         # Before sample_T, so a rejected call leaves every RNG stream where it was.
         check_batched_intervention_source(self.intervention_source, self.tscm_structure)
@@ -751,7 +818,9 @@ class ExtendedDoTime:
         # mode switch the simulator has, which is why generate_batch rejects the modes
         # outside BATCHED_INTERVENTION_SOURCES before reaching here.
         positivity_clip = self.intervention_source == "positivity_aware"
+        redraw = self.divergence_fallback == "batched"
 
+        # Both new flags are False in "sequential" mode, which keeps the legacy call.
         pairs = sim.generate_pairs(
             B=batch_size,
             T=T,
@@ -760,6 +829,8 @@ class ExtendedDoTime:
             intervention_scale=self.intervention_scale,
             seed=seed,
             positivity_clip=positivity_clip,
+            shared_noise=self.pair_mode == "counterfactual",
+            check_recorded_window=redraw,
         )
 
         # Move bulk simulation results to CPU once for the per-sample dict
@@ -772,6 +843,19 @@ class ExtendedDoTime:
         int_values_per_sample = pairs["int_value"].cpu()  # (B,) per-sample
         N = pairs["N"]
         hidden_vars = pairs["hidden_vars"]
+
+        if redraw:
+            X_obs_all, X_int_all, int_values_per_sample = self._redraw_diverged(
+                X_obs_all,
+                X_int_all,
+                int_values_per_sample,
+                valid,
+                T=T,
+                int_time=int_time_idx,
+                seed=seed,
+                positivity_clip=positivity_clip,
+            )
+            valid = torch.ones_like(valid)
 
         # Build per-sample dicts and use the existing _collate_batch
         samples = []
@@ -926,6 +1010,77 @@ class ExtendedDoTime:
             )
 
         return self._collate_batch(samples)
+
+    def _redraw_diverged(
+        self,
+        X_obs: torch.Tensor,
+        X_int: torch.Tensor,
+        int_values: torch.Tensor,
+        valid: torch.Tensor,
+        T: int,
+        int_time: int,
+        seed: int,
+        positivity_clip: bool,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        """Replace the diverged samples of a vectorized batch with batched redraws.
+
+        Each round draws fresh SCMs for the samples still pending, with the batch's
+        simulator, hardening, intervention time, positivity clip, noise pairing and
+        validity check. The replacements therefore follow the same distribution as
+        the samples they sit next to. Divergence is mostly a property of the sampled
+        mechanisms, which is why a round redraws the whole SCM rather than only the
+        noise, as ``generate_sample``'s retries also do.
+
+        Args:
+            X_obs: ``(B, T, N)`` observational trajectories on the CPU.
+            X_int: ``(B, T, N)`` interventional trajectories on the CPU.
+            int_values: ``(B,)`` intervention values on the CPU.
+            valid: ``(B,)`` bool mask, ``False`` for the samples to replace.
+            T: Trajectory length of the batch.
+            int_time: The batch's common intervention time.
+            seed: The seed of the batch's own ``generate_pairs`` call.
+            positivity_clip: Whether intervention values are clipped to the
+                observed 3σ range, as for the rest of the batch.
+
+        Returns:
+            Copies of ``X_obs``, ``X_int`` and ``int_values`` in which every
+            diverged sample is replaced by a valid redraw. Valid samples are
+            untouched.
+
+        Raises:
+            RuntimeError: If samples are still diverged after
+                ``_MAX_REDRAW_ROUNDS`` rounds.
+        """
+        X_obs, X_int, int_values = X_obs.clone(), X_int.clone(), int_values.clone()
+        pending = torch.nonzero(~valid).flatten()
+        for attempt in range(1, _MAX_REDRAW_ROUNDS + 1):
+            if pending.numel() == 0:
+                break
+            redrawn = self.batched_sim.generate_pairs(
+                B=int(pending.numel()),
+                T=T,
+                burn_in=self._burn_in_total,
+                device=self._sim_device,
+                intervention_scale=self.intervention_scale,
+                seed=_redraw_seed(seed, attempt),
+                positivity_clip=positivity_clip,
+                int_time=int_time,
+                shared_noise=self.pair_mode == "counterfactual",
+                check_recorded_window=True,
+            )
+            ok = redrawn["valid"].cpu()
+            filled = pending[ok]
+            X_obs[filled] = redrawn["X_obs"].cpu()[ok]
+            X_int[filled] = redrawn["X_int"].cpu()[ok]
+            int_values[filled] = redrawn["int_value"].cpu()[ok]
+            pending = pending[~ok]
+        if pending.numel() > 0:
+            raise RuntimeError(
+                f"{pending.numel()} of {valid.numel()} samples of a {self.tscm_structure!r} "
+                f"batch (T={T}) still diverged after {_MAX_REDRAW_ROUNDS} batched redraws; "
+                "this configuration diverges too often, e.g. lower hardening['spectral_rho']"
+            )
+        return X_obs, X_int, int_values
 
     def _get_worker_pool(self, n_procs: int):
         """Lazily create (or resize) a persistent ProcessPoolExecutor.

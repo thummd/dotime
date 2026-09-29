@@ -87,7 +87,14 @@ class TemporalInterventionDataLoader:
         sim_device: str | None = None,
         query_offset_range: tuple = (0, 0),
         hardening: dict | None = None,
+        pair_mode: str = "interventional",
+        divergence_fallback: str | None = None,
     ):
+        # pair_mode and divergence_fallback go to every ExtendedDoTime unchanged. With a
+        # named structure, divergence_fallback="batched" redraws diverged samples with
+        # the batched simulator (hardened like the rest of the batch). The default None
+        # keeps the per-sample replacement of interventional batches, which released
+        # checkpoints were trained with, and redraws counterfactual ones.
         self.num_steps = num_steps
         self.batch_size = batch_size
         self.normalize = normalize
@@ -132,6 +139,8 @@ class TemporalInterventionDataLoader:
                     sim_device=sim_device,
                     query_offset_range=PER_STRUCT_OFFSET_RANGE[s],
                     hardening=hardening,
+                    pair_mode=pair_mode,
+                    divergence_fallback=divergence_fallback,
                 )
                 for i, s in enumerate(tscm_structures)
             ]
@@ -155,6 +164,8 @@ class TemporalInterventionDataLoader:
                 sim_device=sim_device,
                 query_offset_range=query_offset_range,
                 hardening=hardening,
+                pair_mode=pair_mode,
+                divergence_fallback=divergence_fallback,
             )
             self.priors = None
 

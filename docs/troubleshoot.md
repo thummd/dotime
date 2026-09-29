@@ -57,6 +57,17 @@ resampling of any episode with a zeroed arm; it produces a *different*, non-v1
 suite). The warnings themselves are safe to filter with
 `warnings.simplefilter("ignore")`.
 
+**Diverged samples in training batches.** For a named `tscm_structure`,
+`ExtendedDoTime.generate_batch` (and so `TemporalInterventionDataLoader`) replaces
+every diverged sample. Without hardening that is 3.5 to 6.2% of samples. For
+interventional pairs the default, `divergence_fallback="sequential"`, keeps the v1
+behaviour that released checkpoints were trained with: the replacement comes from
+`generate_sample`, whose per-sample simulator differs from the batched one, ignores
+`hardening` and draws its own intervention time. Pass `divergence_fallback="batched"`
+to redraw diverged samples with the batch's own simulator instead. This produces
+different training data, so it does not reproduce the released checkpoints.
+Counterfactual batches (`pair_mode="counterfactual"`) always redraw this way.
+
 ## Benchmark cache
 
 `load_benchmark` caches downloaded suites under
