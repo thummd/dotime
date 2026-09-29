@@ -11,6 +11,17 @@ DoTime ships four versioned, immutable suites for reproducible evaluation. Each 
 
 **`dot-Identifiability-v1` 1.1.0 (2026-09)** regenerates the suite with one exogenous-noise realisation per episode shared across both arms (`pair_mode="counterfactual"`): the arms agree exactly before the intervention onset, `y_true - y_obs` is a per-episode counterfactual effect, the released `x_obs` is canonically aligned with hidden variables zeroed, `y_causal_effect` is correct, and diverged episodes are resampled (0 zeroed episodes, verified on all 10 800 episodes). It is a new artifact with new trajectories and targets. Pin `version="1.0.0"` to load the frozen original.
 
+The generator also builds a ninth structure that no frozen suite contains yet,
+`bow_graph`: a hidden U drives A and Y, and A drives Y. It is
+`unobserved_confounder` plus the causal edge A→Y, and it is the structure that
+is **not identifiable**. Nothing observed blocks the back-door path A←U→Y and
+there is no mediator, so two SCMs can agree on every observational
+distribution and still differ in the effect of `do(A)`.
+
+```python
+ExtendedDoTime(tscm_structure="bow_graph", pair_mode="counterfactual")
+```
+
 ## Loader
 
 ```python

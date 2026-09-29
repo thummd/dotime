@@ -43,6 +43,13 @@ class TSCMStructure(Enum):
       not an ancestor of Y and p(Y|do(A)) = p(Y): the effect is identified and
       equals zero. A and Y are associated only through U, so a model that reads
       that association as causal predicts a spurious effect.
+    - Not identifiable: BOW_GRAPH
+      Hidden confounder U -> A, U -> Y plus a causal edge A -> Y. No observed
+      variable blocks the back-door path A <- U -> Y and there is no mediator,
+      so p(Y|do(A)) is not a functional of the observed distribution: two SCMs
+      can share every observational law and still differ in the effect. The
+      history does not rescue it, because U(t) carries fresh noise that
+      confounds A(t) and Y(t) and never appears in any observed series.
     """
 
     OBSERVED_CONFOUNDER = "observed_confounder"  # X -> A, X -> Y (backdoor)
@@ -53,6 +60,7 @@ class TSCMStructure(Enum):
     FRONT_DOOR = "front_door"  # A -> M -> Y, U -> A, U -> Y (frontdoor)
     INSTRUMENTAL_VARIABLE = "instrumental_variable"  # X -> A -> Y, U -> A, U -> Y (IV)
     BI_VARIATE = "bi_variate"  # A -> Y (trivially identified)
+    BOW_GRAPH = "bow_graph"  # U -> A, U -> Y, A -> Y, U hidden (not identifiable)
 
     @classmethod
     def _missing_(cls, value):
@@ -128,6 +136,7 @@ class TSCMSampler:
             TSCMStructure.UNOBSERVED_CONFOUNDER,
             TSCMStructure.FRONT_DOOR,
             TSCMStructure.INSTRUMENTAL_VARIABLE,
+            TSCMStructure.BOW_GRAPH,
         ):
             return [0]  # U is always index 0
         return []
@@ -338,6 +347,31 @@ class TSCMSampler:
         nodes = ["A", "Y"]
         G_0.add_nodes_from(nodes)
         G_0.add_edge("A", "Y")  # direct causal effect
+
+        N = len(nodes)
+        G_lags = []
+        for k in range(self.max_lag):
+            G_k = np.zeros((N, N), dtype=np.float32)
+            if k == 0:
+                for i in range(N):
+                    G_k[i, i] = 1.0  # autoregressive
+            G_lags.append(G_k)
+
+        topo = list(nx.topological_sort(G_0))
+        return TemporalDAG(G_0, G_lags, self.max_lag, topo)
+
+    def _build_bow_graph(self) -> TemporalDAG:
+        """U -> A, U -> Y, A -> Y (inst). U hidden (index 0). Not identifiable.
+
+        The same graph as ``unobserved_confounder`` plus the causal edge A -> Y,
+        so the effect is nonzero and confounded by a variable no estimator sees.
+        """
+        G_0 = nx.DiGraph()
+        nodes = ["U", "A", "Y"]
+        G_0.add_nodes_from(nodes)
+        G_0.add_edge("U", "A")  # hidden confounder -> treatment
+        G_0.add_edge("U", "Y")  # hidden confounder -> outcome
+        G_0.add_edge("A", "Y")  # treatment -> outcome
 
         N = len(nodes)
         G_lags = []
