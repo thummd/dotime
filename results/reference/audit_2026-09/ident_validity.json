@@ -1,0 +1,88 @@
+{
+  "suite": "dot-Identifiability-v1",
+  "note": "1.0.0 invariants are computed after sidecar realignment; misalignment/leak are measured on the raw files",
+  "v1_0_0": {
+    "n_episodes": 10800,
+    "zeroed_frac": 0.04666666666666667,
+    "pre_onset_equal_frac": 0.04601851851851852,
+    "pre_onset_equal_by_structure": {
+      "back_door": 0.043,
+      "bi_variate": 0.0341,
+      "confounder_mediator": 0.0533,
+      "front_door": 0.0622,
+      "instrumental_variable": 0.0481,
+      "mediator": 0.0496,
+      "observed_confounder": 0.0422,
+      "unobserved_confounder": 0.0356
+    },
+    "do_value_in_treatment_col_frac": 0.9536111111111111,
+    "effect_identity_frac": 0.04638888888888889,
+    "effect_field_equals_level_frac": 1.0,
+    "hidden_meta_episodes": 0,
+    "hidden_leak_frac_of_those": null,
+    "arms": {
+      "y_obs_level": {
+        "n": 10800,
+        "nonzero_frac": 0.9537037037037037,
+        "mean": 0.09575162155031312,
+        "var": 0.3326132250258375
+      },
+      "y_int_level": {
+        "n": 10800,
+        "nonzero_frac": 0.9536111111111111,
+        "mean": 0.11631543808346848,
+        "var": 0.508151901638424
+      },
+      "effect": {
+        "n": 10800,
+        "nonzero_frac": 0.9539814814814814,
+        "mean": 0.020563816533155355,
+        "var": 0.49141516821687453
+      }
+    },
+    "x_obs_misaligned_frac": 0.75,
+    "hidden_leak_frac_of_hidden_episodes": 0.9506172839506173,
+    "n_hidden_episodes": 4050
+  },
+  "v1_1_0": {
+    "n_episodes": 10800,
+    "zeroed_frac": 0.0,
+    "pre_onset_equal_frac": 1.0,
+    "pre_onset_equal_by_structure": {
+      "back_door": 1.0,
+      "bi_variate": 1.0,
+      "confounder_mediator": 1.0,
+      "front_door": 1.0,
+      "instrumental_variable": 1.0,
+      "mediator": 1.0,
+      "observed_confounder": 1.0,
+      "unobserved_confounder": 1.0
+    },
+    "do_value_in_treatment_col_frac": 1.0,
+    "effect_identity_frac": 1.0,
+    "effect_field_equals_level_frac": 0.0,
+    "hidden_meta_episodes": 4050,
+    "hidden_leak_frac_of_those": 0.0,
+    "arms": {
+      "y_obs_level": {
+        "n": 10800,
+        "nonzero_frac": 1.0,
+        "mean": 0.10568186632442693,
+        "var": 0.35433068547472407
+      },
+      "y_int_level": {
+        "n": 10800,
+        "nonzero_frac": 1.0,
+        "mean": 0.13096326724427787,
+        "var": 0.534642459265185
+      },
+      "effect": {
+        "n": 10800,
+        "nonzero_frac": 0.47824074074074074,
+        "mean": 0.025281400919850934,
+        "var": 0.21637040142120836
+      }
+    },
+    "x_obs_misaligned_frac": 0.0
+  }
+}

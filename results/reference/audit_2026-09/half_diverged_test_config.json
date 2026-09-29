@@ -1,0 +1,3142 @@
+{
+ "sequences": {
+  "both": {
+   "0": {
+    "counts": {
+     "both": 66,
+     "obs_only": 2,
+     "int_only": 1,
+     "neither": 131
+    },
+    "either_zeroed": 69,
+    "mean_attempts": 1.0,
+    "N_median": 6.0
+   },
+   "3": {
+    "counts": {
+     "both": 1,
+     "obs_only": 2,
+     "int_only": 1,
+     "neither": 196
+    },
+    "either_zeroed": 4,
+    "mean_attempts": 1.445,
+    "N_median": 6.0
+   },
+   "20": {
+    "counts": {
+     "both": 0,
+     "obs_only": 2,
+     "int_only": 1,
+     "neither": 197
+    },
+    "either_zeroed": 3,
+    "mean_attempts": 1.45,
+    "N_median": 6.0
+   }
+  },
+  "either": {
+   "0": {
+    "counts": {
+     "both": 66,
+     "obs_only": 2,
+     "int_only": 1,
+     "neither": 131
+    },
+    "either_zeroed": 69,
+    "mean_attempts": 1.0,
+    "N_median": 6.0
+   },
+   "3": {
+    "counts": {
+     "both": 1,
+     "obs_only": 0,
+     "int_only": 0,
+     "neither": 199
+    },
+    "either_zeroed": 1,
+    "mean_attempts": 1.47,
+    "N_median": 6.0
+   },
+   "20": {
+    "counts": {
+     "both": 0,
+     "obs_only": 0,
+     "int_only": 0,
+     "neither": 200
+    },
+    "either_zeroed": 0,
+    "mean_attempts": 1.475,
+    "N_median": 6.0
+   }
+  }
+ },
+ "rows": [
+  {
+   "i": 0,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 3,
+     "cls": "TemporalSCM",
+     "gen_s": 0.10417371199946501
+    }
+   ]
+  },
+  {
+   "i": 1,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.14490449599907151
+    }
+   ]
+  },
+  {
+   "i": 2,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.15972280400092131
+    }
+   ]
+  },
+  {
+   "i": 3,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.04189142399991397
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 3,
+     "cls": "TemporalSCM",
+     "gen_s": 0.06991089499933878
+    }
+   ]
+  },
+  {
+   "i": 4,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.11157989600178553
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.07650022400048329
+    }
+   ]
+  },
+  {
+   "i": 5,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.16538887599745067
+    }
+   ]
+  },
+  {
+   "i": 6,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.18272324599820422
+    }
+   ]
+  },
+  {
+   "i": 7,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.05497350999939954
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 3,
+     "cls": "TemporalSCM",
+     "gen_s": 0.0525824870019278
+    }
+   ]
+  },
+  {
+   "i": 8,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.16465604999757488
+    }
+   ]
+  },
+  {
+   "i": 9,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 9,
+     "cls": "TemporalSCM",
+     "gen_s": 0.05862536299900967
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.3204950950021157
+    }
+   ]
+  },
+  {
+   "i": 10,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.16006384499996784
+    }
+   ]
+  },
+  {
+   "i": 11,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.32599037600084557
+    }
+   ]
+  },
+  {
+   "i": 12,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.24772529199981363
+    }
+   ]
+  },
+  {
+   "i": 13,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.08770969299803255
+    }
+   ]
+  },
+  {
+   "i": 14,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 3,
+     "cls": "TemporalSCM",
+     "gen_s": 0.012535592002677731
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.08536556499893777
+    }
+   ]
+  },
+  {
+   "i": 15,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 9,
+     "cls": "TemporalSCM",
+     "gen_s": 0.23270150399912382
+    }
+   ]
+  },
+  {
+   "i": 16,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.15446653100298136
+    }
+   ]
+  },
+  {
+   "i": 17,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.029702119001740357
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.07937279299949296
+    }
+   ]
+  },
+  {
+   "i": 18,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.05425019299946143
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.0834188209992135
+    }
+   ]
+  },
+  {
+   "i": 19,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.0353863829986949
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.17792664199805586
+    }
+   ]
+  },
+  {
+   "i": 20,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.05129130999921472
+    }
+   ]
+  },
+  {
+   "i": 21,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.09022659800029942
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.15135637999992468
+    }
+   ]
+  },
+  {
+   "i": 22,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 3,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.15859548499793164
+    }
+   ]
+  },
+  {
+   "i": 23,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 8,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.44876042300165864
+    }
+   ]
+  },
+  {
+   "i": 24,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.4168635179994453
+    }
+   ]
+  },
+  {
+   "i": 25,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.13050476200078265
+    }
+   ]
+  },
+  {
+   "i": 26,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 9,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.5648604800007888
+    }
+   ]
+  },
+  {
+   "i": 27,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1036184869990393
+    }
+   ]
+  },
+  {
+   "i": 28,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 3,
+     "cls": "TemporalSCM",
+     "gen_s": 0.07402463800099213
+    }
+   ]
+  },
+  {
+   "i": 29,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 9,
+     "cls": "TemporalSCM",
+     "gen_s": 0.11442048900062218
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.22546851300285198
+    }
+   ]
+  },
+  {
+   "i": 30,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.13142447199788876
+    }
+   ]
+  },
+  {
+   "i": 31,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 9,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.4231195540014596
+    }
+   ]
+  },
+  {
+   "i": 32,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.3048420979976072
+    }
+   ]
+  },
+  {
+   "i": 33,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.0359660719987005
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 8,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.375294050998491
+    }
+   ]
+  },
+  {
+   "i": 34,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.03569830600099522
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.049411508996854536
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.0369408909973572
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1255536310018215
+    }
+   ]
+  },
+  {
+   "i": 35,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.10120073500002036
+    }
+   ]
+  },
+  {
+   "i": 36,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.10483308900074917
+    }
+   ]
+  },
+  {
+   "i": 37,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": false,
+     "N": 9,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1470420030018431
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.10638392299733823
+    }
+   ]
+  },
+  {
+   "i": 38,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.033389137002814095
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.08341869600189966
+    }
+   ]
+  },
+  {
+   "i": 39,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 3,
+     "cls": "TemporalSCM",
+     "gen_s": 0.04738246600027196
+    }
+   ]
+  },
+  {
+   "i": 40,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.040441387998725986
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.24725722199946176
+    }
+   ]
+  },
+  {
+   "i": 41,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1489420819998486
+    }
+   ]
+  },
+  {
+   "i": 42,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.3562546499997552
+    }
+   ]
+  },
+  {
+   "i": 43,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.04193393199966522
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.14659496899912483
+    }
+   ]
+  },
+  {
+   "i": 44,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.19616525899982662
+    }
+   ]
+  },
+  {
+   "i": 45,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 3,
+     "cls": "TemporalSCM",
+     "gen_s": 0.06265949999942677
+    }
+   ]
+  },
+  {
+   "i": 46,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.07411107599909883
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 3,
+     "cls": "TemporalSCM",
+     "gen_s": 0.04309700700105168
+    }
+   ]
+  },
+  {
+   "i": 47,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.10791588600113755
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 10,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.7525066260022868
+    }
+   ]
+  },
+  {
+   "i": 48,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.12515584400171065
+    }
+   ]
+  },
+  {
+   "i": 49,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 8,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.934280490000674
+    }
+   ]
+  },
+  {
+   "i": 50,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.41007651499967324
+    }
+   ]
+  },
+  {
+   "i": 51,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 3,
+     "cls": "TemporalSCM",
+     "gen_s": 0.06889269000021159
+    }
+   ]
+  },
+  {
+   "i": 52,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.11988777199803735
+    }
+   ]
+  },
+  {
+   "i": 53,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.053202732000499964
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.4275556470020092
+    }
+   ]
+  },
+  {
+   "i": 54,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.0829418449975492
+    }
+   ]
+  },
+  {
+   "i": 55,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.11593304599955445
+    }
+   ]
+  },
+  {
+   "i": 56,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.12181020500065642
+    }
+   ]
+  },
+  {
+   "i": 57,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.26871076700263075
+    }
+   ]
+  },
+  {
+   "i": 58,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.03218248399934964
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.5915293489997566
+    }
+   ]
+  },
+  {
+   "i": 59,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.05798130999755813
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 10,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.8612715859999298
+    }
+   ]
+  },
+  {
+   "i": 60,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.30404350900062127
+    }
+   ]
+  },
+  {
+   "i": 61,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.22709914300139644
+    }
+   ]
+  },
+  {
+   "i": 62,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.2570706079968659
+    }
+   ]
+  },
+  {
+   "i": 63,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.07362635399840656
+    }
+   ]
+  },
+  {
+   "i": 64,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.08909812199999578
+    }
+   ]
+  },
+  {
+   "i": 65,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.17597404099797131
+    }
+   ]
+  },
+  {
+   "i": 66,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.3467480639992573
+    }
+   ]
+  },
+  {
+   "i": 67,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 9,
+     "cls": "TemporalSCM",
+     "gen_s": 0.6045988570003828
+    }
+   ]
+  },
+  {
+   "i": 68,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.163467298996693
+    }
+   ]
+  },
+  {
+   "i": 69,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.07029782600147882
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 3,
+     "cls": "TemporalSCM",
+     "gen_s": 0.04869681100171874
+    }
+   ]
+  },
+  {
+   "i": 70,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1415582240006188
+    }
+   ]
+  },
+  {
+   "i": 71,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.7916433279970079
+    }
+   ]
+  },
+  {
+   "i": 72,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.3099216080008773
+    }
+   ]
+  },
+  {
+   "i": 73,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1362287740012107
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.19482943000184605
+    }
+   ]
+  },
+  {
+   "i": 74,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.09871799100073986
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.03386563800086151
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.07195798199973069
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.12486127200099872
+    }
+   ]
+  },
+  {
+   "i": 75,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 9,
+     "cls": "TemporalSCM",
+     "gen_s": 0.08941588800007594
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.09589335399869015
+    }
+   ]
+  },
+  {
+   "i": 76,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.06855937099680887
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.04023908700037282
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.10824754300119821
+    }
+   ]
+  },
+  {
+   "i": 77,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.14016291100051603
+    }
+   ]
+  },
+  {
+   "i": 78,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1160949420009274
+    }
+   ]
+  },
+  {
+   "i": 79,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.05484016300033545
+    }
+   ]
+  },
+  {
+   "i": 80,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.036290664997068234
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1993223300014506
+    }
+   ]
+  },
+  {
+   "i": 81,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.25930380299905664
+    }
+   ]
+  },
+  {
+   "i": 82,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.045573985000373796
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.18012989099952392
+    }
+   ]
+  },
+  {
+   "i": 83,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 3,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.16661707700041006
+    }
+   ]
+  },
+  {
+   "i": 84,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 3,
+     "cls": "TemporalSCM",
+     "gen_s": 0.0541339009978401
+    }
+   ]
+  },
+  {
+   "i": 85,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.09746033499686746
+    }
+   ]
+  },
+  {
+   "i": 86,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.10296465400097077
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 9,
+     "cls": "TemporalSCM",
+     "gen_s": 0.08783165199929499
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.045356179998634616
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 10,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.5092606549987977
+    }
+   ]
+  },
+  {
+   "i": 87,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.02180578900151886
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1515417519985931
+    }
+   ]
+  },
+  {
+   "i": 88,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.1792823870018765
+    }
+   ]
+  },
+  {
+   "i": 89,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 9,
+     "cls": "TemporalSCM",
+     "gen_s": 0.26196617299865466
+    }
+   ]
+  },
+  {
+   "i": 90,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.04287621399998898
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 8,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.42170144799820264
+    }
+   ]
+  },
+  {
+   "i": 91,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.14936766700338922
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.10763287900044816
+    }
+   ]
+  },
+  {
+   "i": 92,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.08990924499812536
+    }
+   ]
+  },
+  {
+   "i": 93,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.052154635999613674
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.041346125999552896
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.08624739700098871
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.05326628699913272
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1359810940011812
+    }
+   ]
+  },
+  {
+   "i": 94,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.0716583419998642
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.09574649999922258
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 3,
+     "cls": "TemporalSCM",
+     "gen_s": 0.015630466001312016
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 8,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.38584715299657546
+    }
+   ]
+  },
+  {
+   "i": 95,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.15614927799833822
+    }
+   ]
+  },
+  {
+   "i": 96,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.07459519099938916
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1624445220004418
+    }
+   ]
+  },
+  {
+   "i": 97,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.058367412002553465
+    }
+   ]
+  },
+  {
+   "i": 98,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.12754888200288406
+    }
+   ]
+  },
+  {
+   "i": 99,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.09865639199779253
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.168831508999574
+    }
+   ]
+  },
+  {
+   "i": 100,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.10348361799697159
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.03242195100028766
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.052530779998051
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.0763944519967481
+    }
+   ]
+  },
+  {
+   "i": 101,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 3,
+     "cls": "TemporalSCM",
+     "gen_s": 0.011931981000088854
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 9,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.3844325239988393
+    }
+   ]
+  },
+  {
+   "i": 102,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 9,
+     "cls": "TemporalSCM",
+     "gen_s": 0.19346931600011885
+    }
+   ]
+  },
+  {
+   "i": 103,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.061911683002108475
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.18403844199929154
+    }
+   ]
+  },
+  {
+   "i": 104,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 9,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.43173888599994825
+    }
+   ]
+  },
+  {
+   "i": 105,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.10027551500024856
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.12531343499722425
+    }
+   ]
+  },
+  {
+   "i": 106,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.13601390599797014
+    }
+   ]
+  },
+  {
+   "i": 107,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.14065019899862818
+    }
+   ]
+  },
+  {
+   "i": 108,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.09055315200021141
+    }
+   ]
+  },
+  {
+   "i": 109,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 3,
+     "cls": "TemporalSCM",
+     "gen_s": 0.021739527001045644
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.24627467300160788
+    }
+   ]
+  },
+  {
+   "i": 110,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.25480632800099556
+    }
+   ]
+  },
+  {
+   "i": 111,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 9,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.5139214449991414
+    }
+   ]
+  },
+  {
+   "i": 112,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.030926283998269355
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 10,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.6195984740006679
+    }
+   ]
+  },
+  {
+   "i": 113,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1200076450004417
+    }
+   ]
+  },
+  {
+   "i": 114,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.06915471400134265
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 9,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.60667080499843
+    }
+   ]
+  },
+  {
+   "i": 115,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.091142369001318
+    }
+   ]
+  },
+  {
+   "i": 116,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.04923582099945634
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.22332434600320994
+    }
+   ]
+  },
+  {
+   "i": 117,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.15189287400062312
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 9,
+     "cls": "TemporalSCM",
+     "gen_s": 0.24271711799883633
+    }
+   ]
+  },
+  {
+   "i": 118,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.320868254002562
+    }
+   ]
+  },
+  {
+   "i": 119,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.23408856300011394
+    }
+   ]
+  },
+  {
+   "i": 120,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": true,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.17397348499798682
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.06367513700024574
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.09053245099858032
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.13788067599671194
+    }
+   ]
+  },
+  {
+   "i": 121,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 9,
+     "cls": "TemporalSCM",
+     "gen_s": 0.2359810039997683
+    }
+   ]
+  },
+  {
+   "i": 122,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.07746790099918144
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.0867189629971108
+    }
+   ]
+  },
+  {
+   "i": 123,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.15801441300209262
+    }
+   ]
+  },
+  {
+   "i": 124,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.055481898998550605
+    }
+   ]
+  },
+  {
+   "i": 125,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1512470889974793
+    }
+   ]
+  },
+  {
+   "i": 126,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.29493679399820394
+    }
+   ]
+  },
+  {
+   "i": 127,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.08495565200064448
+    }
+   ]
+  },
+  {
+   "i": 128,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.04280497999934596
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 8,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.38262253899665666
+    }
+   ]
+  },
+  {
+   "i": 129,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.13978170300106285
+    }
+   ]
+  },
+  {
+   "i": 130,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.14264104499670793
+    }
+   ]
+  },
+  {
+   "i": 131,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.07474409499991452
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.07359037100104615
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.14170103699871106
+    }
+   ]
+  },
+  {
+   "i": 132,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.20456852100323886
+    }
+   ]
+  },
+  {
+   "i": 133,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.07953731900124694
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 3,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.13869499299835297
+    }
+   ]
+  },
+  {
+   "i": 134,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1435314529990137
+    }
+   ]
+  },
+  {
+   "i": 135,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.1874862389995542
+    }
+   ]
+  },
+  {
+   "i": 136,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.11924619599813013
+    }
+   ]
+  },
+  {
+   "i": 137,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.0615753419988323
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.018821353998646373
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1077740000000631
+    }
+   ]
+  },
+  {
+   "i": 138,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.06310472699988168
+    }
+   ]
+  },
+  {
+   "i": 139,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.0855110219999915
+    }
+   ]
+  },
+  {
+   "i": 140,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.1840868600011163
+    }
+   ]
+  },
+  {
+   "i": 141,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.2011785319991759
+    }
+   ]
+  },
+  {
+   "i": 142,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.14935321099983412
+    }
+   ]
+  },
+  {
+   "i": 143,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 10,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.3521657659985067
+    }
+   ]
+  },
+  {
+   "i": 144,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.08705573699990055
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.18472015100269346
+    }
+   ]
+  },
+  {
+   "i": 145,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 8,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.3095722879988898
+    }
+   ]
+  },
+  {
+   "i": 146,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.27313603199945646
+    }
+   ]
+  },
+  {
+   "i": 147,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.06088686700240942
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.044463328002166236
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 10,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.46241045099668554
+    }
+   ]
+  },
+  {
+   "i": 148,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.03646257900254568
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.13867067000319366
+    }
+   ]
+  },
+  {
+   "i": 149,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.11237817000073846
+    }
+   ]
+  },
+  {
+   "i": 150,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 9,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1579810549992544
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 3,
+     "cls": "TemporalSCM",
+     "gen_s": 0.05953844400210073
+    }
+   ]
+  },
+  {
+   "i": 151,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.0814121189978323
+    }
+   ]
+  },
+  {
+   "i": 152,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 3,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.10762925599919981
+    }
+   ]
+  },
+  {
+   "i": 153,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 9,
+     "cls": "TemporalSCM",
+     "gen_s": 0.0328892130019085
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.18234190499788383
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.046189905999199254
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.0805644950014539
+    }
+   ]
+  },
+  {
+   "i": 154,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.09264538199931849
+    }
+   ]
+  },
+  {
+   "i": 155,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 9,
+     "cls": "TemporalSCM",
+     "gen_s": 0.054111836001538904
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.05160933900333475
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.07522774700191803
+    }
+   ]
+  },
+  {
+   "i": 156,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.1367269669972302
+    }
+   ]
+  },
+  {
+   "i": 157,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.06613222300074995
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.058245161999366246
+    }
+   ]
+  },
+  {
+   "i": 158,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.06038316099875374
+    }
+   ]
+  },
+  {
+   "i": 159,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1558725430004415
+    }
+   ]
+  },
+  {
+   "i": 160,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.04660404300011578
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.01847526699930313
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.39972035600294475
+    }
+   ]
+  },
+  {
+   "i": 161,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 3,
+     "cls": "TemporalSCM",
+     "gen_s": 0.019230899997637607
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.23672706200159155
+    }
+   ]
+  },
+  {
+   "i": 162,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.09907290800038027
+    }
+   ]
+  },
+  {
+   "i": 163,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.08474062900131685
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 3,
+     "cls": "TemporalSCM",
+     "gen_s": 0.053406711002025986
+    }
+   ]
+  },
+  {
+   "i": 164,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.0901550890012004
+    }
+   ]
+  },
+  {
+   "i": 165,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.11093999000149779
+    }
+   ]
+  },
+  {
+   "i": 166,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.0935115720021713
+    }
+   ]
+  },
+  {
+   "i": 167,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.131440297998779
+    }
+   ]
+  },
+  {
+   "i": 168,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.14571094299753895
+    }
+   ]
+  },
+  {
+   "i": 169,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.14528798799801734
+    }
+   ]
+  },
+  {
+   "i": 170,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.03651726699899882
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 9,
+     "cls": "TemporalSCM",
+     "gen_s": 0.08098910799890291
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.21133555000051274
+    }
+   ]
+  },
+  {
+   "i": 171,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.18544959199789446
+    }
+   ]
+  },
+  {
+   "i": 172,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.08993261599971447
+    }
+   ]
+  },
+  {
+   "i": 173,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.14090600900090067
+    }
+   ]
+  },
+  {
+   "i": 174,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 10,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.505272458998661
+    }
+   ]
+  },
+  {
+   "i": 175,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.057442900997557444
+    }
+   ]
+  },
+  {
+   "i": 176,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.042281366000679554
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.06585981800162699
+    }
+   ]
+  },
+  {
+   "i": 177,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.03492506800103001
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.09846132600068813
+    }
+   ]
+  },
+  {
+   "i": 178,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.16351952300101402
+    }
+   ]
+  },
+  {
+   "i": 179,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.04950656399887521
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1090430850017583
+    }
+   ]
+  },
+  {
+   "i": 180,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.14921362699897145
+    }
+   ]
+  },
+  {
+   "i": 181,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 4,
+     "cls": "TemporalSCM",
+     "gen_s": 0.07602568699803669
+    }
+   ]
+  },
+  {
+   "i": 182,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1303061329999764
+    }
+   ]
+  },
+  {
+   "i": 183,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 9,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.34556939899994177
+    }
+   ]
+  },
+  {
+   "i": 184,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 3,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.14137530599691672
+    }
+   ]
+  },
+  {
+   "i": 185,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.08741557499888586
+    }
+   ]
+  },
+  {
+   "i": 186,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.0923370860000432
+    }
+   ]
+  },
+  {
+   "i": 187,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.07963802699669031
+    }
+   ]
+  },
+  {
+   "i": 188,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1501274949987419
+    }
+   ]
+  },
+  {
+   "i": 189,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.09337452900217613
+    }
+   ]
+  },
+  {
+   "i": 190,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.06609096800093539
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 6,
+     "cls": "TemporalSCM",
+     "gen_s": 0.11525335899932543
+    }
+   ]
+  },
+  {
+   "i": 191,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 3,
+     "cls": "RegimeSwitchingTemporalSCM",
+     "gen_s": 0.1381480179989012
+    }
+   ]
+  },
+  {
+   "i": 192,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.24533243699988816
+    }
+   ]
+  },
+  {
+   "i": 193,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.16806056699715555
+    }
+   ]
+  },
+  {
+   "i": 194,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.08858495599997696
+    }
+   ]
+  },
+  {
+   "i": 195,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 8,
+     "cls": "TemporalSCM",
+     "gen_s": 0.07399570000052336
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 9,
+     "cls": "TemporalSCM",
+     "gen_s": 0.06728325899894116
+    },
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.30757587399784825
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 3,
+     "cls": "TemporalSCM",
+     "gen_s": 0.03827445299975807
+    }
+   ]
+  },
+  {
+   "i": 196,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 3,
+     "cls": "TemporalSCM",
+     "gen_s": 0.018296236998139648
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1362699679993966
+    }
+   ]
+  },
+  {
+   "i": 197,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 5,
+     "cls": "TemporalSCM",
+     "gen_s": 0.1416483850007353
+    }
+   ]
+  },
+  {
+   "i": 198,
+   "seq": [
+    {
+     "obs_zero": true,
+     "int_zero": true,
+     "N": 10,
+     "cls": "TemporalSCM",
+     "gen_s": 0.06227959899842972
+    },
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 3,
+     "cls": "TemporalSCM",
+     "gen_s": 0.031586831999447895
+    }
+   ]
+  },
+  {
+   "i": 199,
+   "seq": [
+    {
+     "obs_zero": false,
+     "int_zero": false,
+     "N": 7,
+     "cls": "TemporalSCM",
+     "gen_s": 0.17467378899891628
+    }
+   ]
+  }
+ ],
+ "wall_s": 14.441727638244629
+}

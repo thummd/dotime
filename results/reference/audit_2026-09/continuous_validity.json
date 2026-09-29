@@ -1,0 +1,30 @@
+{
+  "suite": "dot-Continuous-v1",
+  "version": "1.0.0",
+  "n_episodes": 9999,
+  "query_index_convention": "idx = round(query_time * (T - 1)); y_true matches x_int there on all episodes",
+  "zeroed_frac": 0.0,
+  "pre_onset_equal_frac": 1.0,
+  "do_value_at_onset_frac": 1.0,
+  "self_query_frac": 0.33993399339933994,
+  "arms": {
+    "y_obs_level": {
+      "n": 9999,
+      "nonzero_frac": 1.0,
+      "mean": -0.021231241524801648,
+      "var": 11.466977680895655
+    },
+    "y_int_level": {
+      "n": 9999,
+      "nonzero_frac": 1.0,
+      "mean": -0.006349768872435828,
+      "var": 7.55599596030164
+    },
+    "effect": {
+      "n": 9999,
+      "nonzero_frac": 0.5993599359935994,
+      "mean": 0.014881472652365819,
+      "var": 4.019292094773952
+    }
+  }
+}

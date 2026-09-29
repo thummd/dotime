@@ -1,0 +1,475 @@
+{
+  "suite": "dot-Identifiability-v1",
+  "version": "1.1.0",
+  "source": "output/v1_1",
+  "dir_eps": 0.1,
+  "gate": "pooled effect/level dir_acc and n_valid reproduce results/reference/v1_1/ident_cpu_{effect,level}.json exactly",
+  "baselines": {
+    "Zero": {
+      "pooled_dir_acc_effect": 0.5247339010238647,
+      "pooled_n_valid_effect": 3194,
+      "pooled_dir_acc_level": 0.0,
+      "per_structure": {
+        "back_door": {
+          "dir_acc_effect": 0.5044360160827637,
+          "n_valid_effect": 789,
+          "dir_acc_level": 0.0,
+          "n_valid_level": 1169,
+          "rmse": 1.0204016352338128
+        },
+        "bi_variate": {
+          "dir_acc_effect": 0.5413711667060852,
+          "n_valid_effect": 846,
+          "dir_acc_level": 0.0,
+          "n_valid_level": 1144,
+          "rmse": 0.8929527257394718
+        },
+        "confounder_mediator": {
+          "dir_acc_effect": 0.5498575568199158,
+          "n_valid_effect": 351,
+          "dir_acc_level": 0.0,
+          "n_valid_level": 1133,
+          "rmse": 0.6608869892173345
+        },
+        "front_door": {
+          "dir_acc_effect": 0.5094339847564697,
+          "n_valid_effect": 371,
+          "dir_acc_level": 0.0,
+          "n_valid_level": 1165,
+          "rmse": 0.6445918557021681
+        },
+        "instrumental_variable": {
+          "dir_acc_effect": 0.5232974886894226,
+          "n_valid_effect": 837,
+          "dir_acc_level": 0.0,
+          "n_valid_level": 1176,
+          "rmse": 0.8985077641237764
+        },
+        "mediator": {
+          "dir_acc_effect": NaN,
+          "n_valid_effect": 0,
+          "dir_acc_level": 0.0,
+          "n_valid_level": 1098,
+          "rmse": 0.5826358489335044
+        },
+        "observed_confounder": {
+          "dir_acc_effect": NaN,
+          "n_valid_effect": 0,
+          "dir_acc_level": 0.0,
+          "n_valid_level": 1096,
+          "rmse": 0.5671460035469419
+        },
+        "unobserved_confounder": {
+          "dir_acc_effect": NaN,
+          "n_valid_effect": 0,
+          "dir_acc_level": 0.0,
+          "n_valid_level": 1070,
+          "rmse": 0.505035670541893
+        }
+      }
+    },
+    "Mean": {
+      "pooled_dir_acc_effect": 0.5344395637512207,
+      "pooled_n_valid_effect": 3194,
+      "pooled_dir_acc_level": 0.693293571472168,
+      "per_structure": {
+        "back_door": {
+          "dir_acc_effect": 0.5348542332649231,
+          "n_valid_effect": 789,
+          "dir_acc_level": 0.6646706461906433,
+          "n_valid_level": 1169,
+          "rmse": 0.8634181447287835
+        },
+        "bi_variate": {
+          "dir_acc_effect": 0.542553186416626,
+          "n_valid_effect": 846,
+          "dir_acc_level": 0.6512237787246704,
+          "n_valid_level": 1144,
+          "rmse": 0.7844599163080616
+        },
+        "confounder_mediator": {
+          "dir_acc_effect": 0.5128205418586731,
+          "n_valid_effect": 351,
+          "dir_acc_level": 0.707855224609375,
+          "n_valid_level": 1133,
+          "rmse": 0.4845707155793811
+        },
+        "front_door": {
+          "dir_acc_effect": 0.5336927175521851,
+          "n_valid_effect": 371,
+          "dir_acc_level": 0.7064377665519714,
+          "n_valid_level": 1165,
+          "rmse": 0.4870794991735169
+        },
+        "instrumental_variable": {
+          "dir_acc_effect": 0.5352449417114258,
+          "n_valid_effect": 837,
+          "dir_acc_level": 0.6785714030265808,
+          "n_valid_level": 1176,
+          "rmse": 0.7859391235511142
+        },
+        "mediator": {
+          "dir_acc_effect": NaN,
+          "n_valid_effect": 0,
+          "dir_acc_level": 0.7058287858963013,
+          "n_valid_level": 1098,
+          "rmse": 0.37435670556686274
+        },
+        "observed_confounder": {
+          "dir_acc_effect": NaN,
+          "n_valid_effect": 0,
+          "dir_acc_level": 0.720802903175354,
+          "n_valid_level": 1096,
+          "rmse": 0.3821096011637998
+        },
+        "unobserved_confounder": {
+          "dir_acc_effect": NaN,
+          "n_valid_effect": 0,
+          "dir_acc_level": 0.7149532437324524,
+          "n_valid_level": 1070,
+          "rmse": 0.36618869570657603
+        }
+      }
+    },
+    "AR1": {
+      "pooled_dir_acc_effect": 0.5272385478019714,
+      "pooled_n_valid_effect": 3194,
+      "pooled_dir_acc_level": 0.6054579615592957,
+      "per_structure": {
+        "back_door": {
+          "dir_acc_effect": 0.5247148275375366,
+          "n_valid_effect": 789,
+          "dir_acc_level": 0.5842600464820862,
+          "n_valid_level": 1169,
+          "rmse": 1.0024525310939623
+        },
+        "bi_variate": {
+          "dir_acc_effect": 0.5283687710762024,
+          "n_valid_effect": 846,
+          "dir_acc_level": 0.5777971744537354,
+          "n_valid_level": 1144,
+          "rmse": 0.8834012380520637
+        },
+        "confounder_mediator": {
+          "dir_acc_effect": 0.5584045648574829,
+          "n_valid_effect": 351,
+          "dir_acc_level": 0.6231244206428528,
+          "n_valid_level": 1133,
+          "rmse": 0.6209162265812088
+        },
+        "front_door": {
+          "dir_acc_effect": 0.5336927175521851,
+          "n_valid_effect": 371,
+          "dir_acc_level": 0.6051502227783203,
+          "n_valid_level": 1165,
+          "rmse": 0.6471183914919909
+        },
+        "instrumental_variable": {
+          "dir_acc_effect": 0.5125448107719421,
+          "n_valid_effect": 837,
+          "dir_acc_level": 0.5867347121238708,
+          "n_valid_level": 1176,
+          "rmse": 0.8757047779336614
+        },
+        "mediator": {
+          "dir_acc_effect": NaN,
+          "n_valid_effect": 0,
+          "dir_acc_level": 0.6220400929450989,
+          "n_valid_level": 1098,
+          "rmse": 0.5421235523187572
+        },
+        "observed_confounder": {
+          "dir_acc_effect": NaN,
+          "n_valid_effect": 0,
+          "dir_acc_level": 0.6195255517959595,
+          "n_valid_level": 1096,
+          "rmse": 0.5346876967920668
+        },
+        "unobserved_confounder": {
+          "dir_acc_effect": NaN,
+          "n_valid_effect": 0,
+          "dir_acc_level": 0.6289719343185425,
+          "n_valid_level": 1070,
+          "rmse": 0.489134179683736
+        }
+      }
+    },
+    "VAR-OLS": {
+      "pooled_dir_acc_effect": 0.523481547832489,
+      "pooled_n_valid_effect": 3194,
+      "pooled_dir_acc_level": 0.6644569635391235,
+      "per_structure": {
+        "back_door": {
+          "dir_acc_effect": 0.5234473943710327,
+          "n_valid_effect": 789,
+          "dir_acc_level": 0.641573965549469,
+          "n_valid_level": 1169,
+          "rmse": 0.9801232590978014
+        },
+        "bi_variate": {
+          "dir_acc_effect": 0.5342789888381958,
+          "n_valid_effect": 846,
+          "dir_acc_level": 0.6468531489372253,
+          "n_valid_level": 1144,
+          "rmse": 0.8473120248677838
+        },
+        "confounder_mediator": {
+          "dir_acc_effect": 0.4928774833679199,
+          "n_valid_effect": 351,
+          "dir_acc_level": 0.6628420352935791,
+          "n_valid_level": 1133,
+          "rmse": 0.561645640443838
+        },
+        "front_door": {
+          "dir_acc_effect": 0.5363881587982178,
+          "n_valid_effect": 371,
+          "dir_acc_level": 0.6523604989051819,
+          "n_valid_level": 1165,
+          "rmse": 0.5550714134958018
+        },
+        "instrumental_variable": {
+          "dir_acc_effect": 0.519713282585144,
+          "n_valid_effect": 837,
+          "dir_acc_level": 0.6454081535339355,
+          "n_valid_level": 1176,
+          "rmse": 0.8176751294925394
+        },
+        "mediator": {
+          "dir_acc_effect": NaN,
+          "n_valid_effect": 0,
+          "dir_acc_level": 0.687613844871521,
+          "n_valid_level": 1098,
+          "rmse": 0.43998926174678776
+        },
+        "observed_confounder": {
+          "dir_acc_effect": NaN,
+          "n_valid_effect": 0,
+          "dir_acc_level": 0.7043795585632324,
+          "n_valid_level": 1096,
+          "rmse": 0.43138901445702527
+        },
+        "unobserved_confounder": {
+          "dir_acc_effect": NaN,
+          "n_valid_effect": 0,
+          "dir_acc_level": 0.6794392466545105,
+          "n_valid_level": 1070,
+          "rmse": 0.4291143616233615
+        }
+      }
+    },
+    "BackDoorOLS": {
+      "pooled_dir_acc_effect": 0.6008140444755554,
+      "pooled_n_valid_effect": 3194,
+      "pooled_dir_acc_level": 0.693293571472168,
+      "per_structure": {
+        "back_door": {
+          "dir_acc_effect": 0.8098859190940857,
+          "n_valid_effect": 789,
+          "dir_acc_level": 0.753635585308075,
+          "n_valid_level": 1169,
+          "rmse": 0.6164412469541949
+        },
+        "bi_variate": {
+          "dir_acc_effect": 0.542553186416626,
+          "n_valid_effect": 846,
+          "dir_acc_level": 0.6512237787246704,
+          "n_valid_level": 1144,
+          "rmse": 0.7844599192051772
+        },
+        "confounder_mediator": {
+          "dir_acc_effect": 0.49857550859451294,
+          "n_valid_effect": 351,
+          "dir_acc_level": 0.6681376695632935,
+          "n_valid_level": 1133,
+          "rmse": 0.5850985782852979
+        },
+        "front_door": {
+          "dir_acc_effect": 0.5336927175521851,
+          "n_valid_effect": 371,
+          "dir_acc_level": 0.7064377665519714,
+          "n_valid_level": 1165,
+          "rmse": 0.4870794989811564
+        },
+        "instrumental_variable": {
+          "dir_acc_effect": 0.5352449417114258,
+          "n_valid_effect": 837,
+          "dir_acc_level": 0.6785714030265808,
+          "n_valid_level": 1176,
+          "rmse": 0.7859391228069298
+        },
+        "mediator": {
+          "dir_acc_effect": NaN,
+          "n_valid_effect": 0,
+          "dir_acc_level": 0.7058287858963013,
+          "n_valid_level": 1098,
+          "rmse": 0.37435670723513154
+        },
+        "observed_confounder": {
+          "dir_acc_effect": NaN,
+          "n_valid_effect": 0,
+          "dir_acc_level": 0.6669707894325256,
+          "n_valid_level": 1096,
+          "rmse": 0.49117039293716747
+        },
+        "unobserved_confounder": {
+          "dir_acc_effect": NaN,
+          "n_valid_effect": 0,
+          "dir_acc_level": 0.7149532437324524,
+          "n_valid_level": 1070,
+          "rmse": 0.36618869615132377
+        }
+      }
+    },
+    "IV2SLS": {
+      "pooled_dir_acc_effect": 0.5547902584075928,
+      "pooled_n_valid_effect": 3194,
+      "pooled_dir_acc_level": 0.6957242488861084,
+      "per_structure": {
+        "back_door": {
+          "dir_acc_effect": 0.5348542332649231,
+          "n_valid_effect": 789,
+          "dir_acc_level": 0.6646706461906433,
+          "n_valid_level": 1169,
+          "rmse": 0.863418142697136
+        },
+        "bi_variate": {
+          "dir_acc_effect": 0.542553186416626,
+          "n_valid_effect": 846,
+          "dir_acc_level": 0.6512237787246704,
+          "n_valid_level": 1144,
+          "rmse": 0.7844599192051772
+        },
+        "confounder_mediator": {
+          "dir_acc_effect": 0.5128205418586731,
+          "n_valid_effect": 351,
+          "dir_acc_level": 0.707855224609375,
+          "n_valid_level": 1133,
+          "rmse": 0.48457071167481186
+        },
+        "front_door": {
+          "dir_acc_effect": 0.5336927175521851,
+          "n_valid_effect": 371,
+          "dir_acc_level": 0.7064377665519714,
+          "n_valid_level": 1165,
+          "rmse": 0.4870794989811564
+        },
+        "instrumental_variable": {
+          "dir_acc_effect": 0.6129032373428345,
+          "n_valid_effect": 837,
+          "dir_acc_level": 0.6972789168357849,
+          "n_valid_level": 1176,
+          "rmse": 0.7595185080451782
+        },
+        "mediator": {
+          "dir_acc_effect": NaN,
+          "n_valid_effect": 0,
+          "dir_acc_level": 0.7058287858963013,
+          "n_valid_level": 1098,
+          "rmse": 0.37435670723513154
+        },
+        "observed_confounder": {
+          "dir_acc_effect": NaN,
+          "n_valid_effect": 0,
+          "dir_acc_level": 0.720802903175354,
+          "n_valid_level": 1096,
+          "rmse": 0.3821096001610559
+        },
+        "unobserved_confounder": {
+          "dir_acc_effect": NaN,
+          "n_valid_effect": 0,
+          "dir_acc_level": 0.7149532437324524,
+          "n_valid_level": 1070,
+          "rmse": 0.36618869615132377
+        }
+      }
+    }
+  },
+  "level_effect_sign_agreement": {
+    "both_abs_ge_0.1": {
+      "n": 2870,
+      "agreement": 0.7808362369337979,
+      "by_structure": {
+        "back_door": {
+          "n": 723,
+          "agreement": 0.8105117565698479
+        },
+        "bi_variate": {
+          "n": 752,
+          "agreement": 0.8204787234042553
+        },
+        "confounder_mediator": {
+          "n": 307,
+          "agreement": 0.6710097719869706
+        },
+        "front_door": {
+          "n": 339,
+          "agreement": 0.6873156342182891
+        },
+        "instrumental_variable": {
+          "n": 749,
+          "agreement": 0.7997329773030708
+        },
+        "mediator": {
+          "n": 0,
+          "agreement": null
+        },
+        "observed_confounder": {
+          "n": 0,
+          "agreement": null
+        },
+        "unobserved_confounder": {
+          "n": 0,
+          "agreement": null
+        }
+      }
+    },
+    "effect_abs_ge_0.1": {
+      "n": 3194,
+      "agreement": 0.7617407639323732,
+      "by_structure": {
+        "back_door": {
+          "n": 789,
+          "agreement": 0.7984790874524715
+        },
+        "bi_variate": {
+          "n": 846,
+          "agreement": 0.7955082742316785
+        },
+        "confounder_mediator": {
+          "n": 351,
+          "agreement": 0.6495726495726496
+        },
+        "front_door": {
+          "n": 371,
+          "agreement": 0.6900269541778976
+        },
+        "instrumental_variable": {
+          "n": 837,
+          "agreement": 0.7718040621266428
+        },
+        "mediator": {
+          "n": 0,
+          "agreement": null
+        },
+        "observed_confounder": {
+          "n": 0,
+          "agreement": null
+        },
+        "unobserved_confounder": {
+          "n": 0,
+          "agreement": null
+        }
+      }
+    }
+  },
+  "exactly_zero_effect_frac_by_structure": {
+    "back_door": 0.19185185185185186,
+    "bi_variate": 0.1511111111111111,
+    "confounder_mediator": 0.34,
+    "front_door": 0.3348148148148148,
+    "instrumental_variable": 0.1562962962962963,
+    "mediator": 1.0,
+    "observed_confounder": 1.0,
+    "unobserved_confounder": 1.0
+  }
+}

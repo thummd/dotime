@@ -1,0 +1,249 @@
+{
+ "n": 100000,
+ "category_counts": {
+  "both": 28734,
+  "int_only": 695,
+  "neither": 69889,
+  "obs_only": 682
+ },
+ "rows": {
+  "Zero": {
+   "all (published protocol)": {
+    "n": 100000,
+    "pooled_rmse": 46.229366302490234,
+    "dir_acc": 0.0,
+    "dir_n_valid": 62234
+   },
+   "drop both-arm zeroed": {
+    "n": 71266,
+    "pooled_rmse": 54.76167678833008,
+    "dir_acc": 0.0,
+    "dir_n_valid": 62234
+   },
+   "drop either-arm zeroed": {
+    "n": 69889,
+    "pooled_rmse": 41.13200759887695,
+    "dir_acc": 0.0,
+    "dir_n_valid": 61577
+   },
+   "only obs_only": {
+    "n": 682,
+    "pooled_rmse": 374.1545104980469,
+    "dir_acc": 0.0,
+    "dir_n_valid": 657
+   },
+   "only int_only": {
+    "n": 695,
+    "pooled_rmse": 0.0,
+    "dir_acc": NaN,
+    "dir_n_valid": 0
+   },
+   "gate_reproduces_published": true,
+   "obs_only_pred_exactly_zero": 682
+  },
+  "Mean": {
+   "all (published protocol)": {
+    "n": 100000,
+    "pooled_rmse": 46.573917388916016,
+    "dir_acc": 0.6600090265274048,
+    "dir_n_valid": 62234
+   },
+   "drop both-arm zeroed": {
+    "n": 71266,
+    "pooled_rmse": 55.16981887817383,
+    "dir_acc": 0.6600090265274048,
+    "dir_n_valid": 62234
+   },
+   "drop either-arm zeroed": {
+    "n": 69889,
+    "pooled_rmse": 40.12793731689453,
+    "dir_acc": 0.6670510172843933,
+    "dir_n_valid": 61577
+   },
+   "only obs_only": {
+    "n": 682,
+    "pooled_rmse": 374.1545104980469,
+    "dir_acc": 0.0,
+    "dir_n_valid": 657
+   },
+   "only int_only": {
+    "n": 695,
+    "pooled_rmse": 113.16143798828125,
+    "dir_acc": NaN,
+    "dir_n_valid": 0
+   },
+   "gate_reproduces_published": true,
+   "obs_only_pred_exactly_zero": 682
+  },
+  "AR1": {
+   "all (published protocol)": {
+    "n": 100000,
+    "pooled_rmse": 49.44969177246094,
+    "dir_acc": 0.6244014501571655,
+    "dir_n_valid": 62234
+   },
+   "drop both-arm zeroed": {
+    "n": 71266,
+    "pooled_rmse": 58.57636260986328,
+    "dir_acc": 0.6244014501571655,
+    "dir_n_valid": 62234
+   },
+   "drop either-arm zeroed": {
+    "n": 69889,
+    "pooled_rmse": 42.31555938720703,
+    "dir_acc": 0.6310635209083557,
+    "dir_n_valid": 61577
+   },
+   "only obs_only": {
+    "n": 682,
+    "pooled_rmse": 374.1545104980469,
+    "dir_acc": 0.0,
+    "dir_n_valid": 657
+   },
+   "only int_only": {
+    "n": 695,
+    "pooled_rmse": 185.47708129882812,
+    "dir_acc": NaN,
+    "dir_n_valid": 0
+   },
+   "gate_reproduces_published": true,
+   "obs_only_pred_exactly_zero": 682
+  },
+  "VAR-OLS": {
+   "all (published protocol)": {
+    "n": 100000,
+    "pooled_rmse": 62.09830856323242,
+    "dir_acc": 0.6456599235534668,
+    "dir_n_valid": 62234
+   },
+   "drop both-arm zeroed": {
+    "n": 71266,
+    "pooled_rmse": 73.5594711303711,
+    "dir_acc": 0.6456599235534668,
+    "dir_n_valid": 62234
+   },
+   "drop either-arm zeroed": {
+    "n": 69889,
+    "pooled_rmse": 46.6860466003418,
+    "dir_acc": 0.6525488495826721,
+    "dir_n_valid": 61577
+   },
+   "only obs_only": {
+    "n": 682,
+    "pooled_rmse": 374.1545104980469,
+    "dir_acc": 0.0,
+    "dir_n_valid": 657
+   },
+   "only int_only": {
+    "n": 695,
+    "pooled_rmse": 445.3057861328125,
+    "dir_acc": NaN,
+    "dir_n_valid": 0
+   },
+   "gate_reproduces_published": true,
+   "obs_only_pred_exactly_zero": 682
+  },
+  "BackDoorOLS": {
+   "all (published protocol)": {
+    "n": 100000,
+    "pooled_rmse": 46.573917388916016,
+    "dir_acc": 0.6600090265274048,
+    "dir_n_valid": 62234
+   },
+   "drop both-arm zeroed": {
+    "n": 71266,
+    "pooled_rmse": 55.16981887817383,
+    "dir_acc": 0.6600090265274048,
+    "dir_n_valid": 62234
+   },
+   "drop either-arm zeroed": {
+    "n": 69889,
+    "pooled_rmse": 40.12793731689453,
+    "dir_acc": 0.6670510172843933,
+    "dir_n_valid": 61577
+   },
+   "only obs_only": {
+    "n": 682,
+    "pooled_rmse": 374.1545104980469,
+    "dir_acc": 0.0,
+    "dir_n_valid": 657
+   },
+   "only int_only": {
+    "n": 695,
+    "pooled_rmse": 113.16143798828125,
+    "dir_acc": NaN,
+    "dir_n_valid": 0
+   },
+   "gate_reproduces_published": true,
+   "obs_only_pred_exactly_zero": 682
+  },
+  "IV2SLS": {
+   "all (published protocol)": {
+    "n": 100000,
+    "pooled_rmse": 46.573917388916016,
+    "dir_acc": 0.6600090265274048,
+    "dir_n_valid": 62234
+   },
+   "drop both-arm zeroed": {
+    "n": 71266,
+    "pooled_rmse": 55.16981887817383,
+    "dir_acc": 0.6600090265274048,
+    "dir_n_valid": 62234
+   },
+   "drop either-arm zeroed": {
+    "n": 69889,
+    "pooled_rmse": 40.12793731689453,
+    "dir_acc": 0.6670510172843933,
+    "dir_n_valid": 61577
+   },
+   "only obs_only": {
+    "n": 682,
+    "pooled_rmse": 374.1545104980469,
+    "dir_acc": 0.0,
+    "dir_n_valid": 657
+   },
+   "only int_only": {
+    "n": 695,
+    "pooled_rmse": 113.16143798828125,
+    "dir_acc": NaN,
+    "dir_n_valid": 0
+   },
+   "gate_reproduces_published": true,
+   "obs_only_pred_exactly_zero": 682
+  },
+  "Oracle": {
+   "all (published protocol)": {
+    "n": 100000,
+    "pooled_rmse": 0.0,
+    "dir_acc": 1.0,
+    "dir_n_valid": 62234
+   },
+   "drop both-arm zeroed": {
+    "n": 71266,
+    "pooled_rmse": 0.0,
+    "dir_acc": 1.0,
+    "dir_n_valid": 62234
+   },
+   "drop either-arm zeroed": {
+    "n": 69889,
+    "pooled_rmse": 0.0,
+    "dir_acc": 1.0,
+    "dir_n_valid": 61577
+   },
+   "only obs_only": {
+    "n": 682,
+    "pooled_rmse": 0.0,
+    "dir_acc": 1.0,
+    "dir_n_valid": 657
+   },
+   "only int_only": {
+    "n": 695,
+    "pooled_rmse": 0.0,
+    "dir_acc": NaN,
+    "dir_n_valid": 0
+   },
+   "gate_reproduces_published": true,
+   "obs_only_pred_exactly_zero": 0
+  }
+ }
+}

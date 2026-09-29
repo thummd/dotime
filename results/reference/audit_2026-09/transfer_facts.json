@@ -1,0 +1,211 @@
+{
+  "chamber": {
+    "per_checkpoint": {
+      "linear_seed0": {
+        "class0": {
+          "mean_r": -0.20078044110310078,
+          "frac_positive": 0.05,
+          "mean_pred_level": 1530.6371228027344,
+          "mean_true_level": 1780.7404284667969
+        },
+        "class1": {
+          "mean_r": 0.9776224854751864,
+          "frac_positive": 1.0,
+          "mean_pred_level": 1531.4501525878907,
+          "mean_true_level": 1675.1836474609374
+        },
+        "mean_r_all": 0.3884210221860428
+      },
+      "linear_seed1": {
+        "class0": {
+          "mean_r": -0.9849660336257618,
+          "frac_positive": 0.0,
+          "mean_pred_level": 1557.1763220214843,
+          "mean_true_level": 1780.7404284667969
+        },
+        "class1": {
+          "mean_r": 0.9846665381457523,
+          "frac_positive": 1.0,
+          "mean_pred_level": 1555.4774011230468,
+          "mean_true_level": 1675.1836474609374
+        },
+        "mean_r_all": -0.00014974774000465986
+      },
+      "linear_seed2": {
+        "class0": {
+          "mean_r": 0.9949167806634427,
+          "frac_positive": 1.0,
+          "mean_pred_level": 1524.7948388671875,
+          "mean_true_level": 1780.7404284667969
+        },
+        "class1": {
+          "mean_r": -0.9949782953421444,
+          "frac_positive": 0.0,
+          "mean_pred_level": 1524.9099377441407,
+          "mean_true_level": 1675.1836474609374
+        },
+        "mean_r_all": -3.0757339350842014e-05
+      },
+      "linear_seed3": {
+        "class0": {
+          "mean_r": 0.9103018653175872,
+          "frac_positive": 1.0,
+          "mean_pred_level": 1510.315428466797,
+          "mean_true_level": 1780.7404284667969
+        },
+        "class1": {
+          "mean_r": -0.9777330203635252,
+          "frac_positive": 0.0,
+          "mean_pred_level": 1509.700428466797,
+          "mean_true_level": 1675.1836474609374
+        },
+        "mean_r_all": -0.033715577522969185
+      },
+      "linear_seed4": {
+        "class0": {
+          "mean_r": -0.4925963697353739,
+          "frac_positive": 0.0,
+          "mean_pred_level": 1527.455614013672,
+          "mean_true_level": 1780.7404284667969
+        },
+        "class1": {
+          "mean_r": 0.9890386481617512,
+          "frac_positive": 1.0,
+          "mean_pred_level": 1528.476748046875,
+          "mean_true_level": 1675.1836474609374
+        },
+        "mean_r_all": 0.24822113921318859
+      },
+      "mixed_seed0": {
+        "class0": {
+          "mean_r": 0.91298273662894,
+          "frac_positive": 0.96,
+          "mean_pred_level": 1531.07740234375,
+          "mean_true_level": 1780.7404284667969
+        },
+        "class1": {
+          "mean_r": 0.9921510781310144,
+          "frac_positive": 1.0,
+          "mean_pred_level": 1531.8269311523438,
+          "mean_true_level": 1675.1836474609374
+        },
+        "mean_r_all": 0.9525669073799772
+      },
+      "mixed_seed1": {
+        "class0": {
+          "mean_r": -0.768883553125371,
+          "frac_positive": 0.0,
+          "mean_pred_level": 1540.991707763672,
+          "mean_true_level": 1780.7404284667969
+        },
+        "class1": {
+          "mean_r": 0.9694663858690009,
+          "frac_positive": 1.0,
+          "mean_pred_level": 1541.432559814453,
+          "mean_true_level": 1675.1836474609374
+        },
+        "mean_r_all": 0.10029141637181502
+      },
+      "mixed_seed2": {
+        "class0": {
+          "mean_r": -0.9946006906590162,
+          "frac_positive": 0.0,
+          "mean_pred_level": 1537.2641931152343,
+          "mean_true_level": 1780.7404284667969
+        },
+        "class1": {
+          "mean_r": 0.9982199987865059,
+          "frac_positive": 1.0,
+          "mean_pred_level": 1538.1422485351563,
+          "mean_true_level": 1675.1836474609374
+        },
+        "mean_r_all": 0.0018096540637447323
+      },
+      "mixed_seed3": {
+        "class0": {
+          "mean_r": -0.9845587403745981,
+          "frac_positive": 0.0,
+          "mean_pred_level": 1521.4004357910155,
+          "mean_true_level": 1780.7404284667969
+        },
+        "class1": {
+          "mean_r": 0.9858622507296847,
+          "frac_positive": 1.0,
+          "mean_pred_level": 1521.3163232421875,
+          "mean_true_level": 1675.1836474609374
+        },
+        "mean_r_all": 0.0006517551775433539
+      },
+      "mixed_seed4": {
+        "class0": {
+          "mean_r": -0.9843010034987708,
+          "frac_positive": 0.0,
+          "mean_pred_level": 1543.6250646972655,
+          "mean_true_level": 1780.7404284667969
+        },
+        "class1": {
+          "mean_r": 0.9877271655847041,
+          "frac_positive": 1.0,
+          "mean_pred_level": 1543.6835888671876,
+          "mean_true_level": 1675.1836474609374
+        },
+        "mean_r_all": 0.0017130810429666265
+      }
+    },
+    "error_sd_spread_across_checkpoints": {
+      "median": 0.49756905452863975,
+      "max": 0.5712021753458885,
+      "n_episodes": 200
+    },
+    "opposite_sign_episodes": 200,
+    "implied_sum_sp_bound_rpm": {
+      "median": 0.49756905452863975,
+      "max": 0.5712021753458885
+    },
+    "error_sd_rpm_median": 666.5779836924128
+  },
+  "warfarin": {
+    "seed0": {
+      "n_subjects": 32,
+      "n_positive": 32,
+      "mean_r": 0.8774240317667568,
+      "rmse": 3.445603370666504,
+      "subject_mean_reference_rmse": 3.5085246562957764
+    },
+    "seed1": {
+      "n_subjects": 32,
+      "n_positive": 32,
+      "mean_r": 0.856383119364148,
+      "rmse": 3.46494722366333,
+      "subject_mean_reference_rmse": 3.5085246562957764
+    },
+    "seed2": {
+      "n_subjects": 32,
+      "n_positive": 32,
+      "mean_r": 0.8858383336467465,
+      "rmse": 3.4914286136627197,
+      "subject_mean_reference_rmse": 3.5085246562957764
+    },
+    "seed3": {
+      "n_subjects": 32,
+      "n_positive": 0,
+      "mean_r": -0.8745032457254948,
+      "rmse": 3.563145875930786,
+      "subject_mean_reference_rmse": 3.5085246562957764
+    },
+    "seed4": {
+      "n_subjects": 32,
+      "n_positive": 32,
+      "mean_r": 0.7227754474894921,
+      "rmse": 3.4877355098724365,
+      "subject_mean_reference_rmse": 3.5085246562957764
+    },
+    "corr_of_subject_r_seed3_vs_others": {
+      "seed0": -0.9847009002346606,
+      "seed1": -0.9606225394933251,
+      "seed2": -0.9986066029500426,
+      "seed4": -0.5093522338279638
+    },
+    "seed_level_t": 1.437787934542648
+  }
+}
