@@ -314,20 +314,21 @@ The default evaluation reports RMSE, NMSE, MAE, direction accuracy, lift-over-na
 ```python
 from dotime.evaluation import evaluate
 
-results = evaluate(model, suite)  # sign of the interventional level (v1)
+results = evaluate(model, suite, dir_target="level")  # sign of the interventional level (v1)
 results = evaluate(model, suite, dir_target="effect")  # sign of the causal effect y - y_obs
 ```
 
 Direction accuracy asks whether a model gets the direction of the
-intervention right. With `dir_target="level"` (the v1 protocol and the
-default) it compares the sign of the predicted and true interventional
-level, which a positive baseline can make positive whatever the intervention
-did. With `dir_target="effect"` it compares the sign of `y_pred - y_obs` and
+intervention right. With `dir_target="level"` (the v1 protocol) it compares
+the sign of the predicted and true interventional level, which a positive
+baseline can make positive whatever the intervention did. With `dir_target="effect"` it compares the sign of `y_pred - y_obs` and
 `y_true - y_obs` at the query, which is the direction of the intervention's
 effect. On `dot-Identifiability-v1` 1.1.0 the two signs disagree on 22% of the
 episodes where both are scoreable. RMSE, MAE, NMSE and R² are level metrics
 and are the same either way. `dotime-benchmark` and `dotime-eval-submission`
-take the same choice as `--dir-target`. Effect scoring refuses the archived
+take the same choice as `--dir-target`, as do `dotime-eval-reference`,
+`dotime-eval-pfn`, `dotime-eval-tabpfn` and `dotime-eval-chronos`. All of them
+default to `dotime.evaluation.DEFAULT_DIR_TARGET`. Effect scoring refuses the archived
 `dot-Identifiability-v1` 1.0.0 files, whose `x_obs` is misaligned; score them
 with `dotime-eval-reference --dir-target effect --realignment <sidecar>`.
 

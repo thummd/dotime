@@ -143,7 +143,11 @@ All notable changes to `dotime` are documented here. The format follows
   the sign of the causal effect `y - y_obs` at the query instead of the sign of
   the interventional level. The level metrics are unchanged. `Results` records
   `dir_target`, and `summary()` states it. The default stays `"level"`, so
-  existing calls return the same numbers. Effect scoring refuses the archived
+  existing calls return the same numbers. It is set in one place,
+  `dotime.evaluation.DEFAULT_DIR_TARGET`, which `evaluate()`, `Results`,
+  `dotime.qa.target_qa` and the `--dir-target` option of all six evaluators
+  (through `add_dir_target_argument`) read, and a test rejects a default
+  hard-coded anywhere else. Effect scoring refuses the archived
   `dot-Identifiability-v1` 1.0.0 files, whose `x_obs` is misaligned.
 - `dotime-eval-reference` logs and asserts per-arm target statistics (nonzero
   fraction, mean and variance of the observational level, the interventional

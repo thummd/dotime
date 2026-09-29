@@ -39,6 +39,8 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import torch
 
+from dotime.evaluation import DEFAULT_DIR_TARGET, DIR_TARGETS
+
 if TYPE_CHECKING:
     from dotime.benchmarks import Episode
 
@@ -58,7 +60,6 @@ __all__ = [
 ARMS = ("y_obs_level", "y_int_level", "effect")
 
 _LEVEL_ARMS = ("y_obs_level", "y_int_level")
-_DIR_TARGETS = ("level", "effect")
 
 
 class TargetQAError(RuntimeError):
@@ -124,7 +125,7 @@ class QAReport:
     pooled: dict[str, Any]
     groups: dict[str, dict[str, Any]] = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)
-    dir_target: str = "level"
+    dir_target: str = DEFAULT_DIR_TARGET
     check_effect: bool = False
     thresholds: QAThresholds = field(default_factory=QAThresholds)
     label: str | None = None
@@ -496,7 +497,7 @@ def target_qa(
     episodes: Iterable[Episode],
     *,
     obs_levels: Sequence[Any] | None = None,
-    dir_target: str = "level",
+    dir_target: str = DEFAULT_DIR_TARGET,
     group_by: str | Callable[[Episode], Any] | None = "structure",
     thresholds: QAThresholds | None = None,
     raise_on_failure: bool = True,
@@ -528,8 +529,8 @@ def target_qa(
     """
     from dotime.evaluation import query_obs_levels
 
-    if dir_target not in _DIR_TARGETS:
-        raise ValueError(f"dir_target must be one of {_DIR_TARGETS}, got {dir_target!r}")
+    if dir_target not in DIR_TARGETS:
+        raise ValueError(f"dir_target must be one of {DIR_TARGETS}, got {dir_target!r}")
     episodes = list(episodes)
     if obs_levels is not None and len(obs_levels) != len(episodes):
         raise ValueError(f"{len(obs_levels)} obs_levels for {len(episodes)} episodes")

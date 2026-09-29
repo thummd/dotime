@@ -14,9 +14,7 @@ from collections.abc import Sequence
 import numpy as np
 import torch
 
-from dotime.evaluation import direction_accuracy, query_obs_levels
-
-DIR_TARGETS = ("level", "effect")
+from dotime.evaluation import DIR_TARGETS, direction_accuracy, query_obs_levels
 
 
 def observational_levels(

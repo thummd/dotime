@@ -39,7 +39,12 @@ import torch
 
 from dotime.baselines import _INT_TYPE_CODE  # protocol base
 from dotime.benchmarks import load_benchmark
-from dotime.evaluation import direction_accuracy, query_obs_levels
+from dotime.evaluation import (
+    DEFAULT_DIR_TARGET,
+    add_dir_target_argument,
+    direction_accuracy,
+    query_obs_levels,
+)
 from dotime.qa import target_qa
 from dotime.reference._realignment import (
     load_realignment,
@@ -157,7 +162,7 @@ class PFNRef:
         return (pred_norm * std + mean).cpu()
 
 
-def run(model, episodes, dir_target="level", realignment=None):
+def run(model, episodes, dir_target=DEFAULT_DIR_TARGET, realignment=None):
     """Score one model on the episodes under both direction-accuracy targets.
 
     Args:
@@ -165,7 +170,8 @@ def run(model, episodes, dir_target="level", realignment=None):
             at the query, such as :class:`PFNRef`.
         episodes: The episodes to score.
         dir_target: ``"level"`` or ``"effect"``, the target that the headline
-            ``dir_acc`` reports. Both are always computed.
+            ``dir_acc`` reports. Both are always computed. Defaults to
+            :data:`~dotime.evaluation.DEFAULT_DIR_TARGET`.
         realignment: Optional ``{scm_id: row}`` map from
             :func:`~dotime.reference._realignment.load_realignment`. When given,
             each episode's observational level is its row's ``y_obs_corrected``
@@ -276,13 +282,7 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--per-structure", type=int, default=0, help="0 = full suite")
     ap.add_argument("--out", type=Path, default=None)
-    ap.add_argument(
-        "--dir-target",
-        choices=["level", "effect"],
-        default="level",
-        help="Direction-accuracy target: interventional level (v1 protocol) or "
-        "causal effect y_true - y_obs.",
-    )
+    add_dir_target_argument(ap)
     ap.add_argument(
         "--exclude-self-queries",
         action="store_true",

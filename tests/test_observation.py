@@ -605,7 +605,7 @@ def test_excluded_nonfinite_predictions_count_as_wrong_directions(latent_episode
     suite = BenchmarkSuite(_META, latent_episodes)
     with pytest.raises(ValueError, match="'Abstainer' returned 1 non-finite"):
         evaluation.evaluate(_Abstainer(), suite)
-    result = evaluation.evaluate(_Abstainer(), suite, nonfinite="exclude")
+    result = evaluation.evaluate(_Abstainer(), suite, dir_target="level", nonfinite="exclude")
     n = len(latent_episodes)
     assert result.pooled["n_nonfinite"] == n // 2
     assert result.pooled["rmse"] == 0.0
