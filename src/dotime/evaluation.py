@@ -34,6 +34,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "DIR_ACC_EPS",
+    "DIR_TARGETS",
     "Results",
     "bootstrap_ci",
     "compute_mae",
@@ -47,6 +48,14 @@ __all__ = [
 # Near-zero targets are ambiguous for sign-based direction accuracy and are
 # excluded from that metric (reported separately).
 DIR_ACC_EPS = 0.1
+
+# What the direction-accuracy sign test scores. "level" compares the sign of the
+# predicted and true interventional level (the v1 paper protocol); "effect"
+# compares the sign of the predicted and true causal effect, y - y_obs at the
+# query. A positive level can come from a negative effect on a positive
+# baseline, so only "effect" measures whether the intervention direction is
+# right.
+DIR_TARGETS = ("level", "effect")
 
 
 # --------------------------------------------------------------------------- #
@@ -216,6 +225,7 @@ class Results:
     n_queries: int
     pooled: dict[str, float]
     per_structure: dict[str, dict[str, float]] = field(default_factory=dict)
+    dir_target: str = "level"
 
     def to_dict(self) -> dict:
         """JSON-serializable view of the results."""
@@ -224,6 +234,7 @@ class Results:
             "baseline": self.baseline,
             "n_episodes": self.n_episodes,
             "n_queries": self.n_queries,
+            "dir_target": self.dir_target,
             "pooled": self.pooled,
             "per_structure": self.per_structure,
         }
@@ -234,6 +245,7 @@ class Results:
             f"Suite:    {self.suite}",
             f"Baseline: {self.baseline}",
             f"Episodes: {self.n_episodes}   Queries: {self.n_queries}",
+            f"dir_acc scores the sign of the {self.dir_target}",
             "",
         ]
         cols = ["rmse", "mae", "nmse", "r2", "dir_acc", "dir_acc_se"]
@@ -266,9 +278,20 @@ _DEFAULT_METRICS: dict[str, Callable[[torch.Tensor, torch.Tensor], float]] = {
 }
 
 
-def _aggregate(preds: torch.Tensor, targets: torch.Tensor, metrics) -> dict[str, float]:
+def _aggregate(
+    preds: torch.Tensor,
+    targets: torch.Tensor,
+    metrics,
+    obs: torch.Tensor | None = None,
+) -> dict[str, float]:
     out = {name: fn(preds, targets) for name, fn in metrics.items()}
-    da = direction_accuracy(preds, targets)
+    # With ``obs`` the sign test scores the effect: subtracting the same
+    # observational level from both sides leaves every level metric above
+    # unchanged but turns the sign of the level into the sign of the effect.
+    if obs is None:
+        da = direction_accuracy(preds, targets)
+    else:
+        da = direction_accuracy(preds - obs, targets - obs)
     out["dir_acc"] = da["accuracy"]
     # Report the uncertainty alongside the point estimate: the suites score one
     # query per episode, so the binomial standard error is exact (no clustering).
@@ -286,18 +309,49 @@ def evaluate(
     model: Baseline,
     suite: BenchmarkSuite,
     metrics: dict[str, Callable[[torch.Tensor, torch.Tensor], float]] | None = None,
+    dir_target: str = "level",
 ) -> Results:
     """Evaluate a baseline over every episode of a suite.
 
     Calls ``model.predict(episode)`` for each episode, pools predictions and
     ground-truth targets across all queries, and reports pooled and
     per-structure metrics.
+
+    Args:
+        model: The baseline to evaluate.
+        suite: The benchmark suite.
+        metrics: Level-space metrics by name. Defaults to RMSE, MAE, NMSE, R^2.
+        dir_target: What ``dir_acc`` scores: ``"level"`` (the sign of the
+            interventional level, the v1 protocol) or ``"effect"`` (the sign of
+            ``y - y_obs`` at the query, read with :func:`query_obs_levels`). The
+            level metrics are the same either way.
+
+    Raises:
+        ValueError: If ``dir_target`` is unknown, or if ``"effect"`` is asked
+            of the archived ``dot-Identifiability-v1`` 1.0.0 files, whose
+            ``x_obs`` columns are misaligned. Score those with
+            ``dotime-eval-reference --dir-target effect --realignment <sidecar>``.
     """
     metrics = metrics or _DEFAULT_METRICS
+    if dir_target not in DIR_TARGETS:
+        raise ValueError(f"dir_target must be one of {DIR_TARGETS}, got {dir_target!r}")
+    if (
+        dir_target == "effect"
+        and suite.meta.name == "dot-Identifiability-v1"
+        and suite.meta.version == "1.0.0"
+    ):
+        raise ValueError(
+            "dot-Identifiability-v1 1.0.0 ships x_obs in topological order, so y_obs "
+            "cannot be read from it directly. Load 1.1.0, or score 1.0.0 with "
+            "dotime-eval-reference --dir-target effect --realignment "
+            "results/reference/dot-Identifiability-v1.0.0_realignment.jsonl"
+        )
+    effect = dir_target == "effect"
 
     all_preds: list[torch.Tensor] = []
     all_targets: list[torch.Tensor] = []
-    by_struct: dict[str, list[tuple[torch.Tensor, torch.Tensor]]] = {}
+    all_obs: list[torch.Tensor] = []
+    by_struct: dict[str, list[tuple[torch.Tensor, torch.Tensor, torch.Tensor | None]]] = {}
 
     n_episodes = 0
     for ep in suite:
@@ -308,10 +362,13 @@ def evaluate(
                 f"baseline {getattr(model, 'name', model)!r} returned {pred.numel()} "
                 f"predictions for {target.numel()} queries in episode {ep.scm_id}"
             )
+        obs = query_obs_levels(ep).reshape(-1) if effect else None
         all_preds.append(pred)
         all_targets.append(target)
+        if obs is not None:
+            all_obs.append(obs)
         if ep.structure is not None:
-            by_struct.setdefault(ep.structure, []).append((pred, target))
+            by_struct.setdefault(ep.structure, []).append((pred, target, obs))
         n_episodes += 1
 
     if not all_preds:
@@ -322,11 +379,12 @@ def evaluate(
 
     per_structure = {
         struct: _aggregate(
-            torch.cat([p for p, _ in pairs]),
-            torch.cat([t for _, t in pairs]),
+            torch.cat([p for p, _, _ in rows]),
+            torch.cat([t for _, t, _ in rows]),
             metrics,
+            torch.cat([o for _, _, o in rows if o is not None]) if effect else None,
         )
-        for struct, pairs in by_struct.items()
+        for struct, rows in by_struct.items()
     }
 
     return Results(
@@ -334,6 +392,7 @@ def evaluate(
         baseline=getattr(model, "name", type(model).__name__),
         n_episodes=n_episodes,
         n_queries=int(preds.numel()),
-        pooled=_aggregate(preds, targets, metrics),
+        pooled=_aggregate(preds, targets, metrics, torch.cat(all_obs) if effect else None),
         per_structure=per_structure,
+        dir_target=dir_target,
     )
