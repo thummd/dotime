@@ -28,7 +28,12 @@ import torch
 
 from dotime import baselines, qa
 from dotime.benchmarks import load_benchmark
-from dotime.evaluation import direction_accuracy, query_obs_levels
+from dotime.evaluation import (
+    DEFAULT_DIR_TARGET,
+    add_dir_target_argument,
+    direction_accuracy,
+    query_obs_levels,
+)
 from dotime.reference._realignment import load_realignment, realign_episodes
 
 CPU_BASELINES = ["Zero", "Mean", "AR1", "VAR-OLS", "BackDoorOLS", "NaiveOLS", "IV2SLS", "Oracle"]
@@ -82,7 +87,7 @@ def _episode_obs_levels(ep, realignment):
     return query_obs_levels(ep).cpu().numpy()
 
 
-def target_qa(episodes, realignment=None, dir_target="level"):
+def target_qa(episodes, realignment=None, dir_target=DEFAULT_DIR_TARGET):
     """Log and assert per-arm target statistics before any baseline is scored.
 
     A thin wrapper over :func:`dotime.qa.target_qa`, which asserts the arms
@@ -117,7 +122,12 @@ def target_qa(episodes, realignment=None, dir_target="level"):
 
 
 def run_baseline(
-    name, suite_episodes, checkpoint=None, device="cpu", dir_target="level", realignment=None
+    name,
+    suite_episodes,
+    checkpoint=None,
+    device="cpu",
+    dir_target=DEFAULT_DIR_TARGET,
+    realignment=None,
 ):
     from dotime.observation import impute_episode
 
@@ -186,13 +196,7 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--pfn-checkpoint", default=None)
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--out", type=Path, default=None)
-    ap.add_argument(
-        "--dir-target",
-        choices=["level", "effect"],
-        default="level",
-        help="What the direction-accuracy sign test scores: the interventional "
-        "level (v1 paper protocol) or the causal effect y_true - y_obs.",
-    )
+    add_dir_target_argument(ap)
     ap.add_argument(
         "--exclude-self-queries",
         action="store_true",

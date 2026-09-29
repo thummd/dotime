@@ -51,13 +51,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--model", default=None, help="Custom model as 'module:attr'.")
     parser.add_argument("--name", default=None, help="Display name for the leaderboard.")
     parser.add_argument("--out", type=Path, default=Path("submission.json"))
-    parser.add_argument(
-        "--dir-target",
-        choices=["level", "effect"],
-        default="level",
-        help="What direction accuracy scores: the sign of the interventional level "
-        "(v1 protocol, default) or of the causal effect y - y_obs.",
-    )
+    evaluation.add_dir_target_argument(parser)
     parser.add_argument(
         "--target-qa",
         choices=["enforce", "warn"],

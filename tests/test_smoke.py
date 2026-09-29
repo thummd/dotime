@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import re
 
 import pytest
@@ -194,7 +195,7 @@ def test_effect_scored_direction_accuracy(tmp_path):
     _seed_local_suite(tmp_path, "dot-Generic-100k", n=16)
     suite = ctp.benchmarks.load_benchmark("dot-Generic-100k", cache_dir=tmp_path)
     model = ctp.baselines.get("Mean")
-    level = ctp.evaluation.evaluate(model, suite)
+    level = ctp.evaluation.evaluate(model, suite, dir_target="level")
     effect = ctp.evaluation.evaluate(model, suite, dir_target="effect")
 
     for key in ("rmse", "mae", "nmse", "r2"):
@@ -226,9 +227,67 @@ def test_effect_scoring_refuses_misaligned_identifiability_v1_0(tmp_path):
     suite = ctp.benchmarks.load_benchmark(
         "dot-Identifiability-v1", version="1.0.0", cache_dir=tmp_path
     )
-    ctp.evaluation.evaluate(ctp.baselines.get("Mean"), suite)  # level scoring still works
+    ctp.evaluation.evaluate(ctp.baselines.get("Mean"), suite, dir_target="level")
     with pytest.raises(ValueError, match="realignment"):
         ctp.evaluation.evaluate(ctp.baselines.get("Mean"), suite, dir_target="effect")
+
+
+def test_dir_target_default_has_a_single_source():
+    """Every direction-accuracy default reads evaluation.DEFAULT_DIR_TARGET.
+
+    Flipping the default must be a one-line change, so no function signature,
+    dataclass field or --dir-target option may hard-code "level" or "effect".
+    """
+    import inspect
+    import pathlib
+
+    from dotime import cli, evaluation
+
+    default = evaluation.DEFAULT_DIR_TARGET
+    assert default in evaluation.DIR_TARGETS
+    assert inspect.signature(evaluation.evaluate).parameters["dir_target"].default == default
+    assert evaluation.Results("s", "b", 0, 0, {}).dir_target == default
+    assert cli._build_benchmark_parser().parse_args([]).dir_target == default
+
+    src = pathlib.Path(evaluation.__file__).parent
+    for path in src.rglob("*.py"):
+        text = path.read_text(encoding="utf-8")
+        for literal in _dir_target_default_literals(ast.parse(text)):
+            raise AssertionError(
+                f"{path.name}:{literal.lineno} hard-codes dir_target={literal.value!r}"
+            )
+        if path.name != "evaluation.py":
+            assert '"--dir-target"' not in text, f"{path.name} defines --dir-target itself"
+
+
+def _dir_target_default_literals(tree):
+    """String constants used as the default of a ``dir_target`` parameter or field.
+
+    Keyword arguments at call sites (``f(dir_target="effect")``) are choices,
+    not defaults, and are not flagged.
+    """
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            args = node.args
+            positional = args.posonlyargs + args.args
+            pairs = list(
+                zip(positional[len(positional) - len(args.defaults) :], args.defaults, strict=True)
+            )
+            pairs += [
+                (a, d)
+                for a, d in zip(args.kwonlyargs, args.kw_defaults, strict=True)
+                if d is not None
+            ]
+            for arg, default in pairs:
+                if arg.arg == "dir_target" and isinstance(default, ast.Constant):
+                    yield default
+        elif (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and node.target.id == "dir_target"
+            and isinstance(node.value, ast.Constant)
+        ):
+            yield node.value
 
 
 def test_reference_harness_imports_without_optional_extras():
