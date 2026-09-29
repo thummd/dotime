@@ -1,0 +1,294 @@
+{
+  "suite_seed": 20260929,
+  "T": 200,
+  "variants": {
+    "base": null,
+    "weights_only": {
+      "unit_norm_rows": true,
+      "spectral_rho": 0.9
+    },
+    "recommended": {
+      "unit_norm_rows": true,
+      "spectral_rho": 0.9,
+      "bounded_square": true
+    }
+  },
+  "configs": [
+    {
+      "N_max": 10,
+      "K_max": 3,
+      "n": 500,
+      "wall_s": 89.94660061200011,
+      "base": {
+        "n_episodes": 500,
+        "diverged_frac": 0.296,
+        "diverged_frac_N_gt_20": null,
+        "saturated_frac_of_survivors": 0.008522727272727272,
+        "median_N_all": 6.0,
+        "median_N_survivors": 6.0,
+        "median_sd_obs": 0.46942099928855896,
+        "effect_n": 290,
+        "effect_median": 3.077636241912842,
+        "effect_frac_ge_0p1": 0.8724137931034482,
+        "rho_max": 14.925180101180203,
+        "mean_sec": 0.3289693411360422,
+        "by_class": {
+          "RegimeSwitchingTemporalSCM": {
+            "n": 61,
+            "diverged_frac": 0.0
+          },
+          "TemporalSCM": {
+            "n": 439,
+            "diverged_frac": 0.33712984054669703
+          }
+        },
+        "target_qa": {
+          "y_int": {
+            "n": 352,
+            "nonzero_frac": 1.0,
+            "mean": 0.8869156419376932,
+            "var": 39.474900737243125
+          },
+          "y_obs": {
+            "n": 352,
+            "nonzero_frac": 1.0,
+            "mean": 2.503915990496766,
+            "var": 359.5477550002186
+          },
+          "effect": {
+            "n": 352,
+            "nonzero_frac": 1.0,
+            "mean": -1.6170003485590727,
+            "var": 306.4960733146051
+          }
+        }
+      },
+      "weights_only": {
+        "n_episodes": 500,
+        "diverged_frac": 0.092,
+        "diverged_frac_N_gt_20": null,
+        "saturated_frac_of_survivors": 0.0,
+        "median_N_all": 6.0,
+        "median_N_survivors": 6.0,
+        "median_sd_obs": 0.374118834733963,
+        "effect_n": 392,
+        "effect_median": 3.14795982837677,
+        "effect_frac_ge_0p1": 0.8954081632653061,
+        "rho_max": 0.8999540258380402,
+        "mean_sec": 0.40521796697793616,
+        "by_class": {
+          "RegimeSwitchingTemporalSCM": {
+            "n": 61,
+            "diverged_frac": 0.0
+          },
+          "TemporalSCM": {
+            "n": 439,
+            "diverged_frac": 0.10478359908883828
+          }
+        },
+        "target_qa": {
+          "y_int": {
+            "n": 454,
+            "nonzero_frac": 1.0,
+            "mean": 0.5611439277375648,
+            "var": 17.10275267523537
+          },
+          "y_obs": {
+            "n": 454,
+            "nonzero_frac": 1.0,
+            "mean": 1.3550232178918784,
+            "var": 179.85690584284907
+          },
+          "effect": {
+            "n": 454,
+            "nonzero_frac": 1.0,
+            "mean": -0.7938792901543135,
+            "var": 129.72753408978926
+          }
+        }
+      },
+      "recommended": {
+        "n_episodes": 500,
+        "diverged_frac": 0.002,
+        "diverged_frac_N_gt_20": null,
+        "saturated_frac_of_survivors": 0.0,
+        "median_N_all": 6.0,
+        "median_N_survivors": 6.0,
+        "median_sd_obs": 0.3593316376209259,
+        "effect_n": 438,
+        "effect_median": 2.9339877367019653,
+        "effect_frac_ge_0p1": 0.9041095890410958,
+        "rho_max": 0.8999540258380402,
+        "mean_sec": 0.4435156632259605,
+        "by_class": {
+          "RegimeSwitchingTemporalSCM": {
+            "n": 61,
+            "diverged_frac": 0.0
+          },
+          "TemporalSCM": {
+            "n": 439,
+            "diverged_frac": 0.002277904328018223
+          }
+        },
+        "target_qa": {
+          "y_int": {
+            "n": 499,
+            "nonzero_frac": 1.0,
+            "mean": 0.48164634970760994,
+            "var": 15.752702262817046
+          },
+          "y_obs": {
+            "n": 499,
+            "nonzero_frac": 1.0,
+            "mean": 0.677860931188889,
+            "var": 73.86243309532765
+          },
+          "effect": {
+            "n": 499,
+            "nonzero_frac": 1.0,
+            "mean": -0.19621458148127907,
+            "var": 29.164934281150877
+          }
+        }
+      }
+    },
+    {
+      "N_max": 60,
+      "K_max": 8,
+      "n": 300,
+      "wall_s": 1209.7192084319995,
+      "base": {
+        "n_episodes": 300,
+        "diverged_frac": 0.6733333333333333,
+        "diverged_frac_N_gt_20": 0.8505747126436781,
+        "saturated_frac_of_survivors": 0.01020408163265306,
+        "median_N_all": 27.0,
+        "median_N_survivors": 7.0,
+        "median_sd_obs": 0.1687857061624527,
+        "effect_n": 63,
+        "effect_median": 3.9844655990600586,
+        "effect_frac_ge_0p1": 0.8571428571428571,
+        "rho_max": 15.281991039559617,
+        "mean_sec": 3.6522675457833005,
+        "by_class": {
+          "RegimeSwitchingTemporalSCM": {
+            "n": 35,
+            "diverged_frac": 0.0
+          },
+          "TemporalSCM": {
+            "n": 265,
+            "diverged_frac": 0.7622641509433963
+          }
+        },
+        "target_qa": {
+          "y_int": {
+            "n": 98,
+            "nonzero_frac": 1.0,
+            "mean": 1.9681247963429884,
+            "var": 298.8314003203201
+          },
+          "y_obs": {
+            "n": 98,
+            "nonzero_frac": 1.0,
+            "mean": 0.6601677644173425,
+            "var": 35.820656187225914
+          },
+          "effect": {
+            "n": 98,
+            "nonzero_frac": 1.0,
+            "mean": 1.307957031925646,
+            "var": 284.34230448008054
+          }
+        }
+      },
+      "weights_only": {
+        "n_episodes": 300,
+        "diverged_frac": 0.12666666666666668,
+        "diverged_frac_N_gt_20": 0.1781609195402299,
+        "saturated_frac_of_survivors": 0.007633587786259542,
+        "median_N_all": 27.0,
+        "median_N_survivors": 26.0,
+        "median_sd_obs": 0.2633880078792572,
+        "effect_n": 225,
+        "effect_median": 3.9526383876800537,
+        "effect_frac_ge_0p1": 0.9422222222222222,
+        "rho_max": 0.8999364043785278,
+        "mean_sec": 11.174799572109913,
+        "by_class": {
+          "RegimeSwitchingTemporalSCM": {
+            "n": 35,
+            "diverged_frac": 0.0
+          },
+          "TemporalSCM": {
+            "n": 265,
+            "diverged_frac": 0.14339622641509434
+          }
+        },
+        "target_qa": {
+          "y_int": {
+            "n": 262,
+            "nonzero_frac": 1.0,
+            "mean": 1.4360697086409928,
+            "var": 146.30809108503544
+          },
+          "y_obs": {
+            "n": 262,
+            "nonzero_frac": 1.0,
+            "mean": 8.29905842828168,
+            "var": 7570.946926760126
+          },
+          "effect": {
+            "n": 262,
+            "nonzero_frac": 1.0,
+            "mean": -6.862988719640687,
+            "var": 6289.205912367787
+          }
+        }
+      },
+      "recommended": {
+        "n_episodes": 300,
+        "diverged_frac": 0.0,
+        "diverged_frac_N_gt_20": 0.0,
+        "saturated_frac_of_survivors": 0.0,
+        "median_N_all": 27.0,
+        "median_N_survivors": 27.0,
+        "median_sd_obs": 0.2537979781627655,
+        "effect_n": 265,
+        "effect_median": 3.39803409576416,
+        "effect_frac_ge_0p1": 0.9509433962264151,
+        "rho_max": 0.8999364043785278,
+        "mean_sec": 11.531044664500065,
+        "by_class": {
+          "RegimeSwitchingTemporalSCM": {
+            "n": 35,
+            "diverged_frac": 0.0
+          },
+          "TemporalSCM": {
+            "n": 265,
+            "diverged_frac": 0.0
+          }
+        },
+        "target_qa": {
+          "y_int": {
+            "n": 300,
+            "nonzero_frac": 1.0,
+            "mean": 0.30321543748180074,
+            "var": 3.99927511305155
+          },
+          "y_obs": {
+            "n": 300,
+            "nonzero_frac": 1.0,
+            "mean": 0.36331679529238803,
+            "var": 5.0909015566768465
+          },
+          "effect": {
+            "n": 300,
+            "nonzero_frac": 1.0,
+            "mean": -0.060101357810587314,
+            "var": 9.460888851885407
+          }
+        }
+      }
+    }
+  ]
+}

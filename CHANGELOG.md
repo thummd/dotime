@@ -12,6 +12,22 @@ All notable changes to `dotime` are documented here. The format follows
   level and their difference) before scoring. It refuses to score a level arm
   that is less than 50% nonzero. The statistics and the suite version are
   recorded in the output JSON.
+- Opt-in stability hardening for the generic prior,
+  `DoTime(config={"hardening": ...})` (`dotime.hardening`).
+  - **`unit_norm_rows`** normalizes each variable's incoming weights to unit L2
+    norm.
+  - **`spectral_rho`** caps the reduced-form companion spectral radius by scaling
+    the lagged weights.
+  - **`bounded_square`** swaps the unbounded `x^2` activation for `tanh(x)^2`.
+
+  `dotime.hardening.RECOMMENDED_HARDENING` enables all three. On 300 episodes at
+  `N_max=60, K_max=8`, divergence (either arm) falls from 67.3% to 0%, and the
+  surviving graphs keep the prior's size distribution: median 27 variables,
+  against 7 unhardened. At the default `N_max=10, K_max=3` it falls from 29.6% to
+  0.2%. See `results/reference/hardening/`. The option is off by default, and it
+  rescales sampled weights without drawing random numbers. The released suites
+  are therefore unchanged, and a hardened prior draws the same graphs,
+  interventions and noise as an unhardened one with the same seed.
 - `dot-Identifiability-v1` 1.1.0: regenerated with shared-noise counterfactual
   pairing, aligned `x_obs`, hidden variables zeroed, correct `y_causal_effect`,
   resampled divergences (0 zeroed episodes) and a `diverged` flag. Same base seeds,

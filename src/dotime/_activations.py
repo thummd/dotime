@@ -14,7 +14,7 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-__all__ = ["Tanh", "TanhReLU", "TanhX2"]
+__all__ = ["Tanh", "TanhReLU", "TanhSquare", "TanhX2"]
 
 
 class Tanh(nn.Module):
@@ -36,3 +36,16 @@ class TanhReLU(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return torch.tanh(torch.relu(x))
+
+
+class TanhSquare(nn.Module):
+    """``tanh(x)^2``, a bounded stand-in for the prior's ``x^2`` activation.
+
+    It matches ``x^2`` near the origin and stays in ``[0, 1]``. The hardening
+    option ``bounded_square`` swaps it in, because ``x^2`` is the one activation
+    of the prior that is neither bounded nor 1-Lipschitz, so no weight rescaling
+    can keep a lagged loop through it from blowing up.
+    """
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return torch.tanh(x) ** 2

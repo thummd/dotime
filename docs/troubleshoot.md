@@ -75,3 +75,29 @@ Counterfactual batches (`pair_mode="counterfactual"`) always redraw this way.
 `cache_dir=` argument). If a cached suite is corrupt you will see a
 `checksum mismatch` error — delete the suite directory and reload with
 `force_download=True`.
+
+## Large graphs
+
+**Most episodes come back zeroed when `N_max` or `K_max` is raised.** The generic
+prior draws every edge weight from `N(0, sigma_w^2)` whatever a node's in-degree,
+so large graphs diverge: at `N_max=60, K_max=8` about two thirds of the sampled
+episodes have a zeroed arm, and the few that survive are small graphs. Resampling
+with `--stability-retries` cannot fix this without biasing the sample toward
+small graphs. Enable the opt-in hardening instead:
+
+```python
+from dotime import DoTime
+from dotime.hardening import RECOMMENDED_HARDENING
+from dotime.utils import DEFAULT_CONFIG
+
+config = {**DEFAULT_CONFIG, "N_max": 60, "K_max": 8, "hardening": RECOMMENDED_HARDENING}
+prior = DoTime(config=config, seed=0)
+```
+
+It normalizes each variable's incoming weights, caps the spectral radius of the
+lagged dynamics at 0.9, and replaces the unbounded `x^2` activation with
+`tanh(x)^2`. In `results/reference/hardening/` it brings divergence at that size
+from 67% to 0% while keeping the prior's graph sizes. It draws no random numbers,
+so the same seed gives the same graphs, interventions and noise. It is off by
+default because enabling it changes the generated data, and the released suites
+must stay reproducible.

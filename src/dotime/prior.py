@@ -10,6 +10,7 @@ import torch.nn as nn
 from dotime._activations import Tanh, TanhReLU, TanhX2
 from dotime._sampling import ShiftedExponentialSampler
 from dotime.chain_scm import ChainSCMBuilder
+from dotime.hardening import harden_scm, validate_hardening
 from dotime.interventions import InterventionSampler, InterventionSpec
 from dotime.regime_switching import RegimeSwitchingTemporalSCM
 from dotime.regime_switching_builder import RegimeSwitchingSCMBuilder
@@ -56,7 +57,12 @@ class DoTime:
         Parameters
         ----------
         config : Dict[str, Any], optional
-            Configuration dictionary. If None, uses DEFAULT_CONFIG.
+            Configuration dictionary. If None, uses DEFAULT_CONFIG. An optional
+            ``"hardening"`` entry, for example
+            ``{"unit_norm_rows": True, "spectral_rho": 0.9}``, rescales every
+            sampled SCM so that large graphs simulate without diverging (see
+            :mod:`dotime.hardening`). It is off by default, which keeps the
+            released suites reproducible, and it draws no random numbers.
         seed : int
             Random seed for reproducibility.
         chain_prob : float
@@ -72,12 +78,19 @@ class DoTime:
         Raises
         ------
         TypeError
-            If ``config["regime_canonical_weights"]`` is not a bool.
+            If ``config["regime_canonical_weights"]`` is not a bool, or if
+            ``config["hardening"]`` is not a dict or holds a value of the wrong
+            type.
+        ValueError
+            If ``config["hardening"]`` has unknown keys or a non-positive
+            ``spectral_rho`` (see :func:`dotime.hardening.validate_hardening`).
         """
         # Merge config with defaults
         self.config = {**DEFAULT_CONFIG}
         if config is not None:
             self.config.update(config)
+        # Validated before any draw, so a bad config fails without touching RNG.
+        self.hardening = validate_hardening(self.config.get("hardening"))
 
         self.seed = seed
         self.chain_prob = chain_prob
@@ -197,6 +210,8 @@ class DoTime:
             # Sample SCM
             scm = scm_builder.sample(self.generator)
 
+        if self.hardening is not None:
+            harden_scm(scm, **self.hardening)
         return scm
 
     def generate_pair(
@@ -273,6 +288,8 @@ class DoTime:
             canonical_weights=self.regime_canonical_weights,
         )
         scm = rs_builder.sample(self.generator, num_regimes=num_regimes)
+        if self.hardening is not None:
+            harden_scm(scm, **self.hardening)
 
         intervention = InterventionSampler(N=N, T=T, generator=self.generator).sample()
         X_obs = scm.sample_observational(
