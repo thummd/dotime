@@ -15,7 +15,7 @@ from threading import Event, Thread
 
 import torch
 
-from dotime.extended import ExtendedDoTime
+from dotime.extended import ExtendedDoTime, check_batched_intervention_source
 from dotime.normalization import normalize_batch
 
 # Per-TSCM-structure canonical query offset range. Matches the protocol behind
@@ -50,7 +50,15 @@ class _PrefetchError:
 
 
 class TemporalInterventionDataLoader:
-    """Infinite dataloader that generates temporal intervention batches on-the-fly."""
+    """Infinite dataloader that generates temporal intervention batches on-the-fly.
+
+    Raises:
+        ValueError: At construction, if both ``tscm_structure`` and
+            ``tscm_structures`` are given.
+        NotImplementedError: At construction, if a named structure is combined with
+            an ``intervention_source`` that ``ExtendedDoTime.generate_batch`` cannot
+            apply (see :func:`dotime.extended.check_batched_intervention_source`).
+    """
 
     def __init__(
         self,
@@ -149,6 +157,12 @@ class TemporalInterventionDataLoader:
                 hardening=hardening,
             )
             self.priors = None
+
+        # generate_batch is this loader's only generation path, and an exception raised
+        # in the prefetch thread never reaches the training loop, which then blocks on
+        # the queue forever. Checking here raises in the caller's thread instead.
+        for prior in self.priors or [self.prior]:
+            check_batched_intervention_source(prior.intervention_source, prior.tscm_structure)
 
     def __len__(self) -> int:
         return self.num_steps

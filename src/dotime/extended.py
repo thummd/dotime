@@ -124,6 +124,45 @@ def _apply_hidden_mask(
         variable_mask[h] = 0.0
 
 
+# The intervention_source modes ExtendedDoTime.generate_batch can apply to a named
+# TSCM structure. That path builds the batch with BatchedTSCMSimulator.generate_pairs,
+# which draws prior values and can only clip them (positivity_aware). The observed_*
+# modes resample each value from the episode's own pre-onset history, which only
+# generate_sample implements.
+BATCHED_INTERVENTION_SOURCES = ("prior", "positivity_aware")
+
+
+def check_batched_intervention_source(intervention_source: str, tscm_structure: str | None) -> None:
+    """Reject an ``intervention_source`` that ``ExtendedDoTime.generate_batch`` cannot apply.
+
+    For a named ``tscm_structure``, ``generate_batch`` always builds the batch with
+    the vectorized simulator, which implements only the modes in
+    :data:`BATCHED_INTERVENTION_SOURCES`. Any other mode was ignored there, so the
+    batch silently carried prior values. The generic prior (``tscm_structure=None``)
+    builds every batch with ``generate_sample``, which implements every mode.
+
+    Args:
+        intervention_source: The requested intervention-value mode.
+        tscm_structure: The named TSCM structure, or ``None`` for the generic prior.
+
+    Returns:
+        None.
+
+    Raises:
+        NotImplementedError: If ``tscm_structure`` is set and ``intervention_source``
+            is not in :data:`BATCHED_INTERVENTION_SOURCES`.
+    """
+    if tscm_structure is None or intervention_source in BATCHED_INTERVENTION_SOURCES:
+        return
+    supported = " and ".join(repr(s) for s in BATCHED_INTERVENTION_SOURCES)
+    raise NotImplementedError(
+        f"generate_batch cannot apply intervention_source={intervention_source!r} to "
+        f"tscm_structure={tscm_structure!r}: its vectorized simulator implements only "
+        f"{supported}, and earlier versions silently used prior values here. Use one of "
+        "those modes, or build episodes with generate_sample(), which implements every mode."
+    )
+
+
 class TSCMPrior:
     """Drop-in replacement for DoTime that generates from a single TSCM structure.
 
@@ -672,7 +711,16 @@ class ExtendedDoTime:
             X_obs, variable_mask: (B, ...) unique trajectories
             intervention_*, query_*, Y_*: (B_total,) per-query (B_total = sum of queries)
             _traj_idx: (B_total,) index into trajectory dimension
+
+        Raises
+        ------
+        NotImplementedError
+            If ``tscm_structure`` is set and ``intervention_source`` is not in
+            :data:`BATCHED_INTERVENTION_SOURCES` (see
+            :func:`check_batched_intervention_source`).
         """
+        # Before sample_T, so a rejected call leaves every RNG stream where it was.
+        check_batched_intervention_source(self.intervention_source, self.tscm_structure)
         if T is None:
             T = self.sample_T()
 
@@ -699,7 +747,9 @@ class ExtendedDoTime:
         sim = self.batched_sim
         seed = int(self.rng.randint(0, 2**31))
 
-        # Fix 1: positivity_aware in batched path = per-sample 3σ clip
+        # Fix 1: positivity_aware in batched path = per-sample 3σ clip. This is the only
+        # mode switch the simulator has, which is why generate_batch rejects the modes
+        # outside BATCHED_INTERVENTION_SOURCES before reaching here.
         positivity_clip = self.intervention_source == "positivity_aware"
 
         pairs = sim.generate_pairs(
@@ -729,6 +779,10 @@ class ExtendedDoTime:
             if not valid[b]:
                 # Skip diverged — generate a fallback via sequential path
                 s = self.generate_sample(T=T, n_queries=n_queries, query_mode=query_mode)
+                # The vectorized samples below carry no unmasked X_obs_full, and
+                # _collate_batch takes its keys from samples[0], so keeping this key
+                # raised KeyError whenever the first sample of a batch diverged.
+                del s["X_obs_full"]
                 samples.append(s)
                 continue
 
