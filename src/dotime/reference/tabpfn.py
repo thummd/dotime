@@ -4,9 +4,13 @@ Mirrors the TabPFN baselines of the Do-Over-Time-PFN training codebase
 (``scripts/baselines.py``): a back-door adjustment using two TabPFN
 regressors (model_x: p(X_t|X_{t-1}); model_y: p(Y_t|A_t,X_t,Y_{t-1})),
 MC-integrated over the confounder, and a front-door variant. Ported to the
-dotime Episode API; falls back to the pre-intervention outcome mean on
-structures where the adjustment assumptions do not hold (as BackDoorOLS does),
-so every episode gets a prediction.
+dotime Episode API. The treatment, adjustment and mediator columns are read
+off each structure's DAG, so the mediator of ``confounder_mediator`` is never
+adjusted for and the front-door mediator of ``front_door`` is ``M``, not the
+hidden ``U``. Falls back to the pre-intervention outcome mean on structures
+where the adjustment assumptions do not hold (as BackDoorOLS does) and on
+queries of a variable other than the structure's outcome, so every episode
+gets a prediction.
 
 TabPFN is expensive, so we evaluate on a stratified subsample.
 
@@ -33,6 +37,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from dotime.baselines import _back_door_columns, _front_door_columns
 from dotime.benchmarks import load_benchmark
 from dotime.evaluation import direction_accuracy
 from dotime.reference._realignment import load_realignment, realign_episodes
@@ -71,10 +76,95 @@ def _mean_pred(ep):
     return float(x[:fit_end, y].mean())
 
 
+def _require_canonical_layout(structure, n, a, n_vars, treatment):
+    """Check that an episode uses its structure's canonical column layout.
+
+    Args:
+        structure: The episode's structure label.
+        n: Number of columns in the episode's ``x_obs``.
+        a: The episode's treatment column (its intervention target).
+        n_vars: Number of canonical columns of ``structure``.
+        treatment: Canonical treatment column of ``structure``.
+
+    Raises:
+        ValueError: If ``n`` or ``a`` disagree with the canonical layout. The
+            structure label and the data then disagree, so no column role
+            derived from the label can be trusted.
+    """
+    if n != n_vars or a != treatment:
+        raise ValueError(
+            f"TabPFN: a {structure!r} episode needs {n_vars} canonical columns with the "
+            f"treatment in column {treatment}; got {n} columns and treatment {a}"
+        )
+
+
+def _adjustment_columns(structure, n, a, y):
+    """Back-door adjustment columns of an episode, read off its structure's DAG.
+
+    Args:
+        structure: The episode's structure, a member of :data:`BACK_DOOR`.
+        n: Number of columns in the episode's ``x_obs``.
+        a: Treatment column (the intervention target).
+        y: Queried column.
+
+    Returns:
+        The structure's back-door set as column indices (the confounder ``X``
+        for the whole back-door family), or ``None`` when ``y`` is not the
+        structure's outcome. The set is derived for the outcome only, so a
+        query of any other variable takes the mean fallback.
+
+    Raises:
+        ValueError: If ``structure`` is not a named structure, or if ``n`` or
+            ``a`` disagree with its canonical column layout.
+    """
+    n_vars, treatment, outcome, adjust = _back_door_columns(structure)
+    _require_canonical_layout(structure, n, a, n_vars, treatment)
+    return list(adjust) if y == outcome else None
+
+
+def _mediator_column(structure, n, a, y):
+    """Front-door mediator column of an episode, read off its structure's DAG.
+
+    Args:
+        structure: The episode's structure, a member of :data:`FRONT_DOOR`.
+        n: Number of columns in the episode's ``x_obs``.
+        a: Treatment column (the intervention target).
+        y: Queried column.
+
+    Returns:
+        The column of the mediator ``M``, or ``None`` when ``y`` is not the
+        structure's outcome. The mediator is defined relative to the outcome,
+        so a query of any other variable takes the mean fallback.
+
+    Raises:
+        ValueError: If ``structure`` is not a named structure with exactly one
+            observed mediator, or if ``n`` or ``a`` disagree with its canonical
+            column layout.
+    """
+    n_vars, treatment, outcome, mediator = _front_door_columns(structure)
+    _require_canonical_layout(structure, n, a, n_vars, treatment)
+    return mediator if y == outcome else None
+
+
 def _backdoor_tabpfn(ep, n_mc=100, observational=False):
+    """Back-door adjusted TabPFN prediction of an episode's first query.
+
+    Args:
+        ep: A back-door-family episode in its structure's canonical layout.
+        n_mc: Unused. Kept for signature parity with the ported baseline.
+        observational: Plug the last observed treatment instead of the
+            do-value (the observational arm of the int/obs probe).
+
+    Returns:
+        The predicted outcome level as a float.
+
+    Raises:
+        ValueError: If the episode does not match its structure's canonical
+            column layout.
+    """
     x, n, a, y, fit_end, a_val = _series(ep)
-    adj = [v for v in range(n) if v not in (a, y)]
-    if len(adj) < 1 or fit_end < 8 or a_val is None:
+    adj = _adjustment_columns(ep.structure, n, a, y)
+    if not adj or fit_end < 8 or a_val is None:
         return _mean_pred(ep)
     xcov = x[1:fit_end, adj]
     a_t = x[1:fit_end, a]
@@ -93,12 +183,25 @@ def _backdoor_tabpfn(ep, n_mc=100, observational=False):
 
 
 def _frontdoor_tabpfn(ep, n_mc=100, observational=False):
-    # front-door: mediator M between A and Y. Use all non-(A,Y) as candidate M.
+    """Front-door adjusted TabPFN prediction of an episode's first query.
+
+    Args:
+        ep: A front-door-family episode in its structure's canonical layout.
+        n_mc: Unused. Kept for signature parity with the ported baseline.
+        observational: Plug the last observed treatment instead of the
+            do-value (the observational arm of the int/obs probe).
+
+    Returns:
+        The predicted outcome level as a float.
+
+    Raises:
+        ValueError: If the episode does not match its structure's canonical
+            column layout.
+    """
     x, n, a, y, fit_end, a_val = _series(ep)
-    med = [v for v in range(n) if v not in (a, y)]
-    if len(med) < 1 or fit_end < 8 or a_val is None:
+    m_idx = _mediator_column(ep.structure, n, a, y)
+    if m_idx is None or fit_end < 8 or a_val is None:
         return _mean_pred(ep)
-    m_idx = med[0]
     a_t = x[1:fit_end, a]
     m_t = x[1:fit_end, m_idx]
     y_t = x[1:fit_end, y]

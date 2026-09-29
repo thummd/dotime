@@ -169,6 +169,24 @@ All notable changes to `dotime` are documented here. The format follows
   Google parser next to the NumPy one. Before, these sections fell through as raw
   definition lists, and the multi-line entry in `TemporalSCM.freeze_noise` failed
   the `-W` docs build.
+- `dotime-eval-tabpfn` chose its adjustment columns by position. The back-door
+  branch adjusted for every column other than the treatment and the outcome.
+  On `confounder_mediator` (columns A, X, M, Y) that set includes the mediator
+  M, a descendant of A. The front-door branch used the first such column as the
+  mediator, which on `front_door` (columns A, U, M, Y) is the hidden confounder
+  U, all zeros in 1.1.0 `x_obs`. Both roles are now derived from each
+  structure's DAG: the adjustment set is X for the back-door family and the
+  mediator is M for `mediator` and `front_door`. TabPFN inputs are unchanged on
+  `back_door`, `observed_confounder` and `mediator`. An episode whose column
+  count or treatment column contradicts its structure raises `ValueError`, and
+  a query of a variable other than the structure's outcome (only
+  `dot-Continuous-v1` has them) takes the mean fallback. The released TabPFN
+  results were not recomputed: `results/reference/server/tabpfn_ident.json` and
+  `tabpfn_intobs_ident.json` (the int-vs-obs comparison) used the old columns on
+  120 of their 480 episodes, every `front_door` and `confounder_mediator` one,
+  and were computed on the 1.0.0 files, whose `x_obs` is in topological order.
+  `tabpfn_generic.json` is unaffected, since no Generic episode reaches an
+  adjustment branch.
 
 ### Added
 - `dotime-eval-pfn` reports both `dir_acc_level` and `dir_acc_effect` (pooled and

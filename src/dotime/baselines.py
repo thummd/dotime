@@ -193,28 +193,24 @@ def _ols_fit(design: np.ndarray, target: np.ndarray) -> np.ndarray:
     return np.linalg.solve(gram, x.T @ target)
 
 
-@functools.cache
-def _back_door_columns(structure: str) -> tuple[int, int, int, tuple[int, ...]]:
-    """Canonical treatment, outcome and back-door adjustment columns of a structure.
+def _canonical_summary_graph(structure: str) -> tuple[list[str], nx.DiGraph, set[str]]:
+    """Column names, summary graph and hidden variables of a named structure.
 
     The graph comes from the structure's definition in
     :mod:`dotime.tscm_sampler` and the column order from
     :class:`~dotime.extended.TSCMPrior`, which lays out the released ``x_obs``
-    (treatment ``A`` first, outcome ``Y`` last). The adjustment set is every
-    observed variable other than ``A`` and ``Y`` that is not a descendant of
-    ``A`` in the summary graph (instantaneous plus cross-lagged edges). For
-    ``back_door``, ``observed_confounder`` and ``confounder_mediator`` that is
-    the confounder ``X``. It is a valid back-door set only when no hidden
-    variable confounds ``A`` and ``Y``, which is why :class:`BackDoorOLSBaseline`
-    uses it on the back-door family alone.
+    (treatment ``A`` first, outcome ``Y`` last). The summary graph has an edge
+    ``u -> v`` when ``u`` drives ``v`` instantaneously or at some lag, so the
+    descendants of ``A`` in it are the variables that ``A`` affects at any lag.
 
     Args:
         structure: A :class:`~dotime.tscm_sampler.TSCMStructure` value, e.g.
-            ``"confounder_mediator"``.
+            ``"front_door"``.
 
     Returns:
-        ``(n_vars, treatment_col, outcome_col, adjustment_cols)`` as canonical
-        column indices.
+        ``(names, summary, hidden)``: the variable name of each canonical
+        column, the summary graph over those names, and the names of the
+        hidden variables.
 
     Raises:
         ValueError: If ``structure`` is not a named structure.
@@ -228,7 +224,6 @@ def _back_door_columns(structure: str) -> tuple[int, int, int, tuple[int, ...]]:
     prior = TSCMPrior(TSCMStructure(structure))
     dag = prior.sampler._build_dag()
     topo = list(dag.topo_order)
-    canon = [topo[t] for t in prior.canonical_perm]
     summary = nx.DiGraph(dag.G_0)
     for lag in dag.G_lags:
         for i, j in zip(*np.nonzero(lag), strict=True):
@@ -236,12 +231,74 @@ def _back_door_columns(structure: str) -> tuple[int, int, int, tuple[int, ...]]:
             # variable a descendant of A.
             if i != j:
                 summary.add_edge(topo[i], topo[j])
+    names = [topo[t] for t in prior.canonical_perm]
+    return names, summary, {topo[h] for h in prior.hidden_vars}
+
+
+@functools.cache
+def _back_door_columns(structure: str) -> tuple[int, int, int, tuple[int, ...]]:
+    """Canonical treatment, outcome and back-door adjustment columns of a structure.
+
+    The adjustment set is every observed variable other than ``A`` and ``Y``
+    that is not a descendant of ``A`` in the summary graph (see
+    :func:`_canonical_summary_graph`). For ``back_door``,
+    ``observed_confounder`` and ``confounder_mediator`` that is the confounder
+    ``X``. It is a valid back-door set only when no hidden variable confounds
+    ``A`` and ``Y``, so callers apply it to the back-door family alone.
+
+    Args:
+        structure: A :class:`~dotime.tscm_sampler.TSCMStructure` value, e.g.
+            ``"confounder_mediator"``.
+
+    Returns:
+        ``(n_vars, treatment_col, outcome_col, adjustment_cols)`` as canonical
+        column indices.
+
+    Raises:
+        ValueError: If ``structure`` is not a named structure.
+    """
+    names, summary, hidden = _canonical_summary_graph(structure)
     # The back-door criterion excludes every descendant of A: adjusting for a
     # mediator (M on A -> M -> Y) blocks part of the effect, and adjusting for
     # a collider opens a spurious path.
-    excluded = {"A", "Y"} | nx.descendants(summary, "A") | {topo[h] for h in prior.hidden_vars}
-    adjust = tuple(col for col, var in enumerate(canon) if var not in excluded)
-    return len(canon), canon.index("A"), canon.index("Y"), adjust
+    excluded = {"A", "Y"} | nx.descendants(summary, "A") | hidden
+    adjust = tuple(col for col, var in enumerate(names) if var not in excluded)
+    return len(names), names.index("A"), names.index("Y"), adjust
+
+
+@functools.cache
+def _front_door_columns(structure: str) -> tuple[int, int, int, int]:
+    """Canonical treatment, outcome and front-door mediator columns of a structure.
+
+    The mediator is the observed variable on the causal path from ``A`` to
+    ``Y``: a descendant of ``A`` and an ancestor of ``Y`` in the summary graph
+    (see :func:`_canonical_summary_graph`). For ``mediator`` and ``front_door``
+    that is ``M``. Column position cannot identify it, because ``front_door``
+    lays out its columns as A, U, M, Y with the hidden confounder ``U`` first
+    among the middle columns.
+
+    Args:
+        structure: A :class:`~dotime.tscm_sampler.TSCMStructure` value, e.g.
+            ``"front_door"``.
+
+    Returns:
+        ``(n_vars, treatment_col, outcome_col, mediator_col)`` as canonical
+        column indices.
+
+    Raises:
+        ValueError: If ``structure`` is not a named structure, or if it does
+            not have exactly one observed mediator (the front-door estimator
+            conditions on a single one).
+    """
+    names, summary, hidden = _canonical_summary_graph(structure)
+    on_path = (nx.descendants(summary, "A") & nx.ancestors(summary, "Y")) - hidden
+    mediators = [col for col, var in enumerate(names) if var in on_path]
+    if len(mediators) != 1:
+        raise ValueError(
+            f"structure {structure!r} has observed mediators "
+            f"{[names[c] for c in mediators]}, the front-door estimator needs exactly one"
+        )
+    return len(names), names.index("A"), names.index("Y"), mediators[0]
 
 
 @register("BackDoorOLS")
