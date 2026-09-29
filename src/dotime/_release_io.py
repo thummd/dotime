@@ -102,14 +102,34 @@ def _episode_to_row(ep: Episode) -> dict:
     }
 
 
-def _row_to_episode(row: dict) -> Episode:
-    from dotime.benchmarks import Episode
+def _row_to_episode(row: dict, query_time_encoding: str | None = None) -> Episode:
+    """Rebuild one :class:`~dotime.benchmarks.Episode` from a parquet row.
+
+    Args:
+        row: One row of a suite shard, keyed by the ``_COLUMNS`` names.
+        query_time_encoding: The suite's declared ``query_time`` encoding. When
+            given and the row's metadata records no ``query_time_idx`` (true of
+            every frozen v1 file), the exact query rows are resolved from it.
+
+    Returns:
+        The reconstructed episode.
+
+    Raises:
+        ValueError: If the declared encoding does not match the row's query times.
+    """
+    from dotime.benchmarks import Episode, query_time_to_index
 
     length, n_vars = int(row["length"]), int(row["n_vars"])
     x_obs = torch.tensor(row["x_obs"], dtype=torch.float32).reshape(length, n_vars)
     x_int = torch.tensor(row["x_int"], dtype=torch.float32).reshape(length, n_vars)
     y_true = torch.tensor(row["y_true"], dtype=torch.float32)
     metadata = json.loads(row["metadata_json"]) if row["metadata_json"] else {}
+    if query_time_encoding is not None and "query_time_idx" not in metadata:
+        # Resolved once, in memory, so every consumer reads the same row; the
+        # frozen files themselves are never rewritten.
+        metadata["query_time_idx"] = query_time_to_index(
+            row["query_time"], length, query_time_encoding
+        )
     return Episode(
         x_obs=x_obs,
         x_int=x_int,
@@ -194,6 +214,8 @@ def read_suite(meta: SuiteMetadata, suite_dir: str | Path) -> BenchmarkSuite:
         table = pq.read_table(path)
         cols = {name: table.column(name).to_pylist() for name in table.column_names}
         for i in range(table.num_rows):
-            episodes.append(_row_to_episode({name: cols[name][i] for name in cols}))
+            episodes.append(
+                _row_to_episode({name: cols[name][i] for name in cols}, meta.query_time_encoding)
+            )
 
     return BenchmarkSuite(meta, episodes)

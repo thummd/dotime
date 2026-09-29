@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import json
 import os
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
@@ -32,12 +32,85 @@ import torch
 from dotime.interventions import InterventionSpec
 
 __all__ = [
+    "QUERY_TIME_ENCODINGS",
     "BenchmarkSuite",
     "Episode",
     "SuiteMetadata",
     "available_suites",
     "load_benchmark",
+    "query_time_to_index",
 ]
+
+
+# --------------------------------------------------------------------------- #
+# Query-time encodings
+# --------------------------------------------------------------------------- #
+
+#: How ``Episode.query_time`` encodes the queried row of a ``T``-step trajectory.
+#: ``"step"`` stores the row index itself (generic and regime generators),
+#: ``"index/T"`` stores ``index / T`` (``ExtendedDoTime``, the identifiability
+#: suite) and ``"index/(T-1)"`` stores ``index / (T - 1)``, which is the continuous
+#: prior's normalized observation time on its regular grid.
+QUERY_TIME_ENCODINGS = ("step", "index/T", "index/(T-1)")
+
+
+def query_time_to_index(
+    query_time: torch.Tensor | Sequence[float], length: int, encoding: str | None = None
+) -> list[int]:
+    """Map encoded query times to row indices of a ``length``-step trajectory.
+
+    Parameters
+    ----------
+    query_time:
+        Encoded query time of each query.
+    length:
+        Number of rows ``T`` of the episode's trajectories.
+    encoding:
+        One of :data:`QUERY_TIME_ENCODINGS`. ``None`` infers the encoding per
+        value, as the evaluation helpers did before suites declared one. Values
+        up to 1 are then read as ``index / T`` and larger values as steps. That
+        guess is wrong for ``dot-Continuous-v1``, which is why every registered
+        suite declares its encoding.
+
+    Returns
+    -------
+    list of int
+        One row index per query, clamped to ``[0, length - 1]``.
+
+    Raises
+    ------
+    ValueError
+        If ``length`` is not positive, if ``encoding`` is unknown, or if a
+        declared encoding does not land a query on a whole row, which is the
+        signature of a suite declared with the wrong encoding.
+    """
+    if length < 1:
+        raise ValueError(f"trajectory length must be positive, got {length}")
+    if encoding is not None and encoding not in QUERY_TIME_ENCODINGS:
+        raise ValueError(
+            f"unknown query_time encoding {encoding!r}; expected one of {QUERY_TIME_ENCODINGS}"
+        )
+    scale = {"step": 1.0, "index/T": float(length), "index/(T-1)": float(length - 1)}
+    # Positions are rebuilt from float32 values (relative error 2**-24), so a
+    # correct declaration lands within ~length * 6e-8 of a whole row, while the
+    # neighbouring encoding misses by up to half a row.
+    tol = max(1e-3, length * 1e-6)
+    out = []
+    for v in torch.as_tensor(query_time, dtype=torch.float64).reshape(-1).tolist():
+        if encoding is None:
+            # Kept verbatim so episodes that declare nothing (e.g. hand-built
+            # ones) resolve exactly as before.
+            idx = round(v * length) if v <= 1.0 else int(v)
+        else:
+            pos = v * scale[encoding]
+            idx = round(pos)
+            if abs(pos - idx) > tol:
+                raise ValueError(
+                    f"query_time {v!r} is not a whole row under encoding {encoding!r} "
+                    f"for T={length}; the declared encoding does not match the data"
+                )
+        out.append(min(max(idx, 0), length - 1))
+    return out
 
 
 # --------------------------------------------------------------------------- #
@@ -62,6 +135,11 @@ class SuiteMetadata:
     # ((version, zenodo_record_id), ...). The HF mirror serves them from the
     # matching ``v<version>`` tag; Zenodo needs the per-version record id.
     prior_versions: tuple[tuple[str, str], ...] = ()
+    # How ``Episode.query_time`` maps to a row in this suite's frozen files (one
+    # of QUERY_TIME_ENCODINGS). The generators disagree, and a fraction does not
+    # say which one wrote it, so the loader resolves the row from this
+    # declaration. ``None`` falls back to the per-value guess.
+    query_time_encoding: str | None = None
 
     def for_version(self, version: str) -> SuiteMetadata:
         """Return the metadata for a specific released version of this suite.
@@ -113,6 +191,7 @@ _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
         # 1.0.0 stays loadable via load_benchmark(..., version="1.0.0") so the
         # published numbers remain reproducible from the frozen artifact.
         prior_versions=(("1.0.0", "20919553"),),
+        query_time_encoding="index/T",  # both versions: ExtendedDoTime stores index / T
         structures=(
             "back_door",
             "observed_confounder",
@@ -132,6 +211,7 @@ _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
         doi="10.5281/zenodo.20846073",  # concept DOI (resolves to latest version)
         description="Regime-switching SCMs (ITS generalization), break density in {2,3,5}.",
         n_episodes=9_999,
+        query_time_encoding="step",
     ),
     "dot-Continuous-v1": SuiteMetadata(
         name="dot-Continuous-v1",
@@ -141,6 +221,10 @@ _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
         doi="10.5281/zenodo.20845980",  # concept DOI (resolves to latest version)
         description="Continuous-time intervention windows; query times uniform over [onset, T-1].",
         n_episodes=9_999,
+        # Normalized observation time on the regular dt=1 grid of the 1.0.0
+        # build, i.e. index / (T - 1). Reading it as index / T is one step late
+        # for every query in the second half of the trajectory.
+        query_time_encoding="index/(T-1)",
     ),
     "dot-Generic-100k": SuiteMetadata(
         name="dot-Generic-100k",
@@ -150,6 +234,7 @@ _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
         doi="10.5281/zenodo.20845982",  # concept DOI (resolves to latest version)
         description="100k trajectories from the full diverse prior (training scale).",
         n_episodes=100_000,
+        query_time_encoding="step",
     ),
 }
 
@@ -182,14 +267,19 @@ class Episode:
     query_target:
         Index of the queried variable per query, shape ``(n_queries,)``.
     query_time:
-        Query time (float in ``[0, 1]`` for continuous suites, or int step),
-        shape ``(n_queries,)``.
+        Encoded query time per query, shape ``(n_queries,)``. The encoding
+        depends on the generator (see :data:`QUERY_TIME_ENCODINGS`): a step for
+        the generic and regime suites, ``index / T`` for identifiability and
+        ``index / (T - 1)`` for continuous. Read rows through
+        :attr:`query_time_idx` rather than decoding this field.
     structure:
         Identification structure label (``"back_door"``, ...), if applicable.
     scm_id:
         Stable id of the generating SCM within the suite.
     metadata:
         Free-form per-episode metadata (effect magnitude, regime count, ...).
+        ``query_time_idx`` holds the exact row of each query when the episode
+        constructors or the suite loader recorded it.
     """
 
     x_obs: torch.Tensor
@@ -209,6 +299,36 @@ class Episode:
     @property
     def length(self) -> int:
         return int(self.x_obs.shape[0])
+
+    @property
+    def query_time_idx(self) -> torch.Tensor:
+        """Row of ``x_obs`` / ``x_int`` that each query refers to.
+
+        The generators encode :attr:`query_time` differently and a fraction
+        does not say which encoding wrote it, so the row is resolved from the
+        ``query_time_idx`` metadata recorded by :func:`episode_from_sample`,
+        :func:`episode_from_pair` and the frozen-suite loader. An episode that
+        records none, such as one built by hand, falls back to the per-value
+        guess of :func:`query_time_to_index`.
+
+        Returns:
+            ``torch.long`` tensor of shape ``(n_queries,)``.
+
+        Raises:
+            ValueError: If the recorded rows do not match the number of queries
+                or fall outside the trajectory.
+        """
+        recorded = self.metadata.get("query_time_idx")
+        if recorded is None:
+            return torch.tensor(query_time_to_index(self.query_time, self.length), dtype=torch.long)
+        idx = torch.as_tensor(recorded, dtype=torch.long).reshape(-1)
+        n_queries = self.query_time.numel()
+        if idx.numel() != n_queries or bool((idx < 0).any() or (idx >= self.length).any()):
+            raise ValueError(
+                f"episode {self.scm_id} records query_time_idx {idx.tolist()} for "
+                f"{n_queries} queries on a {self.length}-step trajectory"
+            )
+        return idx
 
     @property
     def is_self_query(self) -> bool:
@@ -441,6 +561,38 @@ def _generate_fallback(meta: SuiteMetadata, n: int = 64) -> BenchmarkSuite:
 _INT_TYPE_BY_CODE = {0: "hard", 1: "soft", 2: "time_varying"}
 
 
+def _sample_query_time_idx(sample: dict, query_time: torch.Tensor, t_len: int) -> list[int]:
+    """Exact row of each query in a structured-generator sample.
+
+    The two structured generators encode ``query_time`` differently, so the row
+    is recovered from what each one emits rather than from a shared guess.
+    ``ContinuousExtendedPrior`` samples carry their observation grid ``times``
+    and the absolute query time ``t_query == times[row]``. Locating ``t_query``
+    on that grid is exact for regular and irregular schedules alike, where no
+    fraction-based encoding is. ``ExtendedDoTime`` samples store ``row / T``.
+
+    Args:
+        sample: A ``generate_sample`` dict.
+        query_time: The sample's ``query_time`` as a flat tensor.
+        t_len: Number of observations ``T``.
+
+    Returns:
+        One row index per query.
+
+    Raises:
+        ValueError: If ``t_query`` does not lie on the sample's time grid, or a
+            sample without a grid does not store ``row / T``.
+    """
+    if "times" in sample and "t_query" in sample:
+        times = torch.as_tensor(sample["times"]).reshape(1, -1)
+        t_query = torch.as_tensor(sample["t_query"], dtype=times.dtype).reshape(-1, 1)
+        dist, rows = (times - t_query).abs().min(dim=1)
+        if float(dist.max()) > 1e-6 * max(1.0, float(times.abs().max())):
+            raise ValueError("continuous sample has a t_query that is not on its time grid")
+        return [int(r) for r in rows.tolist()]
+    return query_time_to_index(query_time, t_len, "index/T")
+
+
 def episode_from_sample(
     sample: dict,
     *,
@@ -455,7 +607,9 @@ def episode_from_sample(
     (counterfactual when the generator shares noise across arms)
     and a per-structure query protocol. Trajectories padded to ``n_max`` are
     un-padded to clean ``(T, n_vars)`` here — this is the model-facing/release
-    boundary for the padding, so released tensors carry no zero columns.
+    boundary for the padding, so released tensors carry no zero columns. The
+    exact row of each query is recorded as ``metadata["query_time_idx"]``,
+    because the two generators encode ``query_time`` differently.
     """
     from dotime.interventions import InterventionType
 
@@ -479,18 +633,22 @@ def episode_from_sample(
     )
 
     y_true = torch.as_tensor(sample["Y_true"], dtype=torch.float32).reshape(-1)
-    extra = {}
+    query_time = torch.as_tensor(sample["query_time"], dtype=torch.float32).reshape(-1)
+    extra: dict[str, object] = {}
     if "Y_causal_effect" in sample:
         extra["y_causal_effect"] = torch.as_tensor(
             sample["Y_causal_effect"], dtype=torch.float32
         ).reshape(-1)
+    # Recorded at build time, where the generator's own convention is still
+    # known, so no consumer has to decode query_time later.
+    extra["query_time_idx"] = _sample_query_time_idx(sample, query_time, int(x_int.shape[0]))
     return Episode(
         x_obs=x_obs,
         x_int=x_int,
         intervention=intervention,
         y_true=y_true,
         query_target=torch.as_tensor(sample["query_target"], dtype=torch.long).reshape(-1),
-        query_time=torch.as_tensor(sample["query_time"], dtype=torch.float32).reshape(-1),
+        query_time=query_time,
         structure=structure,
         scm_id=scm_id,
         metadata={**(metadata or {}), "y_oracle": y_true, **extra},
@@ -511,7 +669,9 @@ def episode_from_pair(
     The query targets the last step of the most intervention-affected variable
     that is not itself a treatment target — its interventional value is the exact
     counterfactual ground truth (also stored as ``y_oracle`` for the Oracle
-    baseline). Shared by the local fallback suite and ``dotime-generate``.
+    baseline). ``query_time`` is that step, also recorded as
+    ``metadata["query_time_idx"]``. Shared by the local fallback suite and
+    ``dotime-generate``.
     """
     t_query = x_int.shape[0] - 1
     effect = (x_int[t_query] - x_obs[t_query]).abs().clone()
@@ -529,5 +689,5 @@ def episode_from_pair(
         query_time=torch.tensor([float(t_query)]),
         structure=structure,
         scm_id=scm_id,
-        metadata={**(metadata or {}), "y_oracle": y_true},
+        metadata={**(metadata or {}), "y_oracle": y_true, "query_time_idx": [t_query]},
     )

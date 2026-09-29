@@ -43,9 +43,9 @@ def _episode_frames(ep, use_covariate):
     a = ep.intervention.targets[0] if ep.intervention.targets else 0
     y = int(ep.query_target[0])
     onset = min(ep.intervention.times) if ep.intervention.times else t_len
-    qt = float(ep.query_time[0])
-    q_idx = round(qt * t_len) if qt <= 1.0 else round(qt)
-    q_idx = min(max(q_idx, onset), t_len - 1)
+    # The row comes from the episode, which knows its suite's query_time
+    # encoding: a bare fraction cannot tell index / T from index / (T - 1).
+    q_idx = min(max(int(ep.query_time_idx[0]), onset), t_len - 1)
     horizon = q_idx - onset + 1
     a_val = (
         float(ep.intervention.values)

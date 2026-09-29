@@ -121,19 +121,29 @@ def realign_episode(episode, canonical_perm, hidden_canonical=()):
 
 
 def query_obs_levels(episode) -> torch.Tensor:
-    """Observational level of the queried variable at each query time.
+    """Observational level of the queried variable at each query's row.
 
     Used to score direction accuracy on the *causal effect*
     (``y_true - y_obs``) instead of the interventional level: subtracting the
     same observational level from prediction and target leaves RMSE unchanged
     but makes the sign test measure the effect direction.
 
+    The row comes from :attr:`~dotime.benchmarks.Episode.query_time_idx`,
+    which resolves each suite's declared ``query_time`` encoding. The suites
+    disagree (``dot-Identifiability-v1`` stores ``index / T``,
+    ``dot-Continuous-v1`` stores ``index / (T - 1)``), so a fraction cannot be
+    decoded here without knowing which suite wrote it.
+
     Args:
         episode: A benchmark :class:`~dotime.benchmarks.Episode`.
 
     Returns:
-        Tensor of shape ``(n_queries,)`` with ``x_obs[query_time, query_target]``
-        per query (normalized query times are rescaled by the episode length).
+        Tensor of shape ``(n_queries,)`` with
+        ``x_obs[query_time_idx, query_target]`` per query.
+
+    Raises:
+        ValueError: If the episode records query rows that do not match its
+            queries (see :attr:`~dotime.benchmarks.Episode.query_time_idx`).
 
     .. warning::
         For the archived ``dot-Identifiability-v1`` (v1.0.0) files this reads a
@@ -142,14 +152,9 @@ def query_obs_levels(episode) -> torch.Tensor:
         released realignment sidecar for that suite; later suite versions and
         ``dot-Continuous-v1`` are correctly aligned.
     """
-    t_len = episode.x_obs.shape[0]
-    out = []
-    for q in range(episode.query_target.numel()):
-        var = int(episode.query_target[q])
-        v = float(episode.query_time[q])
-        idx = round(v * t_len) if v <= 1.0 else int(v)
-        out.append(float(episode.x_obs[min(max(idx, 0), t_len - 1), var]))
-    return torch.tensor(out, dtype=torch.float32)
+    rows = episode.query_time_idx
+    cols = episode.query_target.reshape(-1).long()
+    return episode.x_obs[rows, cols].to(torch.float32)
 
 
 def direction_accuracy(

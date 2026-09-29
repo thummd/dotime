@@ -107,6 +107,23 @@ All notable changes to `dotime` are documented here. The format follows
   `stability_retries=0` the tensors are unchanged and only the flag value of
   half-diverged episodes changes. `dotime-generate` parquet output now carries the
   same flag.
+- `evaluation.query_obs_levels` decoded every fractional `query_time` as
+  `index / T`, the Identifiability encoding. `dot-Continuous-v1` stores
+  `index / (T - 1)`, its normalized time on the regular grid, so on that suite
+  the observational level behind effect-scored direction accuracy was read one
+  step after the query in 9,251 of 9,999 episodes (every query at index 100 to
+  198). `dotime-eval-chronos` ended its forecast horizon one step late in the
+  same episodes. Each registered suite now declares its encoding
+  (`SuiteMetadata.query_time_encoding`), the loader resolves the rows of the
+  frozen files from it, `episode_from_sample` and `episode_from_pair` record
+  `metadata["query_time_idx"]` in new builds (exact on irregular schedules
+  too), and every lookup goes through `Episode.query_time_idx`. A declared
+  encoding that does not land on whole rows raises. Identifiability,
+  RegimeSwitch and Generic lookups are bit-identical, and no generator, RNG
+  stream or frozen file changed. Level-scored rows are unaffected, except
+  Chronos on Continuous. The `dir_acc_effect` fields of
+  `results/reference/erratum/pfn_cont_noself.json` are recomputed:
+  `PFN_int` 0.735 to 0.577 and `PFN_obs` 0.738 to 0.564.
 - `ExtendedDoTime.generate_sample`/`generate_batch`: the released (unmasked)
   observational tensor now receives the same canonical column permutation and
   hidden-variable zeroing as `X_int` — v1.0.0 `dot-Identifiability-v1` shipped

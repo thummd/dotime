@@ -50,6 +50,10 @@ episode = Episode(
 have this when the intervention actually happened (an experiment, an A/B test,
 a policy change). Without it you can still get predictions, but not metrics.
 
+`query_time` is the step itself here. Values of at most 1.0 are read as a
+fraction of `T`, which would move a query at step 1 to the last step, so record
+such a row explicitly with `metadata={"query_time_idx": [1]}`.
+
 ## 3. Predict
 
 The registered `DoOverTimePFN` baseline handles all preprocessing the model
