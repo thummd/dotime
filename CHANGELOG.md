@@ -7,6 +7,11 @@ All notable changes to `dotime` are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- `dotime-eval-reference` logs and asserts per-arm target statistics (nonzero
+  fraction, mean and variance of the observational level, the interventional
+  level and their difference) before scoring. It refuses to score a level arm
+  that is less than 50% nonzero. The statistics and the suite version are
+  recorded in the output JSON.
 - `dot-Identifiability-v1` 1.1.0: regenerated with shared-noise counterfactual
   pairing, aligned `x_obs`, hidden variables zeroed, correct `y_causal_effect`,
   resampled divergences (0 zeroed episodes) and a `diverged` flag. Same base seeds,
@@ -134,6 +139,22 @@ All notable changes to `dotime` are documented here. The format follows
   Chronos on Continuous. The `dir_acc_effect` fields of
   `results/reference/erratum/pfn_cont_noself.json` are recomputed:
   `PFN_int` 0.735 to 0.577 and `PFN_obs` 0.738 to 0.564.
+- `BackDoorOLS` adjusted for every variable other than the treatment and the
+  outcome. On `confounder_mediator` (columns A, X, M, Y) that set included the
+  mediator M, a descendant of A. Adjusting for M blocks the causal path
+  A -> M -> Y and violates the back-door criterion. The adjustment set is now
+  derived from each structure's DAG: the observed variables other than A and Y
+  that are not descendants of A. That set is X for `back_door`,
+  `observed_confounder` and `confounder_mediator`. Predictions are bit-identical
+  on every other structure and on all of `dot-Continuous-v1`, whose queries on
+  the treatment or the confounder keep the previous adjustment. On
+  `dot-Identifiability-v1` 1.1.0, BackDoorOLS effect-sign accuracy on
+  `confounder_mediator` rises from 0.499 to 0.678 (n = 351). Pooled effect sign
+  moves from 0.601 to 0.621, level sign from 0.693 to 0.695 and RMSE from 0.582
+  to 0.575. The recomputed rows are in
+  `results/reference/v1_1/ident_cpu_{level,effect}_backdoor_fix.json`. The
+  released v1.1 rows, the v1.0.0 erratum rows and the v1.0.0 Table 3 row
+  (`results/reference/ident.json`) were computed with the old adjustment set.
 - `ExtendedDoTime.generate_sample`/`generate_batch`: the released (unmasked)
   observational tensor now receives the same canonical column permutation and
   hidden-variable zeroing as `X_int` — v1.0.0 `dot-Identifiability-v1` shipped

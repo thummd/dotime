@@ -23,6 +23,9 @@ from dotime.benchmarks import load_benchmark
 from dotime.evaluation import direction_accuracy, query_obs_levels, realign_episode
 
 CPU_BASELINES = ["Zero", "Mean", "AR1", "VAR-OLS", "BackDoorOLS", "IV2SLS", "Oracle"]
+# Same floor as the training-side step-zero check: a level arm that is mostly
+# zero means a masked or diverged target, not data.
+TARGET_QA_MIN_NONZERO = 0.5
 
 
 def _pooled_rmse(pred: np.ndarray, tgt: np.ndarray) -> float:
@@ -59,6 +62,71 @@ def _episode_obs_levels(ep, realignment):
     if realignment is not None and ep.scm_id in realignment:
         return np.asarray([realignment[ep.scm_id]["y_obs_corrected"]], dtype=np.float32)
     return query_obs_levels(ep).cpu().numpy()
+
+
+def _arm_stats(values: np.ndarray) -> dict[str, float | int]:
+    """Summarise one target arm.
+
+    Args:
+        values: 1-D array with one target value per query.
+
+    Returns:
+        Dict with the query count ``n``, ``nonzero_frac``, ``mean`` and ``var``.
+    """
+    return {
+        "n": int(values.size),
+        "nonzero_frac": float(np.mean(values != 0.0)),
+        "mean": float(np.mean(values)),
+        "var": float(np.var(values)),
+    }
+
+
+def target_qa(episodes, realignment=None, dir_target="level"):
+    """Log and assert per-arm target statistics before any baseline is scored.
+
+    Seeds guard against variance, not against a systematically corrupted target:
+    the v1 observational training arm was all zeros and passed every seed check.
+    So every run first records what it is scored against. The observational arm
+    is the factual level at each query, the interventional arm is ``y_true``,
+    and the effect is their difference.
+
+    Args:
+        episodes: The episodes that will be scored.
+        realignment: Optional ``{scm_id: row}`` realignment sidecar map, used for
+            the observational level exactly as in scoring.
+        dir_target: ``"level"`` or ``"effect"``. An effect-scored run also
+            requires the effect arm to be nonzero somewhere.
+
+    Returns:
+        Dict mapping ``y_obs_level``, ``y_int_level`` and ``effect`` to the
+        output of :func:`_arm_stats`, plus the ``min_nonzero_frac`` floor.
+
+    Raises:
+        RuntimeError: If an arm is non-finite, a level arm has zero variance or
+            a nonzero fraction below ``TARGET_QA_MIN_NONZERO``, or an
+            effect-scored run has an all-zero effect.
+    """
+    y_obs = np.concatenate([_episode_obs_levels(ep, realignment) for ep in episodes])
+    y_int = np.concatenate(
+        [torch.as_tensor(ep.y_true, dtype=torch.float32).reshape(-1).numpy() for ep in episodes]
+    )
+    arms = {"y_obs_level": y_obs, "y_int_level": y_int, "effect": y_int - y_obs}
+    stats = {name: _arm_stats(values) for name, values in arms.items()}
+    for name, st in stats.items():
+        print(
+            f"[target QA] {name:11s} n={st['n']} nonzero_frac={st['nonzero_frac']:.4f} "
+            f"mean={st['mean']:.4f} var={st['var']:.4f}"
+        )
+    problems = [name for name, values in arms.items() if not np.isfinite(values).all()]
+    for name in ("y_obs_level", "y_int_level"):
+        st = stats[name]
+        if st["var"] <= 0.0 or st["nonzero_frac"] < TARGET_QA_MIN_NONZERO:
+            problems.append(f"{name} (nonzero_frac={st['nonzero_frac']:.4f}, var={st['var']:.4g})")
+    if dir_target == "effect" and stats["effect"]["nonzero_frac"] == 0.0:
+        problems.append("effect is zero on every query")
+    if problems:
+        raise RuntimeError(f"target QA failed: {'; '.join(problems)}")
+    return {**stats, "min_nonzero_frac": TARGET_QA_MIN_NONZERO}
 
 
 def run_baseline(
@@ -137,8 +205,12 @@ def main():
                 realignment[int(row["idx"])] = row
 
     t0 = time.time()
-    episodes = list(load_benchmark(args.suite))
-    print(f"[{args.suite}] loaded {len(episodes)} episodes in {time.time() - t0:.1f}s")
+    suite = load_benchmark(args.suite)
+    episodes = list(suite)
+    print(
+        f"[{args.suite} {suite.meta.version}] loaded {len(episodes)} episodes "
+        f"in {time.time() - t0:.1f}s"
+    )
     if args.exclude_self_queries:
         n0 = len(episodes)
         episodes = [ep for ep in episodes if not ep.is_self_query]
@@ -158,6 +230,7 @@ def main():
         ]
         print(f"[{args.suite}] realigned x_obs for {len(realignment)} episodes")
 
+    qa = target_qa(episodes, realignment, args.dir_target)
     rows = []
     todo = list(args.baselines)
     if args.pfn_checkpoint:
@@ -186,8 +259,10 @@ def main():
 
     out = {
         "suite": args.suite,
+        "suite_version": suite.meta.version,
         "n_episodes": len(episodes),
         "exclude_self_queries": args.exclude_self_queries,
+        "target_qa": qa,
         "rows": rows,
     }
     if args.out:

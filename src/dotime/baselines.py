@@ -21,9 +21,11 @@ their wiring are present.
 
 from __future__ import annotations
 
+import functools
 from collections.abc import Callable
 from typing import TYPE_CHECKING, ClassVar, Protocol, runtime_checkable
 
+import networkx as nx
 import numpy as np
 import torch
 
@@ -191,22 +193,120 @@ def _ols_fit(design: np.ndarray, target: np.ndarray) -> np.ndarray:
     return np.linalg.solve(gram, x.T @ target)
 
 
+@functools.cache
+def _back_door_columns(structure: str) -> tuple[int, int, int, tuple[int, ...]]:
+    """Canonical treatment, outcome and back-door adjustment columns of a structure.
+
+    The graph comes from the structure's definition in
+    :mod:`dotime.tscm_sampler` and the column order from
+    :class:`~dotime.extended.TSCMPrior`, which lays out the released ``x_obs``
+    (treatment ``A`` first, outcome ``Y`` last). The adjustment set is every
+    observed variable other than ``A`` and ``Y`` that is not a descendant of
+    ``A`` in the summary graph (instantaneous plus cross-lagged edges). For
+    ``back_door``, ``observed_confounder`` and ``confounder_mediator`` that is
+    the confounder ``X``. It is a valid back-door set only when no hidden
+    variable confounds ``A`` and ``Y``, which is why :class:`BackDoorOLSBaseline`
+    uses it on the back-door family alone.
+
+    Args:
+        structure: A :class:`~dotime.tscm_sampler.TSCMStructure` value, e.g.
+            ``"confounder_mediator"``.
+
+    Returns:
+        ``(n_vars, treatment_col, outcome_col, adjustment_cols)`` as canonical
+        column indices.
+
+    Raises:
+        ValueError: If ``structure`` is not a named structure.
+    """
+    # Lazy import: only structure-aware adjustment needs the generator modules.
+    # Building a TSCMPrior draws no random numbers (its generator is private),
+    # so this never perturbs a caller's RNG stream.
+    from dotime.extended import TSCMPrior
+    from dotime.tscm_sampler import TSCMStructure
+
+    prior = TSCMPrior(TSCMStructure(structure))
+    dag = prior.sampler._build_dag()
+    topo = list(dag.topo_order)
+    canon = [topo[t] for t in prior.canonical_perm]
+    summary = nx.DiGraph(dag.G_0)
+    for lag in dag.G_lags:
+        for i, j in zip(*np.nonzero(lag), strict=True):
+            # Self-loops are autoregression, which cannot make another
+            # variable a descendant of A.
+            if i != j:
+                summary.add_edge(topo[i], topo[j])
+    # The back-door criterion excludes every descendant of A: adjusting for a
+    # mediator (M on A -> M -> Y) blocks part of the effect, and adjusting for
+    # a collider opens a spurious path.
+    excluded = {"A", "Y"} | nx.descendants(summary, "A") | {topo[h] for h in prior.hidden_vars}
+    adjust = tuple(col for col, var in enumerate(canon) if var not in excluded)
+    return len(canon), canon.index("A"), canon.index("Y"), adjust
+
+
 @register("BackDoorOLS")
 class BackDoorOLSBaseline:
     """Linear back-door adjustment: E[Y_t | do(A=v)] = E_X[ E[Y_t | A=v, X, Y_{t-1}] ].
 
     Fits an OLS outcome model ``Y_t ~ A_t + X_t + Y_{t-1}`` on the pre-intervention
-    observational data (X = the adjustment set, i.e. all variables other than the
-    treatment A and outcome Y), then plugs the intervention value for A and
-    averages over the observed confounder distribution. Applicable to the
-    back-door family; on other structures it falls back to the pre-intervention
-    outcome mean.
+    observational data, then plugs the intervention value for A and averages over
+    the observed confounder distribution. ``X`` is the structure's back-door
+    adjustment set, read off its DAG: the observed variables other than A and Y
+    that are not descendants of A. That is the confounder X for ``back_door``,
+    ``observed_confounder`` and ``confounder_mediator``. The mediator M of
+    ``confounder_mediator`` lies on the causal path A -> M -> Y, so it is never
+    adjusted for. Applicable to the back-door family; on other structures it
+    falls back to the pre-intervention outcome mean.
     """
 
     name = "BackDoorOLS"
     _BACK_DOOR: ClassVar[set[str]] = {"back_door", "observed_confounder", "confounder_mediator"}
 
+    @staticmethod
+    def _adjustment_set(structure: str, n: int, a: int, y: int) -> list[int]:
+        """Columns to adjust for when estimating the effect of column ``a`` on ``y``.
+
+        Args:
+            structure: The episode's structure, a member of the back-door family.
+            n: Number of columns in the episode's ``x_obs``.
+            a: Treatment column (the intervention target).
+            y: Queried column.
+
+        Returns:
+            Column indices of the adjustment set.
+
+        Raises:
+            ValueError: If ``n`` or ``a`` disagree with the structure's canonical
+                column layout, in which case no adjustment set can be trusted.
+        """
+        n_vars, treatment, outcome, back_door = _back_door_columns(structure)
+        if n != n_vars or a != treatment:
+            raise ValueError(
+                f"BackDoorOLS: a {structure!r} episode needs {n_vars} canonical columns "
+                f"with the treatment in column {treatment}; got {n} columns and treatment {a}"
+            )
+        if y == outcome:
+            return list(back_door)
+        # Only dot-Continuous-v1 queries a variable other than the outcome (the
+        # treatment itself or the confounder). The back-door set is defined for
+        # the outcome, so these queries keep the behaviour behind the published
+        # Continuous rows: adjust for every other column.
+        return [v for v in range(n) if v not in (a, y)]
+
     def predict(self, episode: Episode) -> torch.Tensor:
+        """Predict each query's interventional level by back-door adjustment.
+
+        Args:
+            episode: Episode to predict. Back-door-family episodes must use the
+                canonical column layout of the released suites.
+
+        Returns:
+            1-D float tensor with one prediction per query.
+
+        Raises:
+            ValueError: If a back-door-family episode does not match its
+                structure's canonical column layout.
+        """
         x = episode.x_obs.detach().cpu().numpy()
         t_len, n = x.shape
         a = episode.intervention.targets[0] if episode.intervention.targets else 0
@@ -214,11 +314,11 @@ class BackDoorOLSBaseline:
         preds = []
         for q in range(episode.query_target.numel()):
             y = int(episode.query_target[q])
-            adj = [v for v in range(n) if v not in (a, y)]
             fit_end = max(2, min(onset, t_len))
             if episode.structure not in self._BACK_DOOR or fit_end < 4:
                 preds.append(float(x[:fit_end, y].mean()))
                 continue
+            adj = self._adjustment_set(episode.structure, n, a, y)
             # Design over t in [1, fit_end): [A_t, X_t..., Y_{t-1}] -> Y_t
             a_t = x[1:fit_end, a]
             x_t = x[1:fit_end, adj] if adj else np.empty((fit_end - 1, 0))

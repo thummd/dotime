@@ -184,6 +184,46 @@ def test_reference_harness_imports_without_optional_extras():
         importlib.import_module(mod)
 
 
+def test_reference_harness_target_qa_rejects_an_all_zero_arm():
+    """`dotime-eval-reference` checks per-arm target stats before scoring.
+
+    The v1 observational training arm was all zeros and passed every seed
+    check, so the harness logs nonzero fraction, mean and variance per arm and
+    refuses to score a level arm that is mostly zero.
+    """
+    import dataclasses
+
+    from dotime.reference.reference_table import target_qa
+
+    def toy(seed):
+        """One-query episode whose counterfactual effect is exactly +1.
+
+        Args:
+            seed: Seed of the random trajectory.
+
+        Returns:
+            An episode querying column 2 at the onset, step 20 of 30.
+        """
+        x = torch.randn(30, 3, generator=torch.Generator().manual_seed(seed))
+        spec = ctp.InterventionSpec([0], [20], ctp.InterventionType.HARD, 1.0)
+        return ctp.benchmarks.Episode(
+            x_obs=x,
+            x_int=x + 1.0,
+            intervention=spec,
+            y_true=x[20:21, 2] + 1.0,
+            query_target=torch.tensor([2]),
+            query_time=torch.tensor([20 / 30]),
+        )
+
+    eps = [toy(s) for s in range(6)]
+    stats = target_qa(eps, dir_target="effect")
+    assert stats["effect"]["mean"] == pytest.approx(1.0, abs=1e-6)
+    assert stats["y_int_level"]["nonzero_frac"] == 1.0
+    zeroed = [dataclasses.replace(ep, y_true=torch.zeros_like(ep.y_true)) for ep in eps]
+    with pytest.raises(RuntimeError, match="y_int_level"):
+        target_qa(zeroed)
+
+
 def test_scale_beyond_default_bounds():
     """N_max/K_max are config bounds, not architectural limits.
 
