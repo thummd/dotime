@@ -23,6 +23,7 @@ class CrossVariableMixer(nn.Module):
         embed_size: int = 512,
         n_heads: int = 4,
         n_mixer_layers: int = 1,
+        horizon_embed: str = "none",
     ):
         super().__init__()
         self.n_max = n_max
@@ -38,7 +39,13 @@ class CrossVariableMixer(nn.Module):
         )
 
         # Query encoder: one-hot target (N_max) + query_time (1)
-        query_input_dim = n_max + 1
+        # Optional query horizon feature (offset from the end of the visible
+        # history, /10): query_time alone is a fraction of T and cannot resolve
+        # offsets 1..5. Mirrors do-over-time-pfn.
+        if horizon_embed not in ("none", "scalar"):
+            raise ValueError(f"Unknown horizon_embed: {horizon_embed!r} (none | scalar)")
+        self.horizon_embed = horizon_embed
+        query_input_dim = n_max + (2 if horizon_embed == "scalar" else 1)
         self.query_encoder = nn.Sequential(
             nn.Linear(query_input_dim, embed_size),
             nn.GELU(),
@@ -84,6 +91,7 @@ class CrossVariableMixer(nn.Module):
         query_target: torch.Tensor,
         query_time: torch.Tensor,
         variable_mask: torch.Tensor,
+        query_offset: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Combine variable representations with intervention/query context.
 
@@ -130,13 +138,12 @@ class CrossVariableMixer(nn.Module):
         query_target_onehot = torch.zeros(B, self.n_max, device=device)
         query_target_onehot.scatter_(1, query_target.unsqueeze(1), 1.0)
 
-        query_features = torch.cat(
-            [
-                query_target_onehot,
-                query_time.unsqueeze(1),
-            ],
-            dim=1,
-        )  # (B, N_max + 1)
+        query_parts = [query_target_onehot, query_time.unsqueeze(1)]
+        if self.horizon_embed == "scalar":
+            if query_offset is None:
+                query_offset = torch.zeros(B, device=device)
+            query_parts.append(query_offset.to(device).float().unsqueeze(1) / 10.0)
+        query_features = torch.cat(query_parts, dim=1)  # (B, N_max + 1 [+1])
 
         h_query = self.query_encoder(query_features)  # (B, E)
 
