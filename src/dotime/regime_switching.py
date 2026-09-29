@@ -36,6 +36,7 @@ class RegimeSwitchingTemporalSCM:
         transition_matrix: np.ndarray,
         device: torch.device = torch.device("cpu"),
         dtype: torch.dtype = torch.float32,
+        divergence_threshold: float | None = None,
     ):
         """
         Parameters
@@ -52,13 +53,27 @@ class RegimeSwitchingTemporalSCM:
             Device for computation.
         dtype : torch.dtype
             Data type.
+        divergence_threshold : float, optional
+            If set, a simulation in which any value exceeds this magnitude
+            (burn-in included) counts as diverged. It then returns zeros with a
+            ``RuntimeWarning``, as ``TemporalSCM`` does above 500. ``None``
+            (default) keeps the v1.0.0 check, which flags only NaN, inf or
+            values above 1e6 and so cannot fire on values clipped to +-1000.
+
+        Raises
+        ------
+        ValueError
+            If ``divergence_threshold`` is set but not positive.
         """
+        if divergence_threshold is not None and not divergence_threshold > 0:
+            raise ValueError(f"divergence_threshold must be positive, got {divergence_threshold}")
         self.dags = dags
         self.mechanisms = mechanisms
         self.noise = noise
         self.transition_matrix = transition_matrix
         self.device = device
         self.dtype = dtype
+        self.divergence_threshold = divergence_threshold
 
         self.num_regimes = len(dags)
         assert len(mechanisms) == self.num_regimes
@@ -96,6 +111,34 @@ class RegimeSwitchingTemporalSCM:
             lagged_parents[v] = parents_per_lag
 
         return lagged_parents
+
+    def _diverged(self, buffer: torch.Tensor) -> bool:
+        """Decide whether a finished simulation counts as diverged.
+
+        The check runs once, on the whole buffer, rather than stopping the
+        simulation early as ``TemporalSCM`` does. ``TemporalSCM`` pre-draws all
+        of its noise, so stopping early costs it nothing. Here noise and regime
+        transitions are drawn step by step, so an early stop would shift every
+        later draw from the episode generator and the global numpy RNG. The
+        threshold would then change the randomness of all following episodes,
+        not just this one.
+
+        Parameters
+        ----------
+        buffer : torch.Tensor
+            The full simulated buffer of shape ``(T + burn_in, N)``.
+
+        Returns
+        -------
+        bool
+            True for NaN, inf or values above 1e6, and, when
+            ``divergence_threshold`` is set, for any value above it.
+        """
+        if check_divergence(buffer):
+            return True
+        return self.divergence_threshold is not None and bool(
+            (buffer.abs() > self.divergence_threshold).any()
+        )
 
     @torch.no_grad()
     def sample_observational(
@@ -162,7 +205,7 @@ class RegimeSwitchingTemporalSCM:
                 value = clip_values(value)
                 buffer[t, i] = value.item()
 
-        if check_divergence(buffer):
+        if self._diverged(buffer):
             warnings.warn(
                 "Regime-switching SCM diverged; returning zeros.", RuntimeWarning, stacklevel=2
             )
@@ -268,7 +311,7 @@ class RegimeSwitchingTemporalSCM:
                     value = clip_values(value)
                     buffer[t, i] = value.item()
 
-        if check_divergence(buffer):
+        if self._diverged(buffer):
             warnings.warn(
                 "Regime-switching SCM diverged; returning zeros.", RuntimeWarning, stacklevel=2
             )

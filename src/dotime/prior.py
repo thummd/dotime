@@ -63,6 +63,16 @@ class DoTime:
             Probability of generating a chain SCM (default 0.15).
         regime_switching_prob : float
             Probability of generating a regime-switching SCM (default 0.15).
+            By default these SCMs reproduce v1.0.0, in which no mechanism reads
+            its parents, so every variable is independent noise. Set
+            ``config["regime_canonical_weights"] = True`` to give them live
+            parent weights and zero any arm whose values exceed 500, as for the
+            other SCMs. The flag draws the same random numbers either way.
+
+        Raises
+        ------
+        TypeError
+            If ``config["regime_canonical_weights"]`` is not a bool.
         """
         # Merge config with defaults
         self.config = {**DEFAULT_CONFIG}
@@ -72,6 +82,14 @@ class DoTime:
         self.seed = seed
         self.chain_prob = chain_prob
         self.regime_switching_prob = regime_switching_prob
+        # A strict bool check, because a truthy string such as "false" would
+        # otherwise switch the fix on. It runs before any draw.
+        canonical = self.config.get("regime_canonical_weights", False)
+        if not isinstance(canonical, bool):
+            raise TypeError(
+                f"config['regime_canonical_weights'] must be a bool, got {type(canonical).__name__}"
+            )
+        self.regime_canonical_weights = canonical
         self.generator = torch.Generator()
         self.generator.manual_seed(seed)
 
@@ -134,6 +152,7 @@ class DoTime:
                 sigma_w=self.config["sigma_w"],
                 sigma_b=self.config["sigma_b"],
                 device=self.config["device"],
+                canonical_weights=self.regime_canonical_weights,
             )
 
             scm = rs_builder.sample(self.generator)
@@ -251,6 +270,7 @@ class DoTime:
             sigma_w=self.config["sigma_w"],
             sigma_b=self.config["sigma_b"],
             device=self.config["device"],
+            canonical_weights=self.regime_canonical_weights,
         )
         scm = rs_builder.sample(self.generator, num_regimes=num_regimes)
 

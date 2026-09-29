@@ -184,6 +184,21 @@ All notable changes to `dotime` are documented here. The format follows
   fixed seed, observational arms and intervention values are unchanged.
   `TemporalInterventionDataLoader` accepts `pair_mode`. Interventional batches
   are bit-identical.
+- Regime-switching SCMs never read their parents. `RegimeSwitchingSCMBuilder`
+  renames each regime's nodes to `X0..X{N-1}` but kept the mechanism weights
+  under the old names (`x3`, `u1`, `y`), so `TemporalMechanism.forward` matched
+  no parent and every variable was its own noise term. There was no lagged or
+  cross-variable dependence, and an intervention never reached another variable.
+  This covers all of `dot-RegimeSwitch-v1` and the 15,041 regime-switching
+  episodes (15.0%) of `dot-Generic-100k` (datasheet erratum). The fix is opt-in,
+  `DoTime(config={"regime_canonical_weights": True})`. It re-keys the sampled
+  weights (`TemporalMechanism.rename_nodes`) and zeroes any arm whose values
+  exceed 500 with a `RuntimeWarning`, as `TemporalSCM` does
+  (`RegimeSwitchingTemporalSCM(divergence_threshold=...)`). It draws the same
+  random numbers, and the default path stays byte-identical, so the v1.0.0 suites
+  still regenerate. With the flag, 64.5% of RegimeSwitch episodes diverge at the
+  default prior and 94% at `N_max=60, K_max=8`, so a rebuilt suite needs
+  `stability_retries` or hardening (`results/reference/regime_weights/`).
 - `ExtendedDoTime.generate_sample`/`generate_batch`: the released (unmasked)
   observational tensor now receives the same canonical column permutation and
   hidden-variable zeroing as `X_int` — v1.0.0 `dot-Identifiability-v1` shipped

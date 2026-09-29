@@ -5,7 +5,7 @@ DoTime ships four versioned, immutable suites for reproducible evaluation. Each 
 ## Suites
 
 - **`dot-Identifiability-v1`** — ~10.8k trajectories across **eight** named structures: `back_door`, `observed_confounder`, `confounder_mediator` (back-door family); `front_door`, `mediator` (front-door family); `instrumental_variable` (IV); `bi_variate` (trivially identified); `unobserved_confounder` (null-effect control: a hidden U drives A and Y, and there is no A→Y edge at any lag, so the effect is identified and equals zero). Targets are exact interventional outcomes. In v1.0.0 the two arms are independent noise draws from the same SCM (interventional twins, so `y_int - y_obs` is not a per-episode counterfactual effect). From v1.1.0 one pre-drawn noise stream is shared across arms and the pair is a true counterfactual.
-- **`dot-RegimeSwitch-v1`** — regime-switching trajectories with controllable break density.
+- **`dot-RegimeSwitch-v1`** — regime-switching trajectories with controllable break density. In v1.0.0 no regime mechanism reads its parents, so every variable is independent noise. See the erratum below.
 - **`dot-Continuous-v1`** — continuous-time intervention windows, multiple query offsets.
 - **`dot-Generic-100k`** — 100 000 trajectories from the full diverse prior. Training-scale.
 
@@ -43,11 +43,38 @@ silently patched**. They are fixed in the generator for any v1.1+ build.
 | Continuous (1.0.0) | the query target is drawn uniformly over the three observable variables, treatment included, so **34.0%** of episodes are **self-queries** (query on the intervened variable); **16.6%** of all episodes are in-window self-queries whose target equals the do-value (the suite is hard-intervention only) and 17.4% are post-window self-queries (relaxation after release); 33.7% of in-window queries are self-queries | the published Continuous rows **include** them, which favours any model that receives the intervention value as input on the in-window subset | `Episode.is_self_query`; `--exclude-self-queries` on the eval harness; per-episode `self_query` / `in_window` / `window_end_idx` in `results/reference/dot-Continuous-v1.0.0_query_sidecar.jsonl`; 1.1.0+ builds tag them in metadata |
 | Identifiability (1.0.0 and 1.1.0) | every episode is queried at **offset 0** (the onset step); the paper's per-structure offset protocol was used by the model's loaders, not by the release build | with true counterfactuals (1.1.0) the effect at the query is exactly 0 for `mediator`, `observed_confounder`, `unobserved_confounder` and ~1/3 of `front_door`/`confounder_mediator` episodes, so the effect metric is defined only for structures with an instantaneous A→Y edge | filter `|effect| >= 0.1` (done by `direction_accuracy`); a 1.2.0 protocol with path-length offsets is prepared |
 | Identifiability / RegimeSwitch / Generic (1.0.0) | the two arms are **independent noise draws** from the same SCM (interventional twins), so `y_int - y_obs` is not a per-episode counterfactual effect | effect-based analyses on these files score a noisy twin difference | Identifiability 1.1.0 shares the noise across arms; the continuous suite always did |
+| RegimeSwitch, Generic-100k (1.0.0) | every regime-switching SCM is **per-variable independent noise**. The builder renamed each regime's nodes to `X0..X{N-1}` but kept the mechanism weights under the old names, so no mechanism reads its parents. This is all 9,999 RegimeSwitch episodes and the 15,041 regime-switching episodes (15.0%) of Generic-100k. In the released RegimeSwitch `x_obs` the median absolute lag-1 autocorrelation is 0.048, 1 of 64,830 variables exceeds 0.3, and the median cross-correlation is 0.048 | these episodes have no temporal or causal structure. An intervention changes only the treated variable, so every other variable, the query target included, has the same distribution in both arms and a true effect of 0 | nothing to recover from v1 data. Drop the regime share of Generic-100k with the recipe below. New builds can opt into the fix |
 
 `x_int`, `y_true`, `query_target`, and `intervention_*` are correct and mutually
 consistent in all four v1 suites, apart from the zeroed (diverged) episodes in the
 table above; `dot-Continuous-v1` and `dot-RegimeSwitch-v1` carry none of the
 column/field issues above and have no zeroed arm.
+The RegimeSwitch issue lies in the simulated dynamics, not in how the fields
+are stored.
+
+**Regime-switching episodes (1.0.0).** A Generic-100k episode comes from a
+regime-switching SCM exactly when the first draw of a generator seeded with its
+per-episode seed lies in `[0.15, 0.30)`:
+
+```python
+import torch
+
+
+def in_regime_share(scm_id: int) -> bool:
+    """True for the 15,041 dot-Generic-100k 1.0.0 episodes that are independent noise."""
+    seed = (20264719 * 1_000_003 + scm_id) & 0x7FFFFFFF  # per-episode seed of the build
+    g = torch.Generator()
+    g.manual_seed(seed)
+    return 0.15 <= torch.rand(1, generator=g).item() < 0.30
+```
+
+The unreleased opt-in `DoTime(config={"regime_canonical_weights": True})` re-keys
+the weights and zeroes any arm whose values exceed 500, as for the other SCMs. It
+draws the same random numbers as the default, and the default stays byte-identical,
+so the v1.0.0 files still regenerate. With live weights most regime SCMs of the
+current prior are unstable. At the default prior 64.5% of RegimeSwitch episodes and
+62.7% of the Generic regime share diverge, and at `N_max=60, K_max=8` 94% and 97%
+do (`results/reference/regime_weights/`). No suite has been rebuilt with the flag.
 
 ## Evaluation protocol
 

@@ -1,0 +1,1742 @@
+{
+  "created_utc": "2026-09-29T08:47:06Z",
+  "git_head": "36c543bbf90f08239bcd5307777eb21e0678cdfe",
+  "src_dirty": true,
+  "dotime_file": "src/dotime/__init__.py",
+  "T": 200,
+  "suite_seeds": {
+    "regime": 20262719,
+    "generic": 20264719
+  },
+  "numpy_global_seed": "np.random.seed(episode_seed) per episode",
+  "variants": {
+    "off": {
+      "regime_canonical_weights": false,
+      "hardening": null
+    },
+    "on": {
+      "regime_canonical_weights": true,
+      "hardening": null
+    }
+  },
+  "configs": [
+    {
+      "N_max": 10,
+      "K_max": 3,
+      "n_specs": 900,
+      "paired_episodes_checked": 900,
+      "wall_s": 121.65383379000014,
+      "groups": {
+        "regime_d2": {
+          "off": {
+            "n_episodes": 200,
+            "diverged_frac": 0.0,
+            "obs_zeroed_frac": 0.0,
+            "int_zeroed_frac": 0.0,
+            "over_500_frac": 0.0,
+            "clip_hit_frac": 0.0,
+            "arm_clip_hit_frac": 0.0,
+            "sparse_check_would_miss_frac": 0.0,
+            "sparse_check_would_miss_of_over_500": null,
+            "clip_hit_among_survivors": 0.0,
+            "median_buf_max_survivors": 4.023381948471069,
+            "median_N_all": 6.0,
+            "median_N_survivors": 6.0,
+            "acf1": {
+              "n_vars": 1277,
+              "median": 0.048796877915130876,
+              "p90": 0.11726421452826748,
+              "frac_gt_0p3": 0.0
+            },
+            "xcorr0_median": 0.047106231956773346,
+            "xcorr1_median": 0.04802195469074121,
+            "mean_sec": 0.7953821402950325,
+            "target_qa": {
+              "all_episodes": {
+                "y_int": {
+                  "n": 200,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.12092994115635519,
+                  "var": 3.14903553319977
+                },
+                "y_obs": {
+                  "n": 200,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.12909683941223193,
+                  "var": 1.929393778916135
+                },
+                "effect": {
+                  "n": 200,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.008166898255876732,
+                  "var": 5.963550061057165
+                }
+              },
+              "survivors": {
+                "y_int": {
+                  "n": 200,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.12092994115635519,
+                  "var": 3.14903553319977
+                },
+                "y_obs": {
+                  "n": 200,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.12909683941223193,
+                  "var": 1.929393778916135
+                },
+                "effect": {
+                  "n": 200,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.008166898255876732,
+                  "var": 5.963550061057165
+                }
+              }
+            },
+            "by_num_regimes": {
+              "2": {
+                "n": 200,
+                "diverged_frac": 0.0
+              }
+            },
+            "by_N": {
+              "N3-10": {
+                "n": 200,
+                "diverged_frac": 0.0
+              }
+            }
+          },
+          "on": {
+            "n_episodes": 200,
+            "diverged_frac": 0.485,
+            "obs_zeroed_frac": 0.455,
+            "int_zeroed_frac": 0.475,
+            "over_500_frac": 0.485,
+            "clip_hit_frac": 0.48,
+            "arm_clip_hit_frac": 0.46,
+            "sparse_check_would_miss_frac": 0.08,
+            "sparse_check_would_miss_of_over_500": 0.16494845360824742,
+            "clip_hit_among_survivors": 0.0,
+            "median_buf_max_survivors": 7.105350971221924,
+            "median_N_all": 6.0,
+            "median_N_survivors": 5.0,
+            "acf1": {
+              "n_vars": 625,
+              "median": 0.1078810531744885,
+              "p90": 0.5307485393568561,
+              "frac_gt_0p3": 0.2128
+            },
+            "xcorr0_median": 0.11471545838593294,
+            "xcorr1_median": 0.0898953834378539,
+            "mean_sec": 1.103415642549926,
+            "target_qa": {
+              "all_episodes": {
+                "y_int": {
+                  "n": 200,
+                  "nonzero_frac": 0.525,
+                  "mean": 0.8686250374373049,
+                  "var": 62.149140199781975
+                },
+                "y_obs": {
+                  "n": 200,
+                  "nonzero_frac": 0.545,
+                  "mean": 0.3370626719295979,
+                  "var": 7.036618498414025
+                },
+                "effect": {
+                  "n": 200,
+                  "nonzero_frac": 0.555,
+                  "mean": 0.531562365507707,
+                  "var": 60.16422744391879
+                }
+              },
+              "survivors": {
+                "y_int": {
+                  "n": 103,
+                  "nonzero_frac": 1.0,
+                  "mean": 1.6467889554400756,
+                  "var": 119.32346231869893
+                },
+                "y_obs": {
+                  "n": 103,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.6425201120307145,
+                  "var": 13.062698854252211
+                },
+                "effect": {
+                  "n": 103,
+                  "nonzero_frac": 1.0,
+                  "mean": 1.0042688434093612,
+                  "var": 115.84780091768928
+                }
+              }
+            },
+            "by_num_regimes": {
+              "2": {
+                "n": 200,
+                "diverged_frac": 0.485
+              }
+            },
+            "by_N": {
+              "N3-10": {
+                "n": 200,
+                "diverged_frac": 0.485
+              }
+            }
+          }
+        },
+        "regime_d3": {
+          "off": {
+            "n_episodes": 200,
+            "diverged_frac": 0.0,
+            "obs_zeroed_frac": 0.0,
+            "int_zeroed_frac": 0.0,
+            "over_500_frac": 0.0,
+            "clip_hit_frac": 0.0,
+            "arm_clip_hit_frac": 0.0,
+            "sparse_check_would_miss_frac": 0.0,
+            "sparse_check_would_miss_of_over_500": null,
+            "clip_hit_among_survivors": 0.0,
+            "median_buf_max_survivors": 3.9489513635635376,
+            "median_N_all": 7.0,
+            "median_N_survivors": 7.0,
+            "acf1": {
+              "n_vars": 1339,
+              "median": 0.04652128359745853,
+              "p90": 0.11724505159686494,
+              "frac_gt_0p3": 0.0
+            },
+            "xcorr0_median": 0.04832077671795134,
+            "xcorr1_median": 0.047538569778039226,
+            "mean_sec": 0.8541377808298876,
+            "target_qa": {
+              "all_episodes": {
+                "y_int": {
+                  "n": 200,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.13218115991156082,
+                  "var": 2.3577609938153574
+                },
+                "y_obs": {
+                  "n": 200,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.1391831340760109,
+                  "var": 1.8141216318260536
+                },
+                "effect": {
+                  "n": 200,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.2713642939875717,
+                  "var": 5.3780724204543535
+                }
+              },
+              "survivors": {
+                "y_int": {
+                  "n": 200,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.13218115991156082,
+                  "var": 2.3577609938153574
+                },
+                "y_obs": {
+                  "n": 200,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.1391831340760109,
+                  "var": 1.8141216318260536
+                },
+                "effect": {
+                  "n": 200,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.2713642939875717,
+                  "var": 5.3780724204543535
+                }
+              }
+            },
+            "by_num_regimes": {
+              "3": {
+                "n": 200,
+                "diverged_frac": 0.0
+              }
+            },
+            "by_N": {
+              "N3-10": {
+                "n": 200,
+                "diverged_frac": 0.0
+              }
+            }
+          },
+          "on": {
+            "n_episodes": 200,
+            "diverged_frac": 0.705,
+            "obs_zeroed_frac": 0.665,
+            "int_zeroed_frac": 0.66,
+            "over_500_frac": 0.705,
+            "clip_hit_frac": 0.705,
+            "arm_clip_hit_frac": 0.6575,
+            "sparse_check_would_miss_frac": 0.275,
+            "sparse_check_would_miss_of_over_500": 0.3900709219858156,
+            "clip_hit_among_survivors": 0.0,
+            "median_buf_max_survivors": 8.392327308654785,
+            "median_N_all": 7.0,
+            "median_N_survivors": 5.0,
+            "acf1": {
+              "n_vars": 362,
+              "median": 0.13486551758249846,
+              "p90": 0.5571607143746659,
+              "frac_gt_0p3": 0.27348066298342544
+            },
+            "xcorr0_median": 0.13620766576479076,
+            "xcorr1_median": 0.1025800349594316,
+            "mean_sec": 1.2179313667949827,
+            "target_qa": {
+              "all_episodes": {
+                "y_int": {
+                  "n": 200,
+                  "nonzero_frac": 0.34,
+                  "mean": 0.3358257954270812,
+                  "var": 14.433817645006059
+                },
+                "y_obs": {
+                  "n": 200,
+                  "nonzero_frac": 0.335,
+                  "mean": 0.2350622335728258,
+                  "var": 8.329167966928173
+                },
+                "effect": {
+                  "n": 200,
+                  "nonzero_frac": 0.38,
+                  "mean": 0.10076356185425539,
+                  "var": 15.690829536017112
+                }
+              },
+              "survivors": {
+                "y_int": {
+                  "n": 59,
+                  "nonzero_frac": 1.0,
+                  "mean": 1.5530025995892898,
+                  "var": 36.40777135896852
+                },
+                "y_obs": {
+                  "n": 59,
+                  "nonzero_frac": 1.0,
+                  "mean": 1.1929637875913057,
+                  "var": 17.794080409967087
+                },
+                "effect": {
+                  "n": 59,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.36003881199798404,
+                  "var": 33.39860688869024
+                }
+              }
+            },
+            "by_num_regimes": {
+              "3": {
+                "n": 200,
+                "diverged_frac": 0.705
+              }
+            },
+            "by_N": {
+              "N3-10": {
+                "n": 200,
+                "diverged_frac": 0.705
+              }
+            }
+          }
+        },
+        "regime_d5": {
+          "off": {
+            "n_episodes": 200,
+            "diverged_frac": 0.0,
+            "obs_zeroed_frac": 0.0,
+            "int_zeroed_frac": 0.0,
+            "over_500_frac": 0.0,
+            "clip_hit_frac": 0.0,
+            "arm_clip_hit_frac": 0.0,
+            "sparse_check_would_miss_frac": 0.0,
+            "sparse_check_would_miss_of_over_500": null,
+            "clip_hit_among_survivors": 0.0,
+            "median_buf_max_survivors": 5.097130537033081,
+            "median_N_all": 7.0,
+            "median_N_survivors": 7.0,
+            "acf1": {
+              "n_vars": 1351,
+              "median": 0.05090685534745348,
+              "p90": 0.12481898518100666,
+              "frac_gt_0p3": 0.0
+            },
+            "xcorr0_median": 0.045315981017402786,
+            "xcorr1_median": 0.048400767728516016,
+            "mean_sec": 0.9066386258450712,
+            "target_qa": {
+              "all_episodes": {
+                "y_int": {
+                  "n": 200,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.03815308739343891,
+                  "var": 3.3317949399337112
+                },
+                "y_obs": {
+                  "n": 200,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.04103128571674461,
+                  "var": 3.8260427217158126
+                },
+                "effect": {
+                  "n": 200,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.0028781983233056962,
+                  "var": 8.893458533107477
+                }
+              },
+              "survivors": {
+                "y_int": {
+                  "n": 200,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.03815308739343891,
+                  "var": 3.3317949399337112
+                },
+                "y_obs": {
+                  "n": 200,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.04103128571674461,
+                  "var": 3.8260427217158126
+                },
+                "effect": {
+                  "n": 200,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.0028781983233056962,
+                  "var": 8.893458533107477
+                }
+              }
+            },
+            "by_num_regimes": {
+              "5": {
+                "n": 200,
+                "diverged_frac": 0.0
+              }
+            },
+            "by_N": {
+              "N3-10": {
+                "n": 200,
+                "diverged_frac": 0.0
+              }
+            }
+          },
+          "on": {
+            "n_episodes": 200,
+            "diverged_frac": 0.745,
+            "obs_zeroed_frac": 0.705,
+            "int_zeroed_frac": 0.705,
+            "over_500_frac": 0.745,
+            "clip_hit_frac": 0.735,
+            "arm_clip_hit_frac": 0.6975,
+            "sparse_check_would_miss_frac": 0.385,
+            "sparse_check_would_miss_of_over_500": 0.5167785234899329,
+            "clip_hit_among_survivors": 0.0,
+            "median_buf_max_survivors": 23.07417106628418,
+            "median_N_all": 7.0,
+            "median_N_survivors": 5.0,
+            "acf1": {
+              "n_vars": 325,
+              "median": 0.24854422863284265,
+              "p90": 0.6356128111775704,
+              "frac_gt_0p3": 0.40615384615384614
+            },
+            "xcorr0_median": 0.134414021596155,
+            "xcorr1_median": 0.10887776435211094,
+            "mean_sec": 1.2654258345500147,
+            "target_qa": {
+              "all_episodes": {
+                "y_int": {
+                  "n": 200,
+                  "nonzero_frac": 0.295,
+                  "mean": 0.48914607087150214,
+                  "var": 12.095253596424753
+                },
+                "y_obs": {
+                  "n": 200,
+                  "nonzero_frac": 0.295,
+                  "mean": 0.6046200642362237,
+                  "var": 13.773484939669245
+                },
+                "effect": {
+                  "n": 200,
+                  "nonzero_frac": 0.335,
+                  "mean": -0.11547399336472154,
+                  "var": 26.560504092749582
+                }
+              },
+              "survivors": {
+                "y_int": {
+                  "n": 51,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.729442834050632,
+                  "var": 6.612930829579045
+                },
+                "y_obs": {
+                  "n": 51,
+                  "nonzero_frac": 1.0,
+                  "mean": 1.2616096818271805,
+                  "var": 9.163712563183417
+                },
+                "effect": {
+                  "n": 51,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.5321668477765485,
+                  "var": 18.010405319742027
+                }
+              }
+            },
+            "by_num_regimes": {
+              "5": {
+                "n": 200,
+                "diverged_frac": 0.745
+              }
+            },
+            "by_N": {
+              "N3-10": {
+                "n": 200,
+                "diverged_frac": 0.745
+              }
+            }
+          }
+        },
+        "generic_regime_share": {
+          "off": {
+            "n_episodes": 300,
+            "diverged_frac": 0.0,
+            "obs_zeroed_frac": 0.0,
+            "int_zeroed_frac": 0.0,
+            "over_500_frac": 0.0,
+            "clip_hit_frac": 0.0,
+            "arm_clip_hit_frac": 0.0,
+            "sparse_check_would_miss_frac": 0.0,
+            "sparse_check_would_miss_of_over_500": null,
+            "clip_hit_among_survivors": 0.0,
+            "median_buf_max_survivors": 4.607459783554077,
+            "median_N_all": 6.0,
+            "median_N_survivors": 6.0,
+            "acf1": {
+              "n_vars": 1909,
+              "median": 0.048780286285099596,
+              "p90": 0.11829410668159013,
+              "frac_gt_0p3": 0.0
+            },
+            "xcorr0_median": 0.04795402536561695,
+            "xcorr1_median": 0.04776178721132563,
+            "mean_sec": 0.7774467977599852,
+            "target_qa": {
+              "all_episodes": {
+                "y_int": {
+                  "n": 300,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.11828941979678348,
+                  "var": 3.5146575587383473
+                },
+                "y_obs": {
+                  "n": 300,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.1708198762915951,
+                  "var": 4.356931340810228
+                },
+                "effect": {
+                  "n": 300,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.05253045649481161,
+                  "var": 8.870964653656458
+                }
+              },
+              "survivors": {
+                "y_int": {
+                  "n": 300,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.11828941979678348,
+                  "var": 3.5146575587383473
+                },
+                "y_obs": {
+                  "n": 300,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.1708198762915951,
+                  "var": 4.356931340810228
+                },
+                "effect": {
+                  "n": 300,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.05253045649481161,
+                  "var": 8.870964653656458
+                }
+              }
+            },
+            "by_num_regimes": {
+              "2": {
+                "n": 147,
+                "diverged_frac": 0.0
+              },
+              "3": {
+                "n": 153,
+                "diverged_frac": 0.0
+              }
+            },
+            "by_N": {
+              "N3-10": {
+                "n": 300,
+                "diverged_frac": 0.0
+              }
+            }
+          },
+          "on": {
+            "n_episodes": 300,
+            "diverged_frac": 0.6266666666666667,
+            "obs_zeroed_frac": 0.58,
+            "int_zeroed_frac": 0.5733333333333334,
+            "over_500_frac": 0.6266666666666667,
+            "clip_hit_frac": 0.62,
+            "arm_clip_hit_frac": 0.5716666666666667,
+            "sparse_check_would_miss_frac": 0.2,
+            "sparse_check_would_miss_of_over_500": 0.3191489361702128,
+            "clip_hit_among_survivors": 0.0,
+            "median_buf_max_survivors": 10.555233001708984,
+            "median_N_all": 6.0,
+            "median_N_survivors": 5.0,
+            "acf1": {
+              "n_vars": 667,
+              "median": 0.10992846543897798,
+              "p90": 0.4915482954979434,
+              "frac_gt_0p3": 0.22038980509745126
+            },
+            "xcorr0_median": 0.1257954759850184,
+            "xcorr1_median": 0.09494953173383938,
+            "mean_sec": 1.0941044079666244,
+            "target_qa": {
+              "all_episodes": {
+                "y_int": {
+                  "n": 300,
+                  "nonzero_frac": 0.4266666666666667,
+                  "mean": 1.9377672865492301,
+                  "var": 279.10497028356394
+                },
+                "y_obs": {
+                  "n": 300,
+                  "nonzero_frac": 0.42,
+                  "mean": 0.4960387653824485,
+                  "var": 6.118818740610235
+                },
+                "effect": {
+                  "n": 300,
+                  "nonzero_frac": 0.47333333333333333,
+                  "mean": 1.4417285211667816,
+                  "var": 285.42402092029596
+                }
+              },
+              "survivors": {
+                "y_int": {
+                  "n": 112,
+                  "nonzero_frac": 1.0,
+                  "mean": 1.6537219633221087,
+                  "var": 55.29363004695729
+                },
+                "y_obs": {
+                  "n": 112,
+                  "nonzero_frac": 1.0,
+                  "mean": 1.2548529355964482,
+                  "var": 14.78613923862226
+                },
+                "effect": {
+                  "n": 112,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.39886902772566046,
+                  "var": 69.61713351862053
+                }
+              }
+            },
+            "by_num_regimes": {
+              "2": {
+                "n": 147,
+                "diverged_frac": 0.54421768707483
+              },
+              "3": {
+                "n": 153,
+                "diverged_frac": 0.7058823529411765
+              }
+            },
+            "by_N": {
+              "N3-10": {
+                "n": 300,
+                "diverged_frac": 0.6266666666666667
+              }
+            }
+          }
+        },
+        "regime_all": {
+          "off": {
+            "n_episodes": 600,
+            "diverged_frac": 0.0,
+            "obs_zeroed_frac": 0.0,
+            "int_zeroed_frac": 0.0,
+            "over_500_frac": 0.0,
+            "clip_hit_frac": 0.0,
+            "arm_clip_hit_frac": 0.0,
+            "sparse_check_would_miss_frac": 0.0,
+            "sparse_check_would_miss_of_over_500": null,
+            "clip_hit_among_survivors": 0.0,
+            "median_buf_max_survivors": 4.274859428405762,
+            "median_N_all": 7.0,
+            "median_N_survivors": 7.0,
+            "acf1": {
+              "n_vars": 3967,
+              "median": 0.048529074624624684,
+              "p90": 0.12003206182658838,
+              "frac_gt_0p3": 0.0
+            },
+            "xcorr0_median": 0.04692708644658723,
+            "xcorr1_median": 0.04801207054142314,
+            "mean_sec": 0.8520528489899971,
+            "target_qa": {
+              "all_episodes": {
+                "y_int": {
+                  "n": 600,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.0716526712248257,
+                  "var": 2.9522469062830585
+                },
+                "y_obs": {
+                  "n": 600,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.017039193460174525,
+                  "var": 2.5354695450938998
+                },
+                "effect": {
+                  "n": 600,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.08869186468500023,
+                  "var": 6.761731945446391
+                }
+              },
+              "survivors": {
+                "y_int": {
+                  "n": 600,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.0716526712248257,
+                  "var": 2.9522469062830585
+                },
+                "y_obs": {
+                  "n": 600,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.017039193460174525,
+                  "var": 2.5354695450938998
+                },
+                "effect": {
+                  "n": 600,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.08869186468500023,
+                  "var": 6.761731945446391
+                }
+              }
+            },
+            "by_num_regimes": {
+              "2": {
+                "n": 200,
+                "diverged_frac": 0.0
+              },
+              "3": {
+                "n": 200,
+                "diverged_frac": 0.0
+              },
+              "5": {
+                "n": 200,
+                "diverged_frac": 0.0
+              }
+            },
+            "by_N": {
+              "N3-10": {
+                "n": 600,
+                "diverged_frac": 0.0
+              }
+            }
+          },
+          "on": {
+            "n_episodes": 600,
+            "diverged_frac": 0.645,
+            "obs_zeroed_frac": 0.6083333333333333,
+            "int_zeroed_frac": 0.6133333333333333,
+            "over_500_frac": 0.645,
+            "clip_hit_frac": 0.64,
+            "arm_clip_hit_frac": 0.605,
+            "sparse_check_would_miss_frac": 0.24666666666666667,
+            "sparse_check_would_miss_of_over_500": 0.38242894056847543,
+            "clip_hit_among_survivors": 0.0,
+            "median_buf_max_survivors": 9.862565040588379,
+            "median_N_all": 7.0,
+            "median_N_survivors": 5.0,
+            "acf1": {
+              "n_vars": 1312,
+              "median": 0.13889157081288583,
+              "p90": 0.5607742654849273,
+              "frac_gt_0p3": 0.2774390243902439
+            },
+            "xcorr0_median": 0.12715830808694534,
+            "xcorr1_median": 0.09715876580214024,
+            "mean_sec": 1.1955909479649744,
+            "target_qa": {
+              "all_episodes": {
+                "y_int": {
+                  "n": 600,
+                  "nonzero_frac": 0.38666666666666666,
+                  "mean": 0.5645323012452961,
+                  "var": 29.60955786098369
+                },
+                "y_obs": {
+                  "n": 600,
+                  "nonzero_frac": 0.39166666666666666,
+                  "mean": 0.3922483232462158,
+                  "var": 9.737375361426874
+                },
+                "effect": {
+                  "n": 600,
+                  "nonzero_frac": 0.42333333333333334,
+                  "mean": 0.1722839779990803,
+                  "var": 34.21085395080841
+                }
+              },
+              "survivors": {
+                "y_int": {
+                  "n": 213,
+                  "nonzero_frac": 1.0,
+                  "mean": 1.401164320763747,
+                  "var": 69.51277312801189
+                },
+                "y_obs": {
+                  "n": 213,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.9432231398133185,
+                  "var": 13.524982570412295
+                },
+                "effect": {
+                  "n": 213,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.4579411809504286,
+                  "var": 69.96561644307805
+                }
+              }
+            },
+            "by_num_regimes": {
+              "2": {
+                "n": 200,
+                "diverged_frac": 0.485
+              },
+              "3": {
+                "n": 200,
+                "diverged_frac": 0.705
+              },
+              "5": {
+                "n": 200,
+                "diverged_frac": 0.745
+              }
+            },
+            "by_N": {
+              "N3-10": {
+                "n": 600,
+                "diverged_frac": 0.645
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "N_max": 60,
+      "K_max": 8,
+      "n_specs": 240,
+      "paired_episodes_checked": 80,
+      "wall_s": 442.11850846999914,
+      "groups": {
+        "regime_d2": {
+          "off": {
+            "n_episodes": 20,
+            "diverged_frac": 0.0,
+            "obs_zeroed_frac": 0.0,
+            "int_zeroed_frac": 0.0,
+            "over_500_frac": 0.0,
+            "clip_hit_frac": 0.0,
+            "arm_clip_hit_frac": 0.0,
+            "sparse_check_would_miss_frac": 0.0,
+            "sparse_check_would_miss_of_over_500": null,
+            "clip_hit_among_survivors": 0.0,
+            "median_buf_max_survivors": 6.081121921539307,
+            "median_N_all": 29.5,
+            "median_N_survivors": 29.5,
+            "acf1": {
+              "n_vars": 580,
+              "median": 0.045785199948789684,
+              "p90": 0.11353782912733584,
+              "frac_gt_0p3": 0.0
+            },
+            "xcorr0_median": 0.04794642658138565,
+            "xcorr1_median": 0.04772064691600046,
+            "mean_sec": 12.178218035249937,
+            "target_qa": {
+              "all_episodes": {
+                "y_int": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": -1.35081097073853,
+                  "var": 12.065979540662283
+                },
+                "y_obs": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": 1.0967640224844217,
+                  "var": 5.046819321999483
+                },
+                "effect": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": -2.447574993222952,
+                  "var": 26.735699344533618
+                }
+              },
+              "survivors": {
+                "y_int": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": -1.35081097073853,
+                  "var": 12.065979540662283
+                },
+                "y_obs": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": 1.0967640224844217,
+                  "var": 5.046819321999483
+                },
+                "effect": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": -2.447574993222952,
+                  "var": 26.735699344533618
+                }
+              }
+            },
+            "by_num_regimes": {
+              "2": {
+                "n": 20,
+                "diverged_frac": 0.0
+              }
+            },
+            "by_N": {
+              "N3-10": {
+                "n": 5,
+                "diverged_frac": 0.0
+              },
+              "N11-30": {
+                "n": 5,
+                "diverged_frac": 0.0
+              },
+              "N31-60": {
+                "n": 10,
+                "diverged_frac": 0.0
+              }
+            }
+          },
+          "on": {
+            "n_episodes": 50,
+            "diverged_frac": 0.86,
+            "obs_zeroed_frac": 0.86,
+            "int_zeroed_frac": 0.84,
+            "over_500_frac": 0.86,
+            "clip_hit_frac": 0.86,
+            "arm_clip_hit_frac": 0.85,
+            "sparse_check_would_miss_frac": 0.02,
+            "sparse_check_would_miss_of_over_500": 0.023255813953488372,
+            "clip_hit_among_survivors": 0.0,
+            "median_buf_max_survivors": 32.557647705078125,
+            "median_N_all": 28.5,
+            "median_N_survivors": 7.0,
+            "acf1": {
+              "n_vars": 49,
+              "median": 0.05232135879363167,
+              "p90": 0.2589494992346115,
+              "frac_gt_0p3": 0.10204081632653061
+            },
+            "xcorr0_median": 0.0694812939189744,
+            "xcorr1_median": 0.07072310710849537,
+            "mean_sec": 18.956758834600112,
+            "target_qa": {
+              "all_episodes": {
+                "y_int": {
+                  "n": 50,
+                  "nonzero_frac": 0.16,
+                  "mean": 0.48261654257774356,
+                  "var": 3.7338945561578316
+                },
+                "y_obs": {
+                  "n": 50,
+                  "nonzero_frac": 0.14,
+                  "mean": 0.4159987226733938,
+                  "var": 5.7504308206411565
+                },
+                "effect": {
+                  "n": 50,
+                  "nonzero_frac": 0.16,
+                  "mean": 0.06661781990434974,
+                  "var": 8.415360600611638
+                }
+              },
+              "survivors": {
+                "y_int": {
+                  "n": 7,
+                  "nonzero_frac": 1.0,
+                  "mean": 2.0276460903031484,
+                  "var": 10.115886118899457
+                },
+                "y_obs": {
+                  "n": 7,
+                  "nonzero_frac": 1.0,
+                  "mean": 2.9714194476670985,
+                  "var": 33.48127902250469
+                },
+                "effect": {
+                  "n": 7,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.94377335736395,
+                  "var": 45.14356414501479
+                }
+              }
+            },
+            "by_num_regimes": {
+              "2": {
+                "n": 50,
+                "diverged_frac": 0.86
+              }
+            },
+            "by_N": {
+              "N3-10": {
+                "n": 9,
+                "diverged_frac": 0.3333333333333333
+              },
+              "N11-30": {
+                "n": 17,
+                "diverged_frac": 0.9411764705882353
+              },
+              "N31-60": {
+                "n": 24,
+                "diverged_frac": 1.0
+              }
+            }
+          }
+        },
+        "regime_d3": {
+          "off": {
+            "n_episodes": 20,
+            "diverged_frac": 0.0,
+            "obs_zeroed_frac": 0.0,
+            "int_zeroed_frac": 0.0,
+            "over_500_frac": 0.0,
+            "clip_hit_frac": 0.0,
+            "arm_clip_hit_frac": 0.0,
+            "sparse_check_would_miss_frac": 0.0,
+            "sparse_check_would_miss_of_over_500": null,
+            "clip_hit_among_survivors": 0.0,
+            "median_buf_max_survivors": 4.4636430740356445,
+            "median_N_all": 31.0,
+            "median_N_survivors": 31.0,
+            "acf1": {
+              "n_vars": 677,
+              "median": 0.048150681843807254,
+              "p90": 0.11314050476150674,
+              "frac_gt_0p3": 0.0
+            },
+            "xcorr0_median": 0.046776037799923315,
+            "xcorr1_median": 0.04752557008388646,
+            "mean_sec": 16.30373304115019,
+            "target_qa": {
+              "all_episodes": {
+                "y_int": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.1333561385050416,
+                  "var": 5.294332247955668
+                },
+                "y_obs": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.10543000251054764,
+                  "var": 5.529198639410211
+                },
+                "effect": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.23878614101558923,
+                  "var": 14.716576731819625
+                }
+              },
+              "survivors": {
+                "y_int": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.1333561385050416,
+                  "var": 5.294332247955668
+                },
+                "y_obs": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.10543000251054764,
+                  "var": 5.529198639410211
+                },
+                "effect": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.23878614101558923,
+                  "var": 14.716576731819625
+                }
+              }
+            },
+            "by_num_regimes": {
+              "3": {
+                "n": 20,
+                "diverged_frac": 0.0
+              }
+            },
+            "by_N": {
+              "N3-10": {
+                "n": 1,
+                "diverged_frac": 0.0
+              },
+              "N11-30": {
+                "n": 9,
+                "diverged_frac": 0.0
+              },
+              "N31-60": {
+                "n": 10,
+                "diverged_frac": 0.0
+              }
+            }
+          },
+          "on": {
+            "n_episodes": 50,
+            "diverged_frac": 0.98,
+            "obs_zeroed_frac": 0.96,
+            "int_zeroed_frac": 0.98,
+            "over_500_frac": 0.98,
+            "clip_hit_frac": 0.98,
+            "arm_clip_hit_frac": 0.97,
+            "sparse_check_would_miss_frac": 0.02,
+            "sparse_check_would_miss_of_over_500": 0.02040816326530612,
+            "clip_hit_among_survivors": 0.0,
+            "median_buf_max_survivors": 6.75088357925415,
+            "median_N_all": 30.0,
+            "median_N_survivors": 6.0,
+            "acf1": {
+              "n_vars": 18,
+              "median": 0.05768260354450909,
+              "p90": 0.17217266726183975,
+              "frac_gt_0p3": 0.0
+            },
+            "xcorr0_median": 0.10108399171093196,
+            "xcorr1_median": 0.0756158506205235,
+            "mean_sec": 19.060427767300098,
+            "target_qa": {
+              "all_episodes": {
+                "y_int": {
+                  "n": 50,
+                  "nonzero_frac": 0.02,
+                  "mean": -0.006745557785034179,
+                  "var": 0.002229624941730527
+                },
+                "y_obs": {
+                  "n": 50,
+                  "nonzero_frac": 0.04,
+                  "mean": 0.06118190765380859,
+                  "var": 0.09189554791911292
+                },
+                "effect": {
+                  "n": 50,
+                  "nonzero_frac": 0.04,
+                  "mean": -0.06792746543884277,
+                  "var": 0.11699529537534187
+                }
+              },
+              "survivors": {
+                "y_int": {
+                  "n": 1,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.337277889251709,
+                  "var": 0.0
+                },
+                "y_obs": {
+                  "n": 1,
+                  "nonzero_frac": 1.0,
+                  "mean": 1.7563806772232056,
+                  "var": 0.0
+                },
+                "effect": {
+                  "n": 1,
+                  "nonzero_frac": 1.0,
+                  "mean": -2.0936585664749146,
+                  "var": 0.0
+                }
+              }
+            },
+            "by_num_regimes": {
+              "3": {
+                "n": 50,
+                "diverged_frac": 0.98
+              }
+            },
+            "by_N": {
+              "N3-10": {
+                "n": 6,
+                "diverged_frac": 0.8333333333333334
+              },
+              "N11-30": {
+                "n": 19,
+                "diverged_frac": 1.0
+              },
+              "N31-60": {
+                "n": 25,
+                "diverged_frac": 1.0
+              }
+            }
+          }
+        },
+        "regime_d5": {
+          "off": {
+            "n_episodes": 20,
+            "diverged_frac": 0.0,
+            "obs_zeroed_frac": 0.0,
+            "int_zeroed_frac": 0.0,
+            "over_500_frac": 0.0,
+            "clip_hit_frac": 0.0,
+            "arm_clip_hit_frac": 0.0,
+            "sparse_check_would_miss_frac": 0.0,
+            "sparse_check_would_miss_of_over_500": null,
+            "clip_hit_among_survivors": 0.0,
+            "median_buf_max_survivors": 5.151540279388428,
+            "median_N_all": 30.0,
+            "median_N_survivors": 30.0,
+            "acf1": {
+              "n_vars": 615,
+              "median": 0.04496466635971979,
+              "p90": 0.11795849520905197,
+              "frac_gt_0p3": 0.0
+            },
+            "xcorr0_median": 0.04827189518744403,
+            "xcorr1_median": 0.04765541437560906,
+            "mean_sec": 12.314954379799655,
+            "target_qa": {
+              "all_episodes": {
+                "y_int": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.300788314640522,
+                  "var": 2.882220391638419
+                },
+                "y_obs": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.0862284534610808,
+                  "var": 6.611968130320044
+                },
+                "effect": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.3870167681016028,
+                  "var": 14.48116173122474
+                }
+              },
+              "survivors": {
+                "y_int": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.300788314640522,
+                  "var": 2.882220391638419
+                },
+                "y_obs": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.0862284534610808,
+                  "var": 6.611968130320044
+                },
+                "effect": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.3870167681016028,
+                  "var": 14.48116173122474
+                }
+              }
+            },
+            "by_num_regimes": {
+              "5": {
+                "n": 20,
+                "diverged_frac": 0.0
+              }
+            },
+            "by_N": {
+              "N11-30": {
+                "n": 10,
+                "diverged_frac": 0.0
+              },
+              "N31-60": {
+                "n": 10,
+                "diverged_frac": 0.0
+              }
+            }
+          },
+          "on": {
+            "n_episodes": 50,
+            "diverged_frac": 0.98,
+            "obs_zeroed_frac": 0.98,
+            "int_zeroed_frac": 0.98,
+            "over_500_frac": 0.98,
+            "clip_hit_frac": 0.98,
+            "arm_clip_hit_frac": 0.98,
+            "sparse_check_would_miss_frac": 0.02,
+            "sparse_check_would_miss_of_over_500": 0.02040816326530612,
+            "clip_hit_among_survivors": 0.0,
+            "median_buf_max_survivors": 35.607025146484375,
+            "median_N_all": 31.0,
+            "median_N_survivors": 5.0,
+            "acf1": {
+              "n_vars": 5,
+              "median": 0.35089920003819425,
+              "p90": 0.5025839336911544,
+              "frac_gt_0p3": 0.6
+            },
+            "xcorr0_median": 0.05029516698085229,
+            "xcorr1_median": 0.10638939923824653,
+            "mean_sec": 18.493085536320105,
+            "target_qa": {
+              "all_episodes": {
+                "y_int": {
+                  "n": 50,
+                  "nonzero_frac": 0.02,
+                  "mean": 0.0197730827331543,
+                  "var": 0.019157765237836067
+                },
+                "y_obs": {
+                  "n": 50,
+                  "nonzero_frac": 0.02,
+                  "mean": -0.0029152435064315795,
+                  "var": 0.0004164335903877831
+                },
+                "effect": {
+                  "n": 50,
+                  "nonzero_frac": 0.02,
+                  "mean": 0.022688326239585877,
+                  "var": 0.025223247230140168
+                }
+              },
+              "survivors": {
+                "y_int": {
+                  "n": 1,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.9886541366577148,
+                  "var": 0.0
+                },
+                "y_obs": {
+                  "n": 1,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.14576217532157898,
+                  "var": 0.0
+                },
+                "effect": {
+                  "n": 1,
+                  "nonzero_frac": 1.0,
+                  "mean": 1.1344163119792938,
+                  "var": 0.0
+                }
+              }
+            },
+            "by_num_regimes": {
+              "5": {
+                "n": 50,
+                "diverged_frac": 0.98
+              }
+            },
+            "by_N": {
+              "N3-10": {
+                "n": 3,
+                "diverged_frac": 0.6666666666666666
+              },
+              "N11-30": {
+                "n": 21,
+                "diverged_frac": 1.0
+              },
+              "N31-60": {
+                "n": 26,
+                "diverged_frac": 1.0
+              }
+            }
+          }
+        },
+        "generic_regime_share": {
+          "off": {
+            "n_episodes": 20,
+            "diverged_frac": 0.0,
+            "obs_zeroed_frac": 0.0,
+            "int_zeroed_frac": 0.0,
+            "over_500_frac": 0.0,
+            "clip_hit_frac": 0.0,
+            "arm_clip_hit_frac": 0.0,
+            "sparse_check_would_miss_frac": 0.0,
+            "sparse_check_would_miss_of_over_500": null,
+            "clip_hit_among_survivors": 0.0,
+            "median_buf_max_survivors": 5.804900407791138,
+            "median_N_all": 39.0,
+            "median_N_survivors": 39.0,
+            "acf1": {
+              "n_vars": 720,
+              "median": 0.04989744794402258,
+              "p90": 0.11726052903923924,
+              "frac_gt_0p3": 0.0
+            },
+            "xcorr0_median": 0.04750298694800453,
+            "xcorr1_median": 0.047697141544177576,
+            "mean_sec": 15.855247906099976,
+            "target_qa": {
+              "all_episodes": {
+                "y_int": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.07792190704494714,
+                  "var": 8.858752249856638
+                },
+                "y_obs": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.87992054335773,
+                  "var": 9.912114265736106
+                },
+                "effect": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.957842450402677,
+                  "var": 26.042289119221675
+                }
+              },
+              "survivors": {
+                "y_int": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.07792190704494714,
+                  "var": 8.858752249856638
+                },
+                "y_obs": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.87992054335773,
+                  "var": 9.912114265736106
+                },
+                "effect": {
+                  "n": 20,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.957842450402677,
+                  "var": 26.042289119221675
+                }
+              }
+            },
+            "by_num_regimes": {
+              "2": {
+                "n": 5,
+                "diverged_frac": 0.0
+              },
+              "3": {
+                "n": 15,
+                "diverged_frac": 0.0
+              }
+            },
+            "by_N": {
+              "N11-30": {
+                "n": 7,
+                "diverged_frac": 0.0
+              },
+              "N31-60": {
+                "n": 13,
+                "diverged_frac": 0.0
+              }
+            }
+          },
+          "on": {
+            "n_episodes": 90,
+            "diverged_frac": 0.9666666666666667,
+            "obs_zeroed_frac": 0.9444444444444444,
+            "int_zeroed_frac": 0.9555555555555556,
+            "over_500_frac": 0.9666666666666667,
+            "clip_hit_frac": 0.9666666666666667,
+            "arm_clip_hit_frac": 0.9444444444444444,
+            "sparse_check_would_miss_frac": 0.05555555555555555,
+            "sparse_check_would_miss_of_over_500": 0.05747126436781609,
+            "clip_hit_among_survivors": 0.0,
+            "median_buf_max_survivors": 7.9145355224609375,
+            "median_N_all": 38.5,
+            "median_N_survivors": 6.0,
+            "acf1": {
+              "n_vars": 88,
+              "median": 0.0745487764651057,
+              "p90": 0.18634779184337044,
+              "frac_gt_0p3": 0.056818181818181816
+            },
+            "xcorr0_median": 0.057562443885048165,
+            "xcorr1_median": 0.05543390363250322,
+            "mean_sec": 24.137937343444477,
+            "target_qa": {
+              "all_episodes": {
+                "y_int": {
+                  "n": 90,
+                  "nonzero_frac": 0.044444444444444446,
+                  "mean": 0.005913782119750977,
+                  "var": 0.029468350126307937
+                },
+                "y_obs": {
+                  "n": 90,
+                  "nonzero_frac": 0.05555555555555555,
+                  "mean": 0.2783130837811364,
+                  "var": 24.571966270666863
+                },
+                "effect": {
+                  "n": 90,
+                  "nonzero_frac": 0.06666666666666667,
+                  "mean": -0.27239930166138543,
+                  "var": 24.74348658222658
+                }
+              },
+              "survivors": {
+                "y_int": {
+                  "n": 3,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.1450437307357788,
+                  "var": 0.5521260780100287
+                },
+                "y_obs": {
+                  "n": 3,
+                  "nonzero_frac": 1.0,
+                  "mean": 1.3159299890200298,
+                  "var": 9.585559587933536
+                },
+                "effect": {
+                  "n": 3,
+                  "nonzero_frac": 1.0,
+                  "mean": -1.4609737197558086,
+                  "var": 13.918756742642536
+                }
+              }
+            },
+            "by_num_regimes": {
+              "2": {
+                "n": 38,
+                "diverged_frac": 0.9736842105263158
+              },
+              "3": {
+                "n": 52,
+                "diverged_frac": 0.9615384615384616
+              }
+            },
+            "by_N": {
+              "N3-10": {
+                "n": 7,
+                "diverged_frac": 0.5714285714285714
+              },
+              "N11-30": {
+                "n": 26,
+                "diverged_frac": 1.0
+              },
+              "N31-60": {
+                "n": 57,
+                "diverged_frac": 1.0
+              }
+            }
+          }
+        },
+        "regime_all": {
+          "off": {
+            "n_episodes": 60,
+            "diverged_frac": 0.0,
+            "obs_zeroed_frac": 0.0,
+            "int_zeroed_frac": 0.0,
+            "over_500_frac": 0.0,
+            "clip_hit_frac": 0.0,
+            "arm_clip_hit_frac": 0.0,
+            "sparse_check_would_miss_frac": 0.0,
+            "sparse_check_would_miss_of_over_500": null,
+            "clip_hit_among_survivors": 0.0,
+            "median_buf_max_survivors": 4.886441946029663,
+            "median_N_all": 30.0,
+            "median_N_survivors": 30.0,
+            "acf1": {
+              "n_vars": 1872,
+              "median": 0.04581744490927437,
+              "p90": 0.11452369867313981,
+              "frac_gt_0p3": 0.0
+            },
+            "xcorr0_median": 0.04762454872368103,
+            "xcorr1_median": 0.04763180954858651,
+            "mean_sec": 13.598968485399928,
+            "target_qa": {
+              "all_episodes": {
+                "y_int": {
+                  "n": 60,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.3055555058643222,
+                  "var": 7.298462475777732
+                },
+                "y_obs": {
+                  "n": 60,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.3017018555042644,
+                  "var": 6.045452071839154
+                },
+                "effect": {
+                  "n": 60,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.6072573613685867,
+                  "var": 20.34152581538407
+                }
+              },
+              "survivors": {
+                "y_int": {
+                  "n": 60,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.3055555058643222,
+                  "var": 7.298462475777732
+                },
+                "y_obs": {
+                  "n": 60,
+                  "nonzero_frac": 1.0,
+                  "mean": 0.3017018555042644,
+                  "var": 6.045452071839154
+                },
+                "effect": {
+                  "n": 60,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.6072573613685867,
+                  "var": 20.34152581538407
+                }
+              }
+            },
+            "by_num_regimes": {
+              "2": {
+                "n": 20,
+                "diverged_frac": 0.0
+              },
+              "3": {
+                "n": 20,
+                "diverged_frac": 0.0
+              },
+              "5": {
+                "n": 20,
+                "diverged_frac": 0.0
+              }
+            },
+            "by_N": {
+              "N3-10": {
+                "n": 6,
+                "diverged_frac": 0.0
+              },
+              "N11-30": {
+                "n": 24,
+                "diverged_frac": 0.0
+              },
+              "N31-60": {
+                "n": 30,
+                "diverged_frac": 0.0
+              }
+            }
+          },
+          "on": {
+            "n_episodes": 150,
+            "diverged_frac": 0.94,
+            "obs_zeroed_frac": 0.9333333333333333,
+            "int_zeroed_frac": 0.9333333333333333,
+            "over_500_frac": 0.94,
+            "clip_hit_frac": 0.94,
+            "arm_clip_hit_frac": 0.9333333333333333,
+            "sparse_check_would_miss_frac": 0.02,
+            "sparse_check_would_miss_of_over_500": 0.02127659574468085,
+            "clip_hit_among_survivors": 0.0,
+            "median_buf_max_survivors": 32.557647705078125,
+            "median_N_all": 30.5,
+            "median_N_survivors": 6.0,
+            "acf1": {
+              "n_vars": 72,
+              "median": 0.05883292219099949,
+              "p90": 0.3058755718341705,
+              "frac_gt_0p3": 0.1111111111111111
+            },
+            "xcorr0_median": 0.08225249484937659,
+            "xcorr1_median": 0.07293652341861129,
+            "mean_sec": 18.836757379406773,
+            "target_qa": {
+              "all_episodes": {
+                "y_int": {
+                  "n": 150,
+                  "nonzero_frac": 0.06666666666666667,
+                  "mean": 0.1652146891752879,
+                  "var": 1.3022498234332784
+                },
+                "y_obs": {
+                  "n": 150,
+                  "nonzero_frac": 0.06666666666666667,
+                  "mean": 0.15808846227359027,
+                  "var": 1.9815245260577763
+                },
+                "effect": {
+                  "n": 150,
+                  "nonzero_frac": 0.07333333333333333,
+                  "mean": 0.007126226901697616,
+                  "var": 2.8556645428416214
+                }
+              },
+              "survivors": {
+                "y_int": {
+                  "n": 9,
+                  "nonzero_frac": 1.0,
+                  "mean": 1.6494332088364496,
+                  "var": 8.46624085419374
+                },
+                "y_obs": {
+                  "n": 9,
+                  "nonzero_frac": 1.0,
+                  "mean": 2.4900616261745907,
+                  "var": 27.05297171901165
+                },
+                "effect": {
+                  "n": 9,
+                  "nonzero_frac": 1.0,
+                  "mean": -0.8406284173381411,
+                  "var": 35.727811933680485
+                }
+              }
+            },
+            "by_num_regimes": {
+              "2": {
+                "n": 50,
+                "diverged_frac": 0.86
+              },
+              "3": {
+                "n": 50,
+                "diverged_frac": 0.98
+              },
+              "5": {
+                "n": 50,
+                "diverged_frac": 0.98
+              }
+            },
+            "by_N": {
+              "N3-10": {
+                "n": 18,
+                "diverged_frac": 0.5555555555555556
+              },
+              "N11-30": {
+                "n": 57,
+                "diverged_frac": 0.9824561403508771
+              },
+              "N31-60": {
+                "n": 75,
+                "diverged_frac": 1.0
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

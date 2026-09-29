@@ -8,6 +8,10 @@ from dotime._sampling import ShiftedExponentialSampler
 from dotime.regime_switching import RegimeSwitchingTemporalSCM
 from dotime.temporal_scm_builder import TemporalSCMBuilder
 
+# TemporalSCM's early-divergence threshold (temporal_scm.py), reused so that
+# regime and plain SCMs zero an arm under the same criterion.
+_DIVERGENCE_THRESHOLD = 500.0
+
 
 class RegimeSwitchingSCMBuilder:
     """Builder for regime-switching temporal SCMs.
@@ -25,6 +29,7 @@ class RegimeSwitchingSCMBuilder:
         sigma_w: float,
         sigma_b: float,
         device: torch.device = torch.device("cpu"),
+        canonical_weights: bool = False,
     ):
         """
         Parameters
@@ -43,6 +48,14 @@ class RegimeSwitchingSCMBuilder:
             Mechanism bias std.
         device : torch.device
             Device for computation.
+        canonical_weights : bool
+            Re-key each regime's mechanism weights to the canonical node names
+            ``X0..X{N-1}`` under which the SCM passes parent values, and zero
+            any arm whose values exceed 500, as ``TemporalSCM`` does. ``False``
+            (default) reproduces the v1.0.0 suites: there the weights keep the
+            per-regime names (``x3``, ``u1``, ``y``), no parent is ever read,
+            and every variable is its own independent noise. Both settings
+            draw the same random numbers.
         """
         self.num_nodes = num_nodes
         self.max_lag = max_lag
@@ -51,6 +64,7 @@ class RegimeSwitchingSCMBuilder:
         self.sigma_w = sigma_w
         self.sigma_b = sigma_b
         self.device = device
+        self.canonical_weights = canonical_weights
 
     def sample(
         self,
@@ -149,6 +163,11 @@ class RegimeSwitchingSCMBuilder:
             mechanisms_remapped = {
                 canonical_node_names[i]: scm_r.mechanisms[old_topo[i]] for i in range(len(old_topo))
             }
+            if self.canonical_weights:
+                # The SCM hands each mechanism its parents under canonical names,
+                # so the weights must carry those names too.
+                for mech in mechanisms_remapped.values():
+                    mech.rename_nodes(node_mapping)
 
             dags.append(dag_remapped)
             mechanisms_list.append(mechanisms_remapped)
@@ -166,6 +185,9 @@ class RegimeSwitchingSCMBuilder:
             noise=noise,
             transition_matrix=transition_matrix,
             device=self.device,
+            # Without live weights every value is clipped noise and cannot
+            # diverge, so the default keeps the v1.0.0 check.
+            divergence_threshold=_DIVERGENCE_THRESHOLD if self.canonical_weights else None,
         )
 
         # Add compatibility attributes for pipeline integration

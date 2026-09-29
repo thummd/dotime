@@ -70,6 +70,49 @@ class TemporalMechanism(nn.Module):
         bias_value = torch.randn(1, device=device, generator=generator) * sigma_b
         self.bias = nn.Parameter(bias_value)
 
+    def rename_nodes(self, mapping: dict[str, str]) -> None:
+        """Re-key every weight from an old node name to a new one, in place.
+
+        :meth:`forward` pairs each weight with a parent value by name, so a
+        mechanism moved into an SCM with different node names has to be re-keyed
+        with it. Otherwise it silently reads no parent at all and returns only its
+        noise term. The ``Parameter`` objects are reused and their order is kept,
+        so no random numbers are drawn and the renamed mechanism computes, bit for
+        bit, what the original computed under the old names.
+
+        Parameters
+        ----------
+        mapping : dict of str to str
+            Old node name to new node name. It must cover every weight key and
+            must not send two keys to the same name.
+
+        Raises
+        ------
+        KeyError
+            If a weight key has no entry in ``mapping``.
+        ValueError
+            If ``mapping`` sends two weight keys to the same new name.
+        """
+        # Validate every dict before replacing any, so a bad mapping leaves the
+        # mechanism untouched.
+        for weights in (self.weights_instant, *self.weights_lagged):
+            missing = [v for v in weights if v not in mapping]
+            if missing:
+                raise KeyError(f"mapping has no entry for weight keys {missing}")
+            renamed = [mapping[v] for v in weights]
+            if len(set(renamed)) != len(renamed):
+                raise ValueError(f"mapping sends two weight keys to one name: {renamed}")
+        # Built from (key, value) pairs because ParameterDict re-sorts a plain
+        # dict by key, and forward() sums the weighted parents in dict order.
+        # Keeping the order keeps the floating-point sum identical.
+        self.weights_instant = nn.ParameterDict(
+            [(mapping[v], w) for v, w in self.weights_instant.items()]
+        )
+        self.weights_lagged = nn.ModuleList(
+            nn.ParameterDict([(mapping[v], w) for v, w in weights_k.items()])
+            for weights_k in self.weights_lagged
+        )
+
     def forward(
         self,
         parent_values_instant: dict[str, Tensor],
