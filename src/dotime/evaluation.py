@@ -20,6 +20,7 @@ than via scikit-learn so it stays in the core install).
 
 from __future__ import annotations
 
+import argparse
 import math
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
@@ -35,10 +36,12 @@ if TYPE_CHECKING:
     from dotime.benchmarks import BenchmarkSuite
 
 __all__ = [
+    "DEFAULT_DIR_TARGET",
     "DIR_ACC_EPS",
     "DIR_TARGETS",
     "NONFINITE_MODES",
     "Results",
+    "add_dir_target_argument",
     "bootstrap_ci",
     "compute_mae",
     "compute_nmse",
@@ -52,12 +55,7 @@ __all__ = [
 # excluded from that metric (reported separately).
 DIR_ACC_EPS = 0.1
 
-# What the direction-accuracy sign test scores. "level" compares the sign of the
-# predicted and true interventional level (the v1 paper protocol); "effect"
-# compares the sign of the predicted and true causal effect, y - y_obs at the
-# query. A positive level can come from a negative effect on a positive
-# baseline, so only "effect" measures whether the intervention direction is
-# right.
+# What the direction-accuracy sign test can score (see DEFAULT_DIR_TARGET).
 DIR_TARGETS = ("level", "effect")
 
 # What evaluate() does with a non-finite prediction. "raise" names the baseline
@@ -65,6 +63,28 @@ DIR_TARGETS = ("level", "effect")
 # "exclude" leaves it out of the level metrics, which need a number, but still
 # scores it as a wrong sign, so abstaining never raises direction accuracy.
 NONFINITE_MODES = ("raise", "exclude")
+
+# The one switch for what direction accuracy scores by default. Set it to one of:
+#
+#   "level"   sign(y_pred) vs sign(y_true): the sign of the interventional
+#             level. The v1 paper protocol; reproduces the published v1 tables.
+#             A positive level can come from a negative effect on a positive
+#             baseline, so this mostly rewards predicting where the series
+#             already sits, not the direction of the intervention.
+#   "effect"  sign(y_pred - y_obs) vs sign(y_true - y_obs), with y_obs the
+#             observational level at the query: the sign of the causal effect,
+#             i.e. whether the model gets the intervention's direction right.
+#             evaluate() refuses it on the misaligned dot-Identifiability-v1
+#             1.0.0 files (use dotime-eval-reference --realignment for those).
+#
+# Only direction accuracy changes; RMSE, MAE, NMSE and R^2 are the same either
+# way. evaluate(), Results, dotime.qa.target_qa and the --dir-target option of
+# dotime-benchmark, dotime-eval-submission, dotime-eval-reference,
+# dotime-eval-pfn, dotime-eval-tabpfn and dotime-eval-chronos all read this
+# line. A single call or run can still override it with dir_target= /
+# --dir-target, and tests/test_smoke.py fails if a default is hard-coded
+# anywhere else.
+DEFAULT_DIR_TARGET = "level"
 
 
 # --------------------------------------------------------------------------- #
@@ -271,7 +291,7 @@ class Results:
     n_queries: int
     pooled: dict[str, float]
     per_structure: dict[str, dict[str, float]] = field(default_factory=dict)
-    dir_target: str = "level"
+    dir_target: str = DEFAULT_DIR_TARGET
 
     def to_dict(self) -> dict:
         """JSON-serializable view of the results."""
@@ -329,6 +349,25 @@ _DEFAULT_METRICS: dict[str, Callable[[torch.Tensor, torch.Tensor], float]] = {
 }
 
 
+def add_dir_target_argument(parser: argparse.ArgumentParser) -> None:
+    """Add the ``--dir-target`` option, defaulting to :data:`DEFAULT_DIR_TARGET`.
+
+    Every command-line tool that scores direction accuracy takes its option
+    from here, so none of them can drift from :func:`evaluate`.
+
+    Args:
+        parser: The parser to add the option to.
+    """
+    parser.add_argument(
+        "--dir-target",
+        choices=DIR_TARGETS,
+        default=DEFAULT_DIR_TARGET,
+        help="What direction accuracy scores: the sign of the interventional level "
+        "(the v1 protocol) or of the causal effect y - y_obs "
+        f"(default: {DEFAULT_DIR_TARGET}).",
+    )
+
+
 def _aggregate(
     preds: torch.Tensor,
     targets: torch.Tensor,
@@ -383,7 +422,7 @@ def evaluate(
     model: Baseline,
     suite: BenchmarkSuite,
     metrics: dict[str, Callable[[torch.Tensor, torch.Tensor], float]] | None = None,
-    dir_target: str = "level",
+    dir_target: str = DEFAULT_DIR_TARGET,
     *,
     impute: bool = True,
     nonfinite: str = "raise",
@@ -407,7 +446,8 @@ def evaluate(
         dir_target: What ``dir_acc`` scores: ``"level"`` (the sign of the
             interventional level, the v1 protocol) or ``"effect"`` (the sign of
             ``y - y_obs`` at the query, read with :func:`query_obs_levels`). The
-            level metrics are the same either way.
+            level metrics are the same either way. Defaults to
+            :data:`DEFAULT_DIR_TARGET`.
         impute: Impute missing cells for models that are not ``mask_aware``.
         nonfinite: ``"raise"`` stops at the first non-finite prediction.
             ``"exclude"`` leaves non-finite predictions out of the level

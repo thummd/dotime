@@ -241,7 +241,7 @@ def test_a_nonfinite_target_fails() -> None:
 def test_the_effect_check_follows_the_structure_dag() -> None:
     """A zero effect fails where the DAG allows one, and is exempt where it cannot exist."""
     zero_back_door = _episodes("back_door", 12, effect=0.0)
-    assert target_qa(zero_back_door, log=None).passed  # level scoring ignores the effect
+    assert target_qa(zero_back_door, dir_target="level", log=None).passed  # ignores the effect
     with pytest.raises(TargetQAError, match="back_door effect"):
         target_qa(zero_back_door, dir_target="effect", log=None)
     # mediator: A(t-1) -> M(t) -> Y(t), so a query at the onset has no effect yet.

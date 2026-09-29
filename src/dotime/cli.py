@@ -186,6 +186,8 @@ def _write_parquet(dataset: list, out: Path, *, seed: int) -> None:
 
 
 def _build_benchmark_parser() -> argparse.ArgumentParser:
+    from dotime.evaluation import add_dir_target_argument
+
     p = argparse.ArgumentParser(
         prog="dotime-benchmark",
         description="Evaluate a baseline against a frozen DoTime benchmark suite.",
@@ -204,13 +206,7 @@ def _build_benchmark_parser() -> argparse.ArgumentParser:
         default="VAR-OLS",
         help="Baseline name (see --list-baselines). Default: VAR-OLS.",
     )
-    p.add_argument(
-        "--dir-target",
-        choices=["level", "effect"],
-        default="level",
-        help="What direction accuracy scores: the sign of the interventional level "
-        "(v1 protocol, default) or of the causal effect y - y_obs.",
-    )
+    add_dir_target_argument(p)
     p.add_argument(
         "--target-qa",
         choices=["enforce", "warn"],

@@ -37,6 +37,7 @@ from pathlib import Path
 import numpy as np
 
 from dotime.benchmarks import load_benchmark
+from dotime.evaluation import add_dir_target_argument
 from dotime.qa import target_qa
 from dotime.reference._realignment import (
     load_realignment,
@@ -44,7 +45,6 @@ from dotime.reference._realignment import (
     sidecar_obs_levels,
 )
 from dotime.reference._scoring import (
-    DIR_TARGETS,
     check_predictions,
     direction_scores,
     observational_levels,
@@ -173,13 +173,7 @@ def main(argv: list[str] | None = None) -> None:
         "x_obs to canonical order and zeroes hidden variables. Every evaluated "
         "episode must match its row, so pair it with --version 1.0.0.",
     )
-    ap.add_argument(
-        "--dir-target",
-        choices=list(DIR_TARGETS),
-        default="level",
-        help="What dir_acc scores: the interventional level (the v1 protocol) or the "
-        "causal effect y_true - y_obs. Both scores are always written to the result.",
-    )
+    add_dir_target_argument(ap)
     ap.add_argument(
         "--target-qa",
         choices=["enforce", "warn"],
