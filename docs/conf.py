@@ -104,7 +104,11 @@ autodoc_default_options = {
 }
 autodoc_typehints = "description"
 autodoc_typehints_format = "short"
-napoleon_google_docstring = False
+# Both styles live in the codebase: older modules use NumPy ``Parameters``
+# sections, while the repo convention for new code is Google ``Args:`` /
+# ``Returns:`` / ``Raises:``. With Google parsing off, those sections fall
+# through as raw reST definition lists, and a multi-line entry fails ``-W``.
+napoleon_google_docstring = True
 napoleon_numpy_docstring = True
 napoleon_include_init_with_doc = False
 napoleon_use_rtype = False

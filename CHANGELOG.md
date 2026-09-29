@@ -63,6 +63,11 @@ All notable changes to `dotime` are documented here. The format follows
   trajectory; the causally-masked tensor is zero at every post-onset query, so
   v1 metadata stored the interventional level instead of the effect. RNG
   streams and all other fixed-seed outputs are bit-identical.
+- API reference: Google-style `Args:`/`Returns:`/`Raises:` sections render as
+  parameter, return and exception fields. `docs/conf.py` now enables napoleon's
+  Google parser next to the NumPy one. Before, these sections fell through as raw
+  definition lists, and the multi-line entry in `TemporalSCM.freeze_noise` failed
+  the `-W` docs build.
 
 ### Added
 - `dotime-eval-pfn` reports both `dir_acc_level` and `dir_acc_effect` (pooled and
