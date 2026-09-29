@@ -17,6 +17,14 @@ Usage:
         --ckpt-int .../s9ho_all_causal/do_over_time_pfn_best.pt \
         --ckpt-obs .../s9ho_all_obs/do_over_time_pfn_best.pt \
         --device cuda:0 --out pfn_ident.json
+
+The archived 1.0.0 Identifiability files store ``x_obs`` in topological order,
+so pin that version together with the realignment sidecar. Its rows also
+supply the observational level behind ``dir_acc_effect``:
+
+    dotime-eval-pfn --suite dot-Identifiability-v1 --version 1.0.0 \
+        --realignment results/reference/dot-Identifiability-v1.0.0_realignment.jsonl \
+        --ckpt-int ... --ckpt-obs ... --device cuda:0 --out pfn_ident_realigned.json
 """
 
 from __future__ import annotations
@@ -31,7 +39,8 @@ import torch
 
 from dotime.baselines import _INT_TYPE_CODE  # protocol base
 from dotime.benchmarks import load_benchmark
-from dotime.evaluation import direction_accuracy, query_obs_levels, realign_episode
+from dotime.evaluation import direction_accuracy, query_obs_levels
+from dotime.reference._realignment import load_realignment, realign_episodes
 
 
 def episode_to_batch_interp(episode, n_max, device, observational=False):
@@ -141,6 +150,27 @@ class PFNRef:
 
 
 def run(model, episodes, dir_target="level", realignment=None):
+    """Score one model on the episodes under both direction-accuracy targets.
+
+    Args:
+        model: Object whose ``predict(episode)`` returns the level prediction
+            at the query, such as :class:`PFNRef`.
+        episodes: The episodes to score.
+        dir_target: ``"level"`` or ``"effect"``, the target that the headline
+            ``dir_acc`` reports. Both are always computed.
+        realignment: Optional ``{scm_id: row}`` map from
+            :func:`~dotime.reference._realignment.load_realignment`. When given,
+            each episode's observational level is its row's ``y_obs_corrected``
+            instead of the level read from ``x_obs``.
+
+    Returns:
+        Dict with the pooled RMSE and its episode-cluster bootstrap CI, the
+        headline, level and effect direction accuracies, and per-structure
+        metrics.
+
+    Raises:
+        KeyError: If ``realignment`` is given but has no row for an episode.
+    """
     ep_pred, ep_tgt, ep_obs, structs = [], [], [], []
     for ep in episodes:
         p = torch.as_tensor(model.predict(ep), dtype=torch.float32).reshape(-1).numpy()
@@ -149,8 +179,10 @@ def run(model, episodes, dir_target="level", realignment=None):
         ep_tgt.append(t)
         structs.append(ep.structure)
         # Always collect the observational level so BOTH scorings come from
-        # one prediction pass (predictions do not depend on the target).
-        if realignment is not None and ep.scm_id in realignment:
+        # one prediction pass (predictions do not depend on the target). With
+        # a sidecar there is no fallback to x_obs, whose column may be another
+        # variable in a 1.0.0 episode.
+        if realignment is not None:
             ep_obs.append(np.asarray([realignment[ep.scm_id]["y_obs_corrected"]], dtype=np.float32))
         else:
             ep_obs.append(query_obs_levels(ep).cpu().numpy())
@@ -208,9 +240,27 @@ def run(model, episodes, dir_target="level", realignment=None):
     }
 
 
-def main():
+def main(argv: list[str] | None = None) -> None:
+    """Score the Do-Over-Time-PFN int/obs checkpoint pair on a suite.
+
+    Args:
+        argv: Command-line arguments. ``None`` reads ``sys.argv``, which is how
+            the ``dotime-eval-pfn`` console script calls it.
+
+    Raises:
+        SystemExit: On invalid arguments, or if the PFN architecture
+            (``dotime[models]``) is not installed.
+        OSError: If the ``--realignment`` sidecar cannot be read.
+        ValueError: If the sidecar is malformed or does not describe the
+            evaluated episodes, e.g. a 1.0.0 sidecar against suite 1.1.0.
+    """
     ap = argparse.ArgumentParser()
     ap.add_argument("--suite", required=True)
+    ap.add_argument(
+        "--version",
+        default="latest",
+        help="Suite version to load, e.g. 1.0.0 (default: the registry's current version).",
+    )
     ap.add_argument("--ckpt-int", required=True)
     ap.add_argument("--ckpt-obs", required=True)
     ap.add_argument("--device", default="cuda:0")
@@ -233,33 +283,29 @@ def main():
         "--realignment",
         type=Path,
         default=None,
-        help="JSONL sidecar with corrected per-episode y_obs (archived v1 suites).",
+        help="JSONL realignment sidecar for dot-Identifiability-v1 1.0.0: permutes "
+        "x_obs to canonical order, zeroes hidden variables and supplies the "
+        "corrected y_obs for dir_acc_effect. Every evaluated episode must match "
+        "its row, so pair it with --version 1.0.0.",
     )
-    args = ap.parse_args()
-    realignment = None
-    if args.realignment:
-        realignment = {}
-        with args.realignment.open() as fh:
-            for line in fh:
-                row = json.loads(line)
-                realignment[int(row["idx"])] = row
+    args = ap.parse_args(argv)
+    # Read the sidecar first: a bad path should fail before a suite download.
+    realignment = load_realignment(args.realignment) if args.realignment is not None else None
 
-    episodes = list(load_benchmark(args.suite))
+    suite = load_benchmark(args.suite, version=args.version)
+    episodes = list(suite)
     if args.exclude_self_queries:
         n0 = len(episodes)
         episodes = [ep for ep in episodes if not ep.is_self_query]
         print(f"[{args.suite}] excluded {n0 - len(episodes)} self-query episodes")
     if realignment is not None:
-        episodes = [
-            realign_episode(
-                ep,
-                realignment[ep.scm_id]["canonical_perm"],
-                realignment[ep.scm_id]["hidden_canonical"],
-            )
-            if ep.scm_id in realignment
-            else ep
-            for ep in episodes
-        ]
+        # Every episode must match its row, so a sidecar from another suite
+        # version stops the run before a checkpoint is loaded.
+        episodes = realign_episodes(episodes, realignment)
+        print(
+            f"[{args.suite}] realigned x_obs of {len(episodes)} episodes "
+            f"with {args.realignment.name}"
+        )
     if args.per_structure:
         from collections import defaultdict
 
@@ -267,9 +313,17 @@ def main():
         for ep in episodes:
             byst[ep.structure].append(ep)
         episodes = [e for eps in byst.values() for e in eps[: args.per_structure]]
-    print(f"[{args.suite}] evaluating {len(episodes)} episodes")
+    print(f"[{args.suite} v{suite.meta.version}] evaluating {len(episodes)} episodes")
 
-    out = {"suite": args.suite, "exclude_self_queries": args.exclude_self_queries}
+    out = {
+        "suite": args.suite,
+        "suite_version": suite.meta.version,
+        "realigned": realignment is not None,
+        # File name only: an absolute path would leak the machine's layout
+        # into a released result JSON.
+        "realignment_sidecar": args.realignment.name if realignment is not None else None,
+        "exclude_self_queries": args.exclude_self_queries,
+    }
     for tag, ck, obs in [("PFN_int", args.ckpt_int, False), ("PFN_obs", args.ckpt_obs, True)]:
         t0 = time.time()
         model = PFNRef(ck, device=args.device, observational=obs)

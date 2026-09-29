@@ -1,16 +1,19 @@
-"""``--version`` and ``--realignment`` on the TabPFN and Chronos-2 evaluators.
+"""``--version`` and ``--realignment`` on the reference evaluators.
 
-Both evaluators read the treatment and the outcome from ``x_obs`` by canonical
-column, but the archived ``dot-Identifiability-v1`` 1.0.0 files store ``x_obs``
-in topological order. These tests serve a small 1.0.0-style ``back_door``
-episode through each evaluator's ``main`` and record which columns a stub model
-receives, so neither TabPFN nor Chronos needs to be installed.
+TabPFN, Chronos-2, the reference baselines and the Do-Over-Time-PFN all read
+``x_obs`` by canonical column, but the archived ``dot-Identifiability-v1`` 1.0.0
+files store ``x_obs`` in topological order. These tests serve small 1.0.0-style
+``back_door`` episodes through each evaluator's ``main`` and record which
+columns a stub model receives, so neither TabPFN, Chronos nor a PFN checkpoint
+is needed.
 """
 
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
@@ -19,7 +22,7 @@ import torch
 
 from dotime.benchmarks import _SUITE_REGISTRY, BenchmarkSuite, Episode
 from dotime.interventions import InterventionSpec, InterventionType
-from dotime.reference import chronos, tabpfn
+from dotime.reference import chronos, pfn, reference_table, tabpfn
 from dotime.reference._realignment import load_realignment, realign_episodes
 
 SUITE = "dot-Identifiability-v1"
@@ -50,7 +53,11 @@ def _canonical_x(n_vars: int = 3) -> np.ndarray:
 
 
 def _episode(
-    perm: tuple[int, ...] = PERM, scm_id: int = 7, y_true: float = 0.25, n_vars: int = 3
+    perm: tuple[int, ...] = PERM,
+    scm_id: int = 7,
+    y_true: float = 0.25,
+    n_vars: int = 3,
+    offset: float = 0.0,
 ) -> Episode:
     """A single-query episode stored the way the 1.0.0 files store it.
 
@@ -60,12 +67,14 @@ def _episode(
         scm_id: Episode id, the key into the realignment sidecar.
         y_true: The episode's target, which the sidecar fingerprints.
         n_vars: Number of variables.
+        offset: Added to every value of both trajectories, so that episodes
+            can differ in their observational levels.
 
     Returns:
         An episode with a hard do(A = ``DO_VALUE``) at ``ONSET`` that queries
         the last canonical variable at ``QUERY_STEP``.
     """
-    canonical = _canonical_x(n_vars)
+    canonical = _canonical_x(n_vars) + offset
     stored = np.empty_like(canonical)
     stored[:, list(perm)] = canonical
     return Episode(
@@ -123,12 +132,33 @@ def _write_sidecar(path: Path, rows: list[dict[str, Any]]) -> Path:
     return path
 
 
-@pytest.fixture
-def loads(monkeypatch: pytest.MonkeyPatch) -> list[tuple[str, str]]:
-    """Serve one :func:`_episode` from both evaluators' ``load_benchmark``.
+def _stub_load_benchmark(
+    episodes: Callable[[], list[Episode]], calls: list[tuple[str, str]]
+) -> Callable[..., BenchmarkSuite]:
+    """A ``load_benchmark`` stand-in that records each load.
 
     The stub resolves ``version`` through the real registry, so ``"latest"``
     maps to whatever version the registry currently serves.
+
+    Args:
+        episodes: Builds the episodes of each load. It is called per load, so
+            a realigned copy from one run never reaches the next.
+        calls: Receives the ``(name, version)`` of every load.
+
+    Returns:
+        A function with the signature of :func:`~dotime.benchmarks.load_benchmark`.
+    """
+
+    def _load(name: str, version: str = "latest", **_: Any) -> BenchmarkSuite:
+        calls.append((name, version))
+        return BenchmarkSuite(_SUITE_REGISTRY[name].for_version(version), episodes())
+
+    return _load
+
+
+@pytest.fixture
+def loads(monkeypatch: pytest.MonkeyPatch) -> list[tuple[str, str]]:
+    """Serve one :func:`_episode` from the TabPFN and Chronos-2 ``load_benchmark``.
 
     Args:
         monkeypatch: The pytest monkeypatch fixture.
@@ -137,13 +167,9 @@ def loads(monkeypatch: pytest.MonkeyPatch) -> list[tuple[str, str]]:
         The ``(name, version)`` of every load, in call order.
     """
     calls: list[tuple[str, str]] = []
-
-    def _load(name: str, version: str = "latest", **_: Any) -> BenchmarkSuite:
-        calls.append((name, version))
-        return BenchmarkSuite(_SUITE_REGISTRY[name].for_version(version), [_episode()])
-
-    monkeypatch.setattr(tabpfn, "load_benchmark", _load)
-    monkeypatch.setattr(chronos, "load_benchmark", _load)
+    load = _stub_load_benchmark(lambda: [_episode()], calls)
+    monkeypatch.setattr(tabpfn, "load_benchmark", load)
+    monkeypatch.setattr(chronos, "load_benchmark", load)
     return calls
 
 
@@ -454,3 +480,257 @@ def test_a_sidecar_from_another_version_stops_the_run_before_any_fit(
     assert fits == []
     assert forecasts == []
     assert not (tmp_path / "out.json").exists()
+
+
+# --------------------------------------------------------------------------- #
+# The full-suite evaluators: dotime-eval-reference and dotime-eval-pfn
+# --------------------------------------------------------------------------- #
+
+# Every stub model predicts STUB_PRED. Against the sidecar's observational
+# levels PAIR_Y_OBS it gets the effect sign of both episodes wrong. Against the
+# levels stored in x_obs (350 and 1350) it gets both right. The effect accuracy
+# therefore shows which of the two the evaluator subtracted.
+STUB_PRED = 0.5
+PAIR_Y_TRUE = (0.25, -0.75)
+PAIR_Y_OBS = (0.4, -0.2)
+PAIR_OFFSETS = (0.0, 1000.0)
+
+FULL_SUITE = pytest.mark.parametrize("evaluator", [reference_table, pfn], ids=["reference", "pfn"])
+
+
+def _pair() -> list[Episode]:
+    """Two episodes that differ in id, target and trajectory level.
+
+    ``dotime-eval-reference`` asserts that each target arm varies before it
+    scores anything, so a one-episode suite never reaches its baselines.
+
+    Returns:
+        Episodes 7 and 8, built by :func:`_episode` from ``PAIR_Y_TRUE`` and
+        ``PAIR_OFFSETS``.
+    """
+    return [
+        _episode(scm_id=scm_id, y_true=y_true, offset=offset)
+        for scm_id, y_true, offset in zip((7, 8), PAIR_Y_TRUE, PAIR_OFFSETS, strict=True)
+    ]
+
+
+def _pair_rows(**overrides: Any) -> list[dict[str, Any]]:
+    """Sidecar rows that describe :func:`_pair`, with observational levels ``PAIR_Y_OBS``.
+
+    Args:
+        **overrides: Fields to replace in both rows, as in :func:`_row`.
+
+    Returns:
+        One row per episode of :func:`_pair`, in the same order.
+    """
+    return [
+        _row(ep, **{"y_obs_corrected": y_obs, **overrides})
+        for ep, y_obs in zip(_pair(), PAIR_Y_OBS, strict=True)
+    ]
+
+
+@pytest.fixture
+def pair_loads(monkeypatch: pytest.MonkeyPatch) -> list[tuple[str, str]]:
+    """Serve :func:`_pair` from the full-suite evaluators' ``load_benchmark``.
+
+    Args:
+        monkeypatch: The pytest monkeypatch fixture.
+
+    Returns:
+        The ``(name, version)`` of every load, in call order.
+    """
+    calls: list[tuple[str, str]] = []
+    load = _stub_load_benchmark(_pair, calls)
+    monkeypatch.setattr(reference_table, "load_benchmark", load)
+    monkeypatch.setattr(pfn, "load_benchmark", load)
+    return calls
+
+
+@pytest.fixture
+def model_inputs(monkeypatch: pytest.MonkeyPatch) -> list[np.ndarray]:
+    """Swap every model of the full-suite evaluators for a stub that records its input.
+
+    ``dotime-eval-reference`` resolves baselines through its module's
+    ``baselines`` attribute and ``dotime-eval-pfn`` builds ``PFNRef``, so both
+    are replaced there. No checkpoint is opened.
+
+    Args:
+        monkeypatch: The pytest monkeypatch fixture.
+
+    Returns:
+        The ``x_obs`` of every episode a stub predicted, in call order.
+    """
+    seen: list[np.ndarray] = []
+
+    class _RecordingModel:
+        """Stands in for a baseline or a PFN checkpoint. Predicts ``STUB_PRED``."""
+
+        def predict(self, ep: Episode) -> torch.Tensor:
+            seen.append(ep.x_obs.numpy().copy())
+            return torch.tensor([STUB_PRED])
+
+    def _build(*_args: Any, **_kwargs: Any) -> _RecordingModel:
+        return _RecordingModel()
+
+    monkeypatch.setattr(reference_table, "baselines", SimpleNamespace(get=_build))
+    monkeypatch.setattr(pfn, "PFNRef", _build)
+    return seen
+
+
+def _full_suite_args(
+    evaluator: Any, tmp_path: Path, rows: list[dict[str, Any]] | None, version: str | None = "1.0.0"
+) -> list[str]:
+    """Command-line arguments for ``dotime-eval-reference`` or ``dotime-eval-pfn``.
+
+    Both runs score the effect sign, so each one reads the observational level.
+
+    Args:
+        evaluator: The ``reference_table`` or the ``pfn`` module.
+        tmp_path: Where to write the sidecar and the result JSON.
+        rows: Sidecar rows to pass with ``--realignment``, or ``None`` to omit it.
+        version: Value of ``--version``, or ``None`` to omit the flag.
+
+    Returns:
+        The argument list, writing results to ``tmp_path / "out.json"``.
+    """
+    argv = ["--suite", SUITE, "--dir-target", "effect", "--out", str(tmp_path / "out.json")]
+    # The model_inputs stubs ignore the baseline name and the checkpoint paths.
+    if evaluator is reference_table:
+        argv += ["--baselines", "Stub"]
+    else:
+        argv += ["--ckpt-int", "int.pt", "--ckpt-obs", "obs.pt"]
+    if version is not None:
+        argv += ["--version", version]
+    if rows is not None:
+        argv += ["--realignment", str(_write_sidecar(tmp_path / "sidecar.jsonl", rows))]
+    return argv
+
+
+def _effect_accuracies(evaluator: Any, tmp_path: Path) -> list[float]:
+    """Effect-sign accuracy of every scored model in the result JSON.
+
+    Args:
+        evaluator: The evaluator module that wrote the result.
+        tmp_path: The directory :func:`_full_suite_args` wrote the result to.
+
+    Returns:
+        One accuracy per stub baseline of ``dotime-eval-reference``, or one
+        per arm of ``dotime-eval-pfn``, interventional first.
+    """
+    result = json.loads((tmp_path / "out.json").read_text())
+    if evaluator is reference_table:
+        # A baseline that raises becomes a row with an "error" key instead of
+        # failing the run, so check that the stub was actually scored.
+        assert all("error" not in row for row in result["rows"]), result["rows"]
+        return [row["dir_acc"] for row in result["rows"]]
+    return [result[arm]["dir_acc_effect"] for arm in ("PFN_int", "PFN_obs")]
+
+
+@FULL_SUITE
+@pytest.mark.parametrize("realign", [True, False])
+def test_full_suite_models_see_canonical_columns_and_the_sidecar_y_obs(
+    tmp_path: Path, pair_loads: list, model_inputs: list, evaluator: Any, realign: bool
+) -> None:
+    """Realigned, every model reads canonical columns and the effect uses ``y_obs_corrected``.
+
+    Args:
+        tmp_path: The pytest temporary directory.
+        pair_loads: Suite loads recorded by the stub ``load_benchmark``.
+        model_inputs: ``x_obs`` recorded by the stub models.
+        evaluator: The evaluator module under test.
+        realign: Whether to pass the sidecar.
+    """
+    evaluator.main(_full_suite_args(evaluator, tmp_path, _pair_rows() if realign else None))
+    expected = [
+        _canonical_x() + offset if realign else ep.x_obs.numpy()
+        for ep, offset in zip(_pair(), PAIR_OFFSETS, strict=True)
+    ]
+    n_models = 1 if evaluator is reference_table else 2  # the PFN has an int and an obs arm
+    assert len(model_inputs) == n_models * len(expected)
+    for seen, want in zip(model_inputs, expected * n_models, strict=True):
+        np.testing.assert_array_equal(seen, want)
+    assert _effect_accuracies(evaluator, tmp_path) == [0.0 if realign else 1.0] * n_models
+    assert pair_loads == [(SUITE, "1.0.0")]
+    _assert_provenance(tmp_path, "1.0.0", realign)
+
+
+@FULL_SUITE
+def test_full_suite_default_version_is_latest_and_the_resolved_one_is_recorded(
+    tmp_path: Path, pair_loads: list, model_inputs: list, evaluator: Any
+) -> None:
+    """Without ``--version`` the registry's current version loads and lands in the JSON.
+
+    Args:
+        tmp_path: The pytest temporary directory.
+        pair_loads: Suite loads recorded by the stub ``load_benchmark``.
+        model_inputs: Keeps the models stubbed.
+        evaluator: The evaluator module under test.
+    """
+    evaluator.main(_full_suite_args(evaluator, tmp_path, rows=None, version=None))
+    assert pair_loads == [(SUITE, "latest")]
+    _assert_provenance(tmp_path, _SUITE_REGISTRY[SUITE].version, realign=False)
+
+
+@FULL_SUITE
+def test_full_suite_a_sidecar_from_another_version_stops_the_run_before_any_model(
+    tmp_path: Path, pair_loads: list, model_inputs: list, evaluator: Any
+) -> None:
+    """The 1.0.0 sidecar without ``--version`` fails instead of scoring the wrong suite.
+
+    The registry serves 1.1.0 by default, which reuses the 1.0.0 episode ids
+    with other targets. Rows used to be applied by id alone, which re-permuted
+    the already canonical 1.1.0 columns without an error.
+
+    Args:
+        tmp_path: The pytest temporary directory.
+        pair_loads: Suite loads recorded by the stub ``load_benchmark``.
+        model_inputs: ``x_obs`` recorded by the stub models.
+        evaluator: The evaluator module under test.
+    """
+    argv = _full_suite_args(evaluator, tmp_path, _pair_rows(y_true_regen=-0.5), version=None)
+    with pytest.raises(ValueError, match=r"not built from this episode.*--version 1\.0\.0"):
+        evaluator.main(argv)
+    assert model_inputs == []
+    assert not (tmp_path / "out.json").exists()
+
+
+@FULL_SUITE
+def test_full_suite_an_episode_without_a_row_stops_the_run_before_any_model(
+    tmp_path: Path, pair_loads: list, model_inputs: list, evaluator: Any
+) -> None:
+    """An episode missing from the sidecar is an error, no longer scored unrealigned.
+
+    Args:
+        tmp_path: The pytest temporary directory.
+        pair_loads: Suite loads recorded by the stub ``load_benchmark``.
+        model_inputs: ``x_obs`` recorded by the stub models.
+        evaluator: The evaluator module under test.
+    """
+    with pytest.raises(ValueError, match="no row for episode 8"):
+        evaluator.main(_full_suite_args(evaluator, tmp_path, _pair_rows()[:1]))
+    assert model_inputs == []
+    assert not (tmp_path / "out.json").exists()
+
+
+@FULL_SUITE
+def test_full_suite_logs_the_realigned_episodes_not_the_sidecar_rows(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    pair_loads: list,
+    model_inputs: list,
+    evaluator: Any,
+) -> None:
+    """A row without an episode is ignored and not counted as realigned.
+
+    ``dotime-eval-reference`` used to log the sidecar's size as the realigned count.
+
+    Args:
+        tmp_path: The pytest temporary directory.
+        capsys: The pytest stdout capture fixture.
+        pair_loads: Suite loads recorded by the stub ``load_benchmark``.
+        model_inputs: Keeps the models stubbed.
+        evaluator: The evaluator module under test.
+    """
+    rows = [*_pair_rows(), _row(_episode(scm_id=99))]
+    evaluator.main(_full_suite_args(evaluator, tmp_path, rows))
+    assert "realigned x_obs of 2 episodes with sidecar.jsonl" in capsys.readouterr().out

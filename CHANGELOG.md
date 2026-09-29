@@ -142,6 +142,20 @@ All notable changes to `dotime` are documented here. The format follows
   `release_config.yaml`.
 
 ### Fixed
+- `dotime-eval-reference` and `dotime-eval-pfn` always loaded the registry's
+  current version, `dot-Identifiability-v1` 1.1.0 since 2026-09-09, and applied
+  `--realignment` rows by episode id alone. Passing the 1.0.0 sidecar as
+  documented therefore re-permuted the already canonical 1.1.0 `x_obs` of 8,100
+  of the 10,800 episodes and scored the effect sign against 1.0.0
+  `y_obs_corrected`, without an error. Episodes without a row were scored
+  unrealigned, and `dotime-eval-reference` logged the sidecar's size as the
+  realigned count. Both evaluators now take `--version` (default `latest`) and
+  realign through the same checks as `dotime-eval-tabpfn` and
+  `dotime-eval-chronos`: every evaluated episode needs a row whose variable
+  count, query target and `y_true` match it, which no 1.1.0 episode passes. The
+  result JSON records `suite_version`, `realigned` and `realignment_sidecar`.
+  The `results/reference/v1_1/` CPU rows were computed without a sidecar and are
+  unaffected.
 - Docs build under `-W` (and Read the Docs `fail_on_warning`) and the API
   reference: `docs/conf.py` parsed NumPy sections only, so Google-style
   `Args:`/`Returns:`/`Raises:` sections fell through as raw definition lists,

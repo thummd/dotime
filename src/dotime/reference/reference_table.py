@@ -6,6 +6,14 @@ Do-Over-Time-PFN) over a full suite, reporting pooled RMSE and direction
 accuracy with an episode-cluster bootstrap CI on the pooled RMSE.
 
     dotime-eval-reference --suite dot-Identifiability-v1 --out ident.json
+
+The archived 1.0.0 Identifiability files store ``x_obs`` in topological order,
+so pin that version together with the realignment sidecar. Its rows also
+supply the observational level that ``--dir-target effect`` subtracts:
+
+    dotime-eval-reference --suite dot-Identifiability-v1 --version 1.0.0 \
+        --realignment results/reference/dot-Identifiability-v1.0.0_realignment.jsonl \
+        --dir-target effect --out ident_effect_realigned.json
 """
 
 from __future__ import annotations
@@ -20,7 +28,8 @@ import torch
 
 from dotime import baselines
 from dotime.benchmarks import load_benchmark
-from dotime.evaluation import direction_accuracy, query_obs_levels, realign_episode
+from dotime.evaluation import direction_accuracy, query_obs_levels
+from dotime.reference._realignment import load_realignment, realign_episodes
 
 CPU_BASELINES = ["Zero", "Mean", "AR1", "VAR-OLS", "BackDoorOLS", "IV2SLS", "Oracle"]
 # Same floor as the training-side step-zero check: a level arm that is mostly
@@ -48,18 +57,27 @@ def _cluster_bootstrap_rmse(ep_pred, ep_tgt, n_boot=1000, seed=0):
 
 
 def _episode_obs_levels(ep, realignment):
-    """Per-query observational levels, preferring the realignment sidecar.
+    """Per-query observational levels, from the realignment sidecar when one is given.
 
     Args:
         ep: The episode being scored.
-        realignment: Optional ``{scm_id: y_obs}`` map from the released v1
-            realignment sidecar (required for archived suites whose ``x_obs``
-            is column-misaligned; see the datasheet erratum).
+        realignment: Optional ``{scm_id: row}`` map from
+            :func:`~dotime.reference._realignment.load_realignment`. Each row's
+            ``y_obs_corrected`` is the observational level regenerated for the
+            archived 1.0.0 suite, whose ``x_obs`` is column-misaligned (see the
+            datasheet erratum).
 
     Returns:
         1-D numpy array of observational levels, one per query.
+
+    Raises:
+        KeyError: If ``realignment`` is given but has no row for ``ep``.
+            :func:`main` realigns every scored episode first, which refuses
+            such an episode with a clearer message.
     """
-    if realignment is not None and ep.scm_id in realignment:
+    if realignment is not None:
+        # No fallback to x_obs: for a 1.0.0 episode that column may be another
+        # variable, and one effect score would mix two sources of y_obs.
         return np.asarray([realignment[ep.scm_id]["y_obs_corrected"]], dtype=np.float32)
     return query_obs_levels(ep).cpu().numpy()
 
@@ -168,9 +186,27 @@ def run_baseline(
     }
 
 
-def main():
+def main(argv: list[str] | None = None) -> None:
+    """Score the reference baselines, and optionally the PFN, on a full suite.
+
+    Args:
+        argv: Command-line arguments. ``None`` reads ``sys.argv``, which is how
+            the ``dotime-eval-reference`` console script calls it.
+
+    Raises:
+        SystemExit: On invalid arguments.
+        OSError: If the ``--realignment`` sidecar cannot be read.
+        ValueError: If the sidecar is malformed or does not describe the
+            evaluated episodes, e.g. a 1.0.0 sidecar against suite 1.1.0.
+        RuntimeError: If the targets fail :func:`target_qa`.
+    """
     ap = argparse.ArgumentParser()
     ap.add_argument("--suite", required=True)
+    ap.add_argument(
+        "--version",
+        default="latest",
+        help="Suite version to load, e.g. 1.0.0 (default: the registry's current version).",
+    )
     ap.add_argument("--baselines", nargs="+", default=CPU_BASELINES)
     ap.add_argument("--pfn-checkpoint", default=None)
     ap.add_argument("--device", default="cpu")
@@ -192,20 +228,17 @@ def main():
         "--realignment",
         type=Path,
         default=None,
-        help="JSONL realignment sidecar mapping episodes to corrected y_obs "
-        "(needed for archived suites with misaligned x_obs columns).",
+        help="JSONL realignment sidecar for dot-Identifiability-v1 1.0.0: permutes "
+        "x_obs to canonical order, zeroes hidden variables and supplies the "
+        "corrected y_obs for --dir-target effect. Every evaluated episode must "
+        "match its row, so pair it with --version 1.0.0.",
     )
-    args = ap.parse_args()
-    realignment = None
-    if args.realignment:
-        realignment = {}
-        with args.realignment.open() as fh:
-            for line in fh:
-                row = json.loads(line)
-                realignment[int(row["idx"])] = row
+    args = ap.parse_args(argv)
+    # Read the sidecar first: a bad path should fail before a suite download.
+    realignment = load_realignment(args.realignment) if args.realignment is not None else None
 
     t0 = time.time()
-    suite = load_benchmark(args.suite)
+    suite = load_benchmark(args.suite, version=args.version)
     episodes = list(suite)
     print(
         f"[{args.suite} {suite.meta.version}] loaded {len(episodes)} episodes "
@@ -217,18 +250,13 @@ def main():
         print(f"[{args.suite}] excluded {n0 - len(episodes)} self-query episodes")
     if realignment is not None:
         # Repair the archived x_obs (column order + hidden zeroing) so
-        # baselines read the variable they claim to read.
-        episodes = [
-            realign_episode(
-                ep,
-                realignment[ep.scm_id]["canonical_perm"],
-                realignment[ep.scm_id]["hidden_canonical"],
-            )
-            if ep.scm_id in realignment
-            else ep
-            for ep in episodes
-        ]
-        print(f"[{args.suite}] realigned x_obs for {len(realignment)} episodes")
+        # baselines read the variable they claim to read. Every episode must
+        # match its row, so a sidecar from another suite version stops here.
+        episodes = realign_episodes(episodes, realignment)
+        print(
+            f"[{args.suite}] realigned x_obs of {len(episodes)} episodes "
+            f"with {args.realignment.name}"
+        )
 
     qa = target_qa(episodes, realignment, args.dir_target)
     rows = []
@@ -260,6 +288,10 @@ def main():
     out = {
         "suite": args.suite,
         "suite_version": suite.meta.version,
+        "realigned": realignment is not None,
+        # File name only: an absolute path would leak the machine's layout
+        # into a released result JSON.
+        "realignment_sidecar": args.realignment.name if realignment is not None else None,
         "n_episodes": len(episodes),
         "exclude_self_queries": args.exclude_self_queries,
         "target_qa": qa,
