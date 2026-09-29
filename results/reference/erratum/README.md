@@ -21,4 +21,6 @@ target-QA banner in each `train.log` records nonzero fraction / mean / variance
 per arm. Checkpoints live in the do-over-time-pfn repo (`checkpoints/s10*`).
 
 Headline: with the observational arms trained on a non-degenerate target, no
-structure x T cell in either prior shows an int-vs-obs gap beyond its SE.
+structure x T cell in either prior shows an int-vs-obs gap beyond two standard
+errors. Eight of the 48 level- and effect-scored cells exceed one standard error
+(`gap_tables_corrected.json`).
