@@ -13,6 +13,14 @@ prediction at the query step is compared against episode ``y_true``.
 
     dotime-eval-chronos --suite dot-Identifiability-v1 \
         --per-structure 60 --device cuda:0 --out chronos_ident.json
+
+The treatment and outcome columns are read from ``x_obs`` by canonical index.
+The archived 1.0.0 Identifiability files store ``x_obs`` in topological order,
+so pin that version together with the realignment sidecar:
+
+    dotime-eval-chronos --suite dot-Identifiability-v1 --version 1.0.0 \
+        --realignment results/reference/dot-Identifiability-v1.0.0_realignment.jsonl \
+        --per-structure 60 --device cuda:0 --out chronos_ident_realigned.json
 """
 
 from __future__ import annotations
@@ -28,6 +36,7 @@ import torch
 
 from dotime.benchmarks import load_benchmark
 from dotime.evaluation import direction_accuracy
+from dotime.reference._realignment import load_realignment, realign_episodes
 
 _FREQ = "s"
 _T0_ISO = "2000-01-01"
@@ -88,33 +97,95 @@ def predict(pipeline, ep, use_covariate):
     return float(pred["predictions"].to_numpy()[-1])
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--suite", required=True)
-    ap.add_argument("--per-structure", type=int, default=60)
-    ap.add_argument("--max-total", type=int, default=600)
-    ap.add_argument("--model-id", default="amazon/chronos-2")
-    ap.add_argument("--device", default="cuda:0")
-    ap.add_argument("--out", type=Path, default=None)
-    args = ap.parse_args()
+def _load_pipeline(model_id, device):
+    """Load a pretrained Chronos pipeline, importing Chronos lazily.
 
+    Chronos is an optional dependency, so the import happens on first use,
+    as TabPFN's does in :func:`dotime.reference.tabpfn._regressor`.
+
+    Args:
+        model_id: Hugging Face model id, e.g. ``"amazon/chronos-2"``.
+        device: Device map handed to ``from_pretrained``, e.g. ``"cuda:0"``.
+
+    Returns:
+        The loaded pipeline. Only its ``predict_df`` method is used.
+
+    Raises:
+        SystemExit: If Chronos is not installed.
+    """
     try:
         from chronos import BaseChronosPipeline
     except ImportError as exc:  # pragma: no cover - dependency-gated
         raise SystemExit(
             "Chronos is required for this evaluator: pip install 'dotime[baselines]'"
         ) from exc
+    return BaseChronosPipeline.from_pretrained(model_id, device_map=device)
 
-    pipeline = BaseChronosPipeline.from_pretrained(args.model_id, device_map=args.device)
 
-    allep = list(load_benchmark(args.suite))
+def main(argv: list[str] | None = None) -> None:
+    """Score the Chronos-2 int/obs pair on a per-structure subsample of a suite.
+
+    Args:
+        argv: Command-line arguments. ``None`` reads ``sys.argv``, which is how
+            the ``dotime-eval-chronos`` console script calls it.
+
+    Raises:
+        SystemExit: On invalid arguments, or if Chronos is not installed.
+        OSError: If the ``--realignment`` sidecar cannot be read.
+        ValueError: If the sidecar is malformed or does not describe the
+            evaluated episodes, e.g. a 1.0.0 sidecar against suite 1.1.0.
+    """
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--suite", required=True)
+    ap.add_argument(
+        "--version",
+        default="latest",
+        help="Suite version to load, e.g. 1.0.0 (default: the registry's current version).",
+    )
+    ap.add_argument("--per-structure", type=int, default=60)
+    ap.add_argument("--max-total", type=int, default=600)
+    ap.add_argument("--model-id", default="amazon/chronos-2")
+    ap.add_argument("--device", default="cuda:0")
+    ap.add_argument("--out", type=Path, default=None)
+    ap.add_argument(
+        "--realignment",
+        type=Path,
+        default=None,
+        help="JSONL realignment sidecar for dot-Identifiability-v1 1.0.0: permutes "
+        "x_obs to canonical order and zeroes hidden variables. Every evaluated "
+        "episode must match its row, so pair it with --version 1.0.0.",
+    )
+    args = ap.parse_args(argv)
+    # Read the sidecar first: a bad path should fail before a model load or
+    # a suite download.
+    realignment = load_realignment(args.realignment) if args.realignment is not None else None
+
+    pipeline = _load_pipeline(args.model_id, args.device)
+
+    suite = load_benchmark(args.suite, version=args.version)
     byst = defaultdict(list)
-    for ep in allep:
+    for ep in suite:
         byst[ep.structure].append(ep)
     samp = [e for eps in byst.values() for e in eps[: args.per_structure]][: args.max_total]
-    print(f"[{args.suite}] {len(samp)} episodes across {len(byst)} structures")
+    print(
+        f"[{args.suite} v{suite.meta.version}] {len(samp)} episodes across {len(byst)} structures"
+    )
+    if realignment is not None:
+        # The subsample is chosen by structure label and suite order alone, so
+        # realigning after it scores the same episodes and checks only those.
+        samp = realign_episodes(samp, realignment)
+        print(f"  realigned x_obs of {len(samp)} episodes with {args.realignment.name}")
 
-    out = {"suite": args.suite, "n": len(samp), "model_id": args.model_id}
+    out = {
+        "suite": args.suite,
+        "suite_version": suite.meta.version,
+        "realigned": realignment is not None,
+        # File name only: an absolute path would leak the machine's layout
+        # into a released result JSON.
+        "realignment_sidecar": args.realignment.name if realignment is not None else None,
+        "n": len(samp),
+        "model_id": args.model_id,
+    }
     for tag, cov in [("Chronos_int", True), ("Chronos_obs", False)]:
         t0 = time.time()
         pred_list: list[float] = []

@@ -12,6 +12,14 @@ TabPFN is expensive, so we evaluate on a stratified subsample.
 
     dotime-eval-tabpfn --suite dot-Identifiability-v1 \
         --per-structure 60 --device cuda:0 --out tabpfn_ident.json
+
+The evaluator indexes ``x_obs`` by canonical column. The archived 1.0.0
+Identifiability files store it in topological order, so pin that version
+together with the realignment sidecar:
+
+    dotime-eval-tabpfn --suite dot-Identifiability-v1 --version 1.0.0 \
+        --realignment results/reference/dot-Identifiability-v1.0.0_realignment.jsonl \
+        --per-structure 60 --device cuda:0 --out tabpfn_ident_realigned.json
 """
 
 from __future__ import annotations
@@ -27,6 +35,7 @@ import torch
 
 from dotime.benchmarks import load_benchmark
 from dotime.evaluation import direction_accuracy
+from dotime.reference._realignment import load_realignment, realign_episodes
 
 
 def _regressor():
@@ -114,30 +123,72 @@ def predict(ep, observational=False):
     return _mean_pred(ep)
 
 
-def main():
+def main(argv: list[str] | None = None) -> None:
+    """Score the TabPFN int/obs pair on a per-structure subsample of a suite.
+
+    Args:
+        argv: Command-line arguments. ``None`` reads ``sys.argv``, which is how
+            the ``dotime-eval-tabpfn`` console script calls it.
+
+    Raises:
+        SystemExit: On invalid arguments, or if TabPFN is not installed.
+        OSError: If the ``--realignment`` sidecar cannot be read.
+        ValueError: If the sidecar is malformed or does not describe the
+            evaluated episodes, e.g. a 1.0.0 sidecar against suite 1.1.0.
+    """
     ap = argparse.ArgumentParser()
     ap.add_argument("--suite", required=True)
+    ap.add_argument(
+        "--version",
+        default="latest",
+        help="Suite version to load, e.g. 1.0.0 (default: the registry's current version).",
+    )
     ap.add_argument("--per-structure", type=int, default=60)
     ap.add_argument("--max-total", type=int, default=600)
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--out", type=Path, default=None)
-    args = ap.parse_args()
+    ap.add_argument(
+        "--realignment",
+        type=Path,
+        default=None,
+        help="JSONL realignment sidecar for dot-Identifiability-v1 1.0.0: permutes "
+        "x_obs to canonical order and zeroes hidden variables. Every evaluated "
+        "episode must match its row, so pair it with --version 1.0.0.",
+    )
+    args = ap.parse_args(argv)
+    # Read the sidecar first: a bad path should fail before a suite download.
+    realignment = load_realignment(args.realignment) if args.realignment is not None else None
 
     import os
 
     os.environ.setdefault("TABPFN_ALLOW_CPU_LARGE_DATASET", "1")
 
-    allep = list(load_benchmark(args.suite))
+    suite = load_benchmark(args.suite, version=args.version)
     byst = defaultdict(list)
-    for ep in allep:
+    for ep in suite:
         byst[ep.structure].append(ep)
     samp = []
     for eps in byst.values():
         samp += eps[: args.per_structure]
     samp = samp[: args.max_total]
-    print(f"[{args.suite}] {len(samp)} episodes across {len(byst)} structures")
+    print(
+        f"[{args.suite} v{suite.meta.version}] {len(samp)} episodes across {len(byst)} structures"
+    )
+    if realignment is not None:
+        # The subsample is chosen by structure label and suite order alone, so
+        # realigning after it scores the same episodes and checks only those.
+        samp = realign_episodes(samp, realignment)
+        print(f"  realigned x_obs of {len(samp)} episodes with {args.realignment.name}")
 
-    out = {"suite": args.suite, "n": len(samp)}
+    out = {
+        "suite": args.suite,
+        "suite_version": suite.meta.version,
+        "realigned": realignment is not None,
+        # File name only: an absolute path would leak the machine's layout
+        # into a released result JSON.
+        "realignment_sidecar": args.realignment.name if realignment is not None else None,
+        "n": len(samp),
+    }
     for tag, obs in [("TabPFN_int", False), ("TabPFN_obs", True)]:
         t0 = time.time()
         pred_list: list[float] = []

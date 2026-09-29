@@ -21,6 +21,16 @@ All notable changes to `dotime` are documented here. The format follows
   `pair_mode="interventional"` keeps the v1.0.0 independent-draw path
   byte-identical. `scripts/release_config_v1_1.yaml` builds
   `dot-Identifiability-v1` 1.1.0 with it (plus `stability_retries`).
+- `--version` and `--realignment` options on `dotime-eval-tabpfn` and
+  `dotime-eval-chronos`. Both evaluators index `x_obs` by canonical column, so on
+  the archived `dot-Identifiability-v1` 1.0.0 files they need `--version 1.0.0
+  --realignment results/reference/dot-Identifiability-v1.0.0_realignment.jsonl`.
+  The released `results/reference/server/tabpfn_intobs_ident.json` and
+  `chronos_ident.json` predate these options and read unrealigned 1.0.0 columns.
+  Every realigned episode must match its sidecar row (variable count, query
+  target and `y_true`), so the 1.0.0 sidecar is refused on 1.1.0, whose `x_obs`
+  is already canonical. The result JSON records `suite_version`, `realigned` and
+  `realignment_sidecar`.
 
 ### Changed
 - Documented that 34.0% of `dot-Continuous-v1` queries are self-queries (query on
