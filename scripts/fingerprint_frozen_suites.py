@@ -65,6 +65,11 @@ VERSIONS = (
     ("dot-RegimeSwitch-v1", "1.0.0", "release_config.yaml"),
     ("dot-Continuous-v1", "1.0.0", "release_config.yaml"),
     ("dot-Generic-100k", "1.0.0", "release_config.yaml"),
+    ("dot-Identifiability-v1", "1.2.0", "release_config_v1_2.yaml"),
+    ("dot-SeasonalTrend-v1", "1.0.0", "release_config_seasonal_trend.yaml"),
+    ("dot-Wide-v1", "1.0.0", "release_config_wide.yaml"),
+    ("dot-Observed-v1", "1.0.0", "release_config_observed_v1.yaml"),
+    ("dot-ContinuousIrregular-v1", "1.0.0", "release_config_continuous_irregular.yaml"),
 )
 FULL_VERSIONS = ("dot-Continuous-v1-1.0.0", "dot-Identifiability-v1-1.1.0")
 IDENT_V1_0 = "dot-Identifiability-v1-1.0.0"
@@ -230,6 +235,28 @@ def released_rows(info: dict[str, Any], indices) -> dict[int, dict[str, Any]]:
             for i in here:
                 out[i] = {c: table.column(c)[i - start].as_py() for c in table.column_names}
     return out
+
+
+def _as_released_columns(current: dict, released: dict) -> dict:
+    """Give a regenerated row the column set of its released row.
+
+    ``write_suite`` writes schema 2 for a whole suite once any episode records
+    observation times or a mask, so an episode without them is released with
+    ``None`` in those columns while ``_episode_to_row`` leaves them out. The
+    comparison must see what was written.
+
+    Args:
+        current: Row from :func:`dotime._release_io._episode_to_row`.
+        released: The released parquet row.
+
+    Returns:
+        ``current`` reordered to the released columns, with ``None`` for the
+        schema-2 columns it lacks, or unchanged when it has a column the release
+        lacks (which :func:`compare_row` then reports).
+    """
+    if set(current) <= set(released):
+        return {c: current.get(c) for c in released}
+    return current
 
 
 def compare_row(key: str, idx: int, current: dict, released: dict, sidecar) -> tuple[dict, list]:
@@ -503,13 +530,23 @@ def select_continuous(info: dict[str, Any]) -> dict[int, list[str]]:
     """
     from dotime.benchmarks import _SUITE_REGISTRY, query_time_to_index
 
-    encoding = _SUITE_REGISTRY["dot-Continuous-v1"].query_time_encoding
+    encoding = _SUITE_REGISTRY[info["manifest"]["name"]].query_time_encoding
     tiers = read_column(info, "tier")
     queries = read_column(info, "query_target")
     ivs = [json.loads(s) for s in read_column(info, "intervention_json")]
+    # A "time/span" suite (irregular grids) resolves the query row through the
+    # episode's observation times, which schema 2 stores as a column.
+    first = read_shard(info, info["shards"][0][0])
+    obs_times = (
+        read_column(info, "obs_times")
+        if "obs_times" in first.column_names
+        else [None] * len(info["specs"])
+    )
     rows = [
-        query_time_to_index(q, n, encoding)[0]
-        for q, n in zip(read_column(info, "query_time"), read_column(info, "length"), strict=True)
+        query_time_to_index(q, n, encoding, times=t)[0]
+        for q, n, t in zip(
+            read_column(info, "query_time"), read_column(info, "length"), obs_times, strict=True
+        )
     ]
     labels = {
         i: f"tier {tiers[i]}, self_query {queries[i][0] in ivs[i]['targets']}"
@@ -522,6 +559,72 @@ def select_continuous(info: dict[str, Any]) -> dict[int, list[str]]:
         _add(selected, late, f"structure {structure}: latest onset {min(ivs[late]['times'])}")
         at_onset = next(i for i in idxs if rows[i] == min(ivs[i]["times"]))
         _add(selected, at_onset, f"structure {structure}: query at the onset")
+    schedules = _metadata_labels(info, "schedule")
+    if schedules:
+        # Irregular grids: one row per schedule kind, since the grid draws and
+        # the sub-stepped integration only exist on the non-regular ones.
+        _cover(selected, sorted(schedules), schedules, 8, "schedule")
+    return selected
+
+
+def _metadata_labels(info: dict[str, Any], key: str) -> dict[int, str]:
+    """Read one metadata key of every row as a label.
+
+    Args:
+        info: Output of :func:`load_version`.
+        key: Metadata key, e.g. ``"schedule"`` or ``"obs_cell"``.
+
+    Returns:
+        ``{idx: str(value)}`` for the rows whose metadata carries the key.
+    """
+    out = {}
+    for i, raw in enumerate(read_column(info, "metadata_json")):
+        meta = json.loads(raw) if raw else {}
+        if key in meta:
+            out[i] = str(meta[key])
+    return out
+
+
+def select_observed(info: dict[str, Any]) -> dict[int, list[str]]:
+    """Pick Observed rows: per structure three anchors, every observation cell, two cells per structure.
+
+    Args:
+        info: Output of :func:`load_version`.
+
+    Returns:
+        ``{idx: reasons}``.
+    """
+    cells = _metadata_labels(info, "obs_cell")
+    selected = _anchors(info, "structure")
+    _cover(selected, sorted(cells), cells, 16, "obs_cell")
+    for structure, idxs in _blocks(info, "structure").items():
+        # The cells are cell-major, so the reversed block reaches the cells the
+        # suite-wide cover above did not take from this structure.
+        _cover(selected, list(reversed(idxs)), cells, 2, f"structure {structure}")
+    return selected
+
+
+def select_wide(info: dict[str, Any]) -> dict[int, list[str]]:
+    """Pick Wide rows: each (intervention kind, graph-size bucket), the extremes and the anchors.
+
+    Args:
+        info: Output of :func:`load_version`.
+
+    Returns:
+        ``{idx: reasons}``.
+    """
+    kinds = [_intervention_kind(s) for s in read_column(info, "intervention_json")]
+    n_vars = read_column(info, "n_vars")
+    labels = {
+        i: f"{kinds[i]}, released n_vars {'<= 15' if n <= 15 else '<= 25' if n <= 25 else '> 25'}"
+        for i, n in enumerate(n_vars)
+    }
+    selected: dict[int, list[str]] = {}
+    for where, idx in (("first", 0), ("middle", len(n_vars) // 2), ("last", len(n_vars) - 1)):
+        _add(selected, idx, f"suite ({where})")
+    _cover(selected, range(len(n_vars)), labels, 9, "wide")
+    _add(selected, int(np.argmin(n_vars)), f"fewest released variables ({min(n_vars)})")
+    _add(selected, int(np.argmax(n_vars)), f"most released variables ({max(n_vars)})")
     return selected
 
 
@@ -608,12 +711,16 @@ def fingerprint(cache: Path, out: Path) -> int:
     for name, version, config in VERSIONS:
         info = load_version(name, version, config, cache)
         key = info["key"]
-        if name == "dot-Identifiability-v1":
+        if name in ("dot-Identifiability-v1", "dot-SeasonalTrend-v1"):
             selected = select_identifiability(info, scan)
+        elif name == "dot-Observed-v1":
+            selected = select_observed(info)
         elif name == "dot-RegimeSwitch-v1":
             selected = select_regime(info)
-        elif name == "dot-Continuous-v1":
+        elif name in ("dot-Continuous-v1", "dot-ContinuousIrregular-v1"):
             selected = select_continuous(info)
+        elif name == "dot-Wide-v1":
+            selected = select_wide(info)
         else:
             selected = select_generic(info, scan)
         released = released_rows(info, selected)
@@ -623,7 +730,7 @@ def fingerprint(cache: Path, out: Path) -> int:
             for idx in sorted(selected):
                 spec = info["specs"][idx]
                 ep = make_episode(spec)
-                current = _release_io._episode_to_row(ep)
+                current = _as_released_columns(_release_io._episode_to_row(ep), released[idx])
                 match, found = compare_row(key, idx, current, released[idx], sidecar)
                 findings += found
                 rows.append(
@@ -689,7 +796,7 @@ def _full_chunk(task: dict[str, Any]) -> dict[str, Any]:
     for spec in task["specs"]:
         idx = int(spec["idx"])
         released = {c: table.column(c)[idx - start].as_py() for c in table.column_names}
-        current = _release_io._episode_to_row(make_episode(spec))
+        current = _as_released_columns(_release_io._episode_to_row(make_episode(spec)), released)
         match, found = compare_row(info["key"], idx, current, released, {})
         counts.update(c for c, ok in match.items() if ok)
         findings += found

@@ -50,6 +50,7 @@ V1_COLUMNS = (
     "y_true",
     "metadata_json",
 )
+SCHEMA2_COLUMNS = (*V1_COLUMNS, "obs_times", "obs_mask")
 
 # Columns that may differ from the release, and the versions where they may.
 _DOCUMENTED = {
@@ -78,16 +79,22 @@ def test_fingerprints_cover_every_released_version() -> None:
     """Every frozen version is pinned, with the v1 columns and only documented differences."""
     assert sorted(_DATA["versions"]) == [
         "dot-Continuous-v1-1.0.0",
+        "dot-ContinuousIrregular-v1-1.0.0",
         "dot-Generic-100k-1.0.0",
         "dot-Identifiability-v1-1.0.0",
         "dot-Identifiability-v1-1.1.0",
+        "dot-Identifiability-v1-1.2.0",
+        "dot-Observed-v1-1.0.0",
         "dot-RegimeSwitch-v1-1.0.0",
+        "dot-SeasonalTrend-v1-1.0.0",
+        "dot-Wide-v1-1.0.0",
     ]
     assert tuple(_DATA["columns"]) == V1_COLUMNS
     for key, version in _DATA["versions"].items():
-        assert len(version["rows"]) >= 20, key
+        assert len(version["rows"]) >= 12, key
         for row in version["rows"]:
-            assert tuple(row["hashes"]) == V1_COLUMNS
+            # Schema-2 suites (irregular grids, observation masks) add two columns.
+            assert tuple(row["hashes"]) in (V1_COLUMNS, SCHEMA2_COLUMNS), key
             for col, ok in row["release_match"].items():
                 versions = _DOCUMENTED.get(col, set())
                 allowed = versions is None or key in versions
@@ -128,16 +135,22 @@ def test_pinned_rows_regenerate(key: str) -> None:
         for row in _DATA["versions"][key]["rows"]:
             ep = make_episode(row["spec"])
             cols = _release_io._episode_to_row(ep)
-            assert tuple(cols) == V1_COLUMNS, f"{key} row {row['idx']}: columns {tuple(cols)}"
+            # A schema-2 suite is written with obs_times and obs_mask for every
+            # row, None where an episode records neither, so pad to the pinned
+            # column set before hashing.
+            pinned = tuple(row["hashes"])
+            assert set(cols) <= set(pinned), f"{key} row {row['idx']}: columns {tuple(cols)}"
+            cols = {c: cols.get(c) for c in pinned}
+            assert tuple(cols) in (V1_COLUMNS, SCHEMA2_COLUMNS), (
+                f"{key} row {row['idx']}: columns {tuple(cols)}"
+            )
             summary_problems += summary_mismatches(
                 row["portable"], portable_summary(ep), path=f"row {row['idx']}"
             )
             if exact:
                 hashes = row_hashes(cols)
                 hash_problems += [
-                    f"row {row['idx']} {col}"
-                    for col in V1_COLUMNS
-                    if hashes[col] != row["hashes"][col]
+                    f"row {row['idx']} {col}" for col in pinned if hashes[col] != row["hashes"][col]
                 ]
     assert not summary_problems, (
         f"{key}: regenerated rows no longer match their portable summaries "
@@ -162,8 +175,13 @@ def test_row_hashes_are_type_driven_and_match_a_parquet_round_trip(tmp_path: Pat
     table = pq.read_table(tmp_path / "row.parquet")
     back = {c: table.column(c)[0].as_py() for c in table.column_names}
     assert row_hashes(back) == row_hashes(row)
-    # Integer lists and float lists with equal values must not collide.
+    # Integer lists and float lists with equal values must not collide, nor
+    # bool masks with 0/1 integer lists, and a missing schema-2 column hashes.
     assert row_hashes({"a": [1, 2]})["a"] != row_hashes({"a": [1.0, 2.0]})["a"]
+    assert row_hashes({"m": [True, False]})["m"] != row_hashes({"m": [1, 0]})["m"]
+    assert (
+        row_hashes({"obs_times": None})["obs_times"] != row_hashes({"obs_times": []})["obs_times"]
+    )
     with pytest.raises(TypeError, match="flag"):
         row_hashes({"flag": True})
 

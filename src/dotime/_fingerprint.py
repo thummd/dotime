@@ -101,18 +101,27 @@ def _column_bytes(name: str, value: object) -> bytes:
 
     Returns:
         UTF-8 for strings, little-endian int64 for integers and integer lists,
-        little-endian float64 for floats and float lists.
+        little-endian float64 for floats and float lists, one byte per element
+        behind a ``bool:`` prefix for bool lists (the schema-2 ``obs_mask``),
+        and a fixed ``null`` marker for ``None`` (a schema-2 column an episode
+        does not record).
 
     Raises:
         TypeError: If the value, or an element of a list, is none of these.
-            Bools are refused so that a new flag column needs an explicit
-            encoding rather than silently hashing as an integer.
+            Scalar bools are refused so that a new flag column needs an
+            explicit encoding rather than silently hashing as an integer.
     """
+    if value is None:
+        return b"\x00null"
     if isinstance(value, str):
         return value.encode("utf-8")
     if isinstance(value, (list, tuple)):
         # The column's dtype follows its elements: tensor.tolist() and pyarrow
-        # both return Python ints for integer columns and floats for float ones.
+        # both return Python ints for integer columns and floats for float ones,
+        # and bools for the observation mask. The prefix keeps a bool list from
+        # colliding with a 0/1 integer list of the same values.
+        if value and all(isinstance(v, (bool, np.bool_)) for v in value):
+            return b"bool:" + np.asarray(value, dtype="u1").tobytes()
         if all(_is_int(v) for v in value):
             return np.asarray(value, dtype="<i8").tobytes()
         if all(_is_int(v) or isinstance(v, (float, np.floating)) for v in value):
