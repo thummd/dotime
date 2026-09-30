@@ -7,6 +7,9 @@ All notable changes to `dotime` are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- `dotime-eval-tabpfn` and `dotime-eval-chronos` score direction accuracy on
+  the level and on the causal effect for every arm and take `--dir-target
+  {level,effect}` to choose which fills `dir_acc` (`dotime.reference._scoring`).
 - Frozen fingerprints now cover ten versions: the five released ones plus
   dot-Identifiability-v1 1.2.0, dot-SeasonalTrend-v1, dot-Wide-v1, dot-Observed-v1
   and dot-ContinuousIrregular-v1 1.0.0 (`scripts/fingerprint_frozen_suites.py`,

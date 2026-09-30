@@ -13,6 +13,9 @@ queries of a variable other than the structure's outcome, so every episode
 gets a prediction.
 
 TabPFN is expensive, so we evaluate on a stratified subsample.
+Direction accuracy is written on the interventional level and on the causal
+effect ``y_true - y_obs`` for every arm; ``--dir-target`` picks which one fills
+``dir_acc`` (default ``level``, the v1 protocol).
 
     dotime-eval-tabpfn --suite dot-Identifiability-v1 \
         --per-structure 60 --device cuda:0 --out tabpfn_ident.json
@@ -35,17 +38,16 @@ from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
-import torch
 
 from dotime.baselines import _back_door_columns, _front_door_columns
 from dotime.benchmarks import load_benchmark
-from dotime.evaluation import direction_accuracy
 from dotime.qa import target_qa
 from dotime.reference._realignment import (
     load_realignment,
     realign_episodes,
     sidecar_obs_levels,
 )
+from dotime.reference._scoring import DIR_TARGETS, direction_scores, observational_levels
 
 
 def _regressor():
@@ -270,6 +272,13 @@ def main(argv: list[str] | None = None) -> None:
         "episode must match its row, so pair it with --version 1.0.0.",
     )
     ap.add_argument(
+        "--dir-target",
+        choices=list(DIR_TARGETS),
+        default="level",
+        help="What dir_acc scores: the interventional level (the v1 protocol) or the "
+        "causal effect y_true - y_obs. Both scores are always written to the result.",
+    )
+    ap.add_argument(
         "--target-qa",
         choices=["enforce", "warn"],
         default="enforce",
@@ -301,11 +310,14 @@ def main(argv: list[str] | None = None) -> None:
         samp = realign_episodes(samp, realignment)
         print(f"  realigned x_obs of {len(samp)} episodes with {args.realignment.name}")
     # The subsample is what gets scored, so it is what gets checked.
+    sidecar_levels = sidecar_obs_levels(samp, realignment)
     qa_report = target_qa(
         samp,
-        obs_levels=sidecar_obs_levels(samp, realignment),
+        obs_levels=sidecar_levels,
         raise_on_failure=args.target_qa == "enforce",
     )
+    # The same factual levels the QA saw score the effect direction below.
+    y_obs = observational_levels(samp, sidecar_levels)
 
     out = {
         "suite": args.suite,
@@ -315,6 +327,7 @@ def main(argv: list[str] | None = None) -> None:
         # into a released result JSON.
         "realignment_sidecar": args.realignment.name if realignment is not None else None,
         "n": len(samp),
+        "dir_target": args.dir_target,
         "target_qa": qa_report.to_dict(),
     }
     for tag, obs in [("TabPFN_int", False), ("TabPFN_obs", True)]:
@@ -329,24 +342,16 @@ def main(argv: list[str] | None = None) -> None:
         preds = np.array(pred_list)
         tgts = np.array(tgt_list)
         rmse = float(np.sqrt(np.mean((preds - tgts) ** 2)))
-        da = direction_accuracy(torch.from_numpy(preds).float(), torch.from_numpy(tgts).float())
         rng = np.random.default_rng(0)
         se = (preds - tgts) ** 2
         boot = np.array(
             [np.sqrt(se[rng.integers(0, len(se), len(se))].mean()) for _ in range(1000)]
         )
         ci = [float(np.quantile(boot, 0.025)), float(np.quantile(boot, 0.975))]
-        _nv = da["n_valid"]
-        _se = (da["accuracy"] * (1 - da["accuracy"]) / _nv) ** 0.5 if _nv else float("nan")
-        out[tag] = {
-            "pooled_rmse": rmse,
-            "rmse_ci95": ci,
-            "dir_acc": da["accuracy"],
-            "dir_n_valid": _nv,
-            "dir_acc_se": _se,
-        }
+        scores = direction_scores(preds, tgts, y_obs, args.dir_target)
+        out[tag] = {"pooled_rmse": rmse, "rmse_ci95": ci, **scores}
         print(
-            f"{tag}  RMSE={rmse:.3f} CI[{ci[0]:.3f},{ci[1]:.3f}] dir_acc={da['accuracy']:.3f}  "
+            f"{tag}  RMSE={rmse:.3f} CI[{ci[0]:.3f},{ci[1]:.3f}] dir_acc={scores['dir_acc']:.3f} ({args.dir_target})  "
             f"({time.time() - t0:.0f}s total)"
         )
     if args.out:
