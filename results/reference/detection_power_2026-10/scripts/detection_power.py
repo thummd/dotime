@@ -712,6 +712,11 @@ def score(
         peers = [k for k in VALID.get(s, ()) if k in correct and k != routed]
         contrasts[s] = structure_contrasts(correct, naive, id_aware, others, router, peers)
         contrasts[s]["router_route"] = routed
+        if "do-SVAR" in correct:
+            contrasts[s]["common_calls_vs_do_svar"] = {
+                k: common_call_direction(preds[k][m], preds["do-SVAR"][m], cols, m)
+                for k in id_aware
+            }
     cross = {
         f"{a} - {b}": cross_structure_contrast(correct_by_s[a], correct_by_s[b])
         for a, b in CROSS_STRUCTURE
@@ -725,6 +730,39 @@ def score(
         "estimators": table,
         "contrasts": contrasts,
         "cross_structure": cross,
+    }
+
+
+def common_call_direction(
+    pred_a: np.ndarray, pred_b: np.ndarray, cols: EpisodeColumns, m: np.ndarray
+) -> dict[str, Any]:
+    """Exploratory: sign of two estimators' own effects on the episodes where both call one.
+
+    An abstention (a zero contrast) says nothing about the direction an
+    estimator would give, and the two estimators abstain on different
+    episodes (short histories, weak instruments), so they are compared on the
+    valid episodes where neither abstains.
+
+    Args:
+        pred_a: ``(n, 2)`` predictions of the first estimator on the structure.
+        pred_b: The same for the second.
+        cols: The episode columns.
+        m: Mask selecting the structure's episodes in ``cols``.
+
+    Returns:
+        ``n`` common calls and the two direction accuracies ``a`` and ``b``.
+    """
+    effect = cols.y_true[m] - cols.y_obs[m]
+    con_a, con_b = pred_a[:, 0] - pred_a[:, 1], pred_b[:, 0] - pred_b[:, 1]
+    both = (np.abs(effect) >= DIR_ACC_EPS) & (con_a != 0.0) & (con_b != 0.0)
+    n = int(both.sum())
+    if n == 0:
+        return {"n": 0, "a": None, "b": None}
+    truth = np.sign(effect[both])
+    return {
+        "n": n,
+        "a": float(np.mean(np.sign(con_a[both]) == truth)),
+        "b": float(np.mean(np.sign(con_b[both]) == truth)),
     }
 
 
@@ -1515,6 +1553,18 @@ def render_markdown(result: dict[str, Any]) -> str:
                     f"{cell['contrast_sign_acc']:.3f}; {_fmt(calls)} [{cell['contrast_n_calls']}]"
                 )
         lines.append(f"| {name} | {' | '.join(cells)} |")
+
+    lines += [
+        "",
+        "Same sign, identification-aware estimators against do-SVAR on the valid episodes where "
+        "both call a direction (not pre-registered):",
+        "",
+        "| Structure | Estimator | Common calls | Estimator accuracy | do-SVAR accuracy |",
+        "|---|---|---|---|---|",
+    ]
+    for s in structures:
+        for k, d in result["contrasts"].get(s, {}).get("common_calls_vs_do_svar", {}).items():
+            lines.append(f"| `{s}` | {k} | {d['n']} | {_fmt(d['a'])} | {_fmt(d['b'])} |")
 
     for title, key, digits in (
         (
