@@ -60,8 +60,17 @@ _CONFIG_PATH = Path(__file__).with_name("release_config.yaml")
 
 
 def croissant_metadata(meta: SuiteMetadata, manifest: dict) -> dict:
-    """Minimal Croissant JSON-LD descriptor for one suite."""
-    return {
+    """Minimal Croissant JSON-LD descriptor for one suite.
+
+    Args:
+        meta: Metadata of the suite.
+        manifest: The suite's ``manifest.json`` content.
+
+    Returns:
+        The Croissant descriptor. Schema-2 suites also describe their optional
+        ``obs_times`` and ``obs_mask`` fields.
+    """
+    descriptor = {
         "@context": {"@vocab": "https://schema.org/", "cr": "http://mlcommons.org/croissant/"},
         "@type": "Dataset",
         "name": meta.name,
@@ -107,6 +116,20 @@ def croissant_metadata(meta: SuiteMetadata, manifest: dict) -> dict:
             ],
         },
     }
+    if manifest["schema_version"] == "2":
+        descriptor["cr:recordSet"]["field"] += [
+            {
+                "@id": "obs_times",
+                "dataType": "cr:Float",
+                "description": "Observation time of each of the T rows (null if not recorded).",
+            },
+            {
+                "@id": "obs_mask",
+                "dataType": "cr:Boolean",
+                "description": "True where x_obs is observed (T*N row-major, null if all are).",
+            },
+        ]
+    return descriptor
 
 
 # --------------------------------------------------------------------------- #

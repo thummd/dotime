@@ -117,8 +117,9 @@ def realign_episode(episode, canonical_perm, hidden_canonical=()):
         hidden_canonical: Canonical indices of hidden variables to zero out.
 
     Returns:
-        A new :class:`~dotime.benchmarks.Episode` with realigned ``x_obs``;
-        every other field is shared with the input episode.
+        A new :class:`~dotime.benchmarks.Episode` with realigned ``x_obs`` and,
+        when the episode has one, ``obs_mask`` permuted with it; every other
+        field is shared with the input episode.
     """
     import dataclasses
 
@@ -126,7 +127,13 @@ def realign_episode(episode, canonical_perm, hidden_canonical=()):
     x = episode.x_obs.index_select(1, perm).clone()
     for h in hidden_canonical:
         x[:, int(h)] = 0.0
-    return dataclasses.replace(episode, x_obs=x)
+    # The mask describes x_obs cell by cell, so it must move with its columns.
+    # Zeroed hidden columns keep their entries: hidden variables are stored as
+    # zeros, not as missing values.
+    mask = episode.obs_mask
+    if mask is not None:
+        mask = mask.index_select(1, perm).clone()
+    return dataclasses.replace(episode, x_obs=x, obs_mask=mask)
 
 
 def query_obs_levels(episode) -> torch.Tensor:

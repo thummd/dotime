@@ -280,6 +280,17 @@ class Episode:
         Free-form per-episode metadata (effect magnitude, regime count, ...).
         ``query_time_idx`` holds the exact row of each query when the episode
         constructors or the suite loader recorded it.
+    obs_times:
+        Observation time of each row, float64 of shape ``(T,)``, or ``None``
+        when the episode does not record its grid. Every schema-1 suite
+        leaves it ``None``, and its rows are equally spaced steps. Rows of an
+        irregular grid are not, so a time-aware model should read this field.
+    obs_mask:
+        Which ``x_obs`` entries are observed (``True``), bool of shape
+        ``(T, N)``, or ``None`` when the episode records no mask, in which case
+        every finite entry counts as observed. A schema-2 suite stores
+        ``isfinite(x_obs)`` for an episode that has non-finite ``x_obs`` values
+        and no mask of its own.
     """
 
     x_obs: torch.Tensor
@@ -291,6 +302,8 @@ class Episode:
     structure: str | None = None
     scm_id: int | None = None
     metadata: dict = field(default_factory=dict)
+    obs_times: torch.Tensor | None = None
+    obs_mask: torch.Tensor | None = None
 
     @property
     def n_vars(self) -> int:

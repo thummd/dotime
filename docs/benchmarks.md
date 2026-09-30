@@ -378,3 +378,23 @@ training log without any logging setup, and it draws no random numbers, so its
 batches are bit-identical with the check on or off. All five released suite versions
 pass the defaults, with the observational level of `dot-Identifiability-v1` 1.0.0 read
 from the realignment sidecar (`results/reference/audit_2026-09/frozen_target_qa.json`).
+## Schema 2
+
+Suites can carry two optional columns next to the twelve of schema 1. The
+manifest's `schema_version` says which schema a suite uses.
+
+| Column | Type | Meaning |
+|---|---|---|
+| `obs_times` | `list<double>` of length `T` | Observation time of each row, loaded as `Episode.obs_times` (float64, shape `(T,)`) |
+| `obs_mask` | `list<bool>` of length `T*N`, row-major like `x_obs` | `True` where `x_obs` is observed, loaded as `Episode.obs_mask` (bool, shape `(T, N)`) |
+
+A row holds null where its episode records nothing, and the loader returns
+`None`. A null `obs_mask` means that every finite `x_obs` value is observed.
+`write_suite` writes schema 2 only when an episode records observation times or
+a mask, or holds a non-finite `x_obs` or `x_int` value. An episode with
+non-finite `x_obs` values and no mask of its own stores `isfinite(x_obs)` as its
+mask. Every other suite is still written as schema 1, byte for byte, so the
+frozen suites and their checksums do not change. This package reads both
+schemas. Earlier releases read only schema 1 and refuse a schema-2 suite rather
+than misread it. `evaluation.realign_episode` permutes `obs_mask` together with
+`x_obs`.

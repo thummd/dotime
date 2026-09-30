@@ -29,6 +29,16 @@ All notable changes to `dotime` are documented here. The format follows
   bit for bit against the released files. A per-lag breakdown of the CPU
   baselines on Generic-100k is in
   `results/reference/audit_2026-09/generic_lag_breakdown.json`.
+- Suite schema 2: optional `obs_times` (observation time of each row) and
+  `obs_mask` (`True` where `x_obs` is observed) parquet columns, loaded as
+  `Episode.obs_times` and `Episode.obs_mask`. `write_suite` writes schema 2 only
+  when an episode records times or a mask or holds a non-finite `x_obs` or
+  `x_int` value, and then stores `isfinite(x_obs)` as the mask of an episode
+  with non-finite `x_obs` values and no mask of its own. Every other suite is
+  written as schema 1, byte for byte as before. `read_suite` accepts both
+  (`SUPPORTED_SCHEMA_VERSIONS`), the Croissant descriptor of a schema-2 suite
+  lists the two fields, `evaluation.realign_episode` permutes `obs_mask` with
+  `x_obs`, and episode metadata may hold numpy scalars and arrays.
 - `TSCMStructure.BOW_GRAPH` (`"bow_graph"`), a structure whose effect is not
   identifiable: hidden U -> A, U -> Y and a causal edge A -> Y. It is
   `unobserved_confounder` plus A -> Y, so it takes over the role the paper gave
