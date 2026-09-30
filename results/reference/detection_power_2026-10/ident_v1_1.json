@@ -1,0 +1,2910 @@
+{
+  "analysis": "detection power of dot-Identifiability-v1 by estimator class and structure",
+  "suite": "dot-Identifiability-v1",
+  "version": "1.1.0",
+  "source": "load_benchmark",
+  "n_episodes": 10800,
+  "limit_per_structure": null,
+  "code": {
+    "git_commit": "9a199117e81d6caea48b9f7072221f670b24f6df",
+    "code_dirty": false,
+    "dotime_version": "0.1.3",
+    "naive_ols_registered": false
+  },
+  "protocol": {
+    "effect_sign": "direction_accuracy(pred - y_obs, y_true - y_obs), |y_true - y_obs| >= 0.1",
+    "level_sign": "direction_accuracy(pred, y_true), |y_true| >= 0.1",
+    "false_effect": "|pred(do v) - pred(do a_ref)| >= 0.1, a_ref = x_obs[onset, A]",
+    "bootstrap": {
+      "seed": 20261001,
+      "n_boot": 2000,
+      "unit": "valid episode, paired across estimators"
+    },
+    "arithmetic": "float32, as dotime.reference.reference_table.run_baseline"
+  },
+  "pending_estimators": [
+    "NaiveOLS"
+  ],
+  "target_qa": {
+    "y_obs_level": {
+      "n": 10800,
+      "nonzero_frac": 1.0,
+      "mean": 0.10568185150623322,
+      "var": 0.3543306589126587
+    },
+    "y_int_level": {
+      "n": 10800,
+      "nonzero_frac": 1.0,
+      "mean": 0.1309632658958435,
+      "var": 0.5346424579620361
+    },
+    "effect": {
+      "n": 10800,
+      "nonzero_frac": 0.47824074074074074,
+      "mean": 0.025281399488449097,
+      "var": 0.21637040376663208
+    },
+    "min_nonzero_frac": 0.5
+  },
+  "pooled_n_valid_effect": 3194,
+  "structures": {
+    "bi_variate": {
+      "n_episodes": 1350,
+      "null_effect": false,
+      "null_reason": null,
+      "route": {
+        "estimator": "NaiveOLS",
+        "rule": "unadjusted (no confounding)",
+        "identified": true
+      },
+      "valid_estimators": [
+        "NaiveOLS",
+        "do-SVAR"
+      ],
+      "n_valid_effect": 846,
+      "target_qa": {
+        "y_obs_level": {
+          "n": 1350,
+          "nonzero_frac": 1.0,
+          "mean": 0.08208246529102325,
+          "var": 0.37519821524620056
+        },
+        "y_int_level": {
+          "n": 1350,
+          "nonzero_frac": 1.0,
+          "mean": 0.14582036435604095,
+          "var": 0.7761009931564331
+        },
+        "effect": {
+          "n": 1350,
+          "nonzero_frac": 0.8488888888888889,
+          "mean": 0.0637378990650177,
+          "var": 0.5024064183235168
+        },
+        "exactly_zero_effect_frac": 0.1511111111111111,
+        "query_offsets": [
+          0
+        ]
+      }
+    },
+    "back_door": {
+      "n_episodes": 1350,
+      "null_effect": false,
+      "null_reason": null,
+      "route": {
+        "estimator": "BackDoorOLS",
+        "rule": "back-door adjustment",
+        "identified": true
+      },
+      "valid_estimators": [
+        "BackDoorOLS"
+      ],
+      "n_valid_effect": 789,
+      "target_qa": {
+        "y_obs_level": {
+          "n": 1350,
+          "nonzero_frac": 1.0,
+          "mean": 0.12496968358755112,
+          "var": 0.45576155185699463
+        },
+        "y_int_level": {
+          "n": 1350,
+          "nonzero_frac": 1.0,
+          "mean": 0.16569450497627258,
+          "var": 1.0137648582458496
+        },
+        "effect": {
+          "n": 1350,
+          "nonzero_frac": 0.8081481481481482,
+          "mean": 0.04072483628988266,
+          "var": 0.5866256952285767
+        },
+        "exactly_zero_effect_frac": 0.19185185185185186,
+        "query_offsets": [
+          0
+        ]
+      }
+    },
+    "observed_confounder": {
+      "n_episodes": 1350,
+      "null_effect": true,
+      "null_reason": "dag",
+      "route": {
+        "estimator": "BackDoorOLS",
+        "rule": "back-door adjustment",
+        "identified": true
+      },
+      "valid_estimators": [
+        "BackDoorOLS"
+      ],
+      "n_valid_effect": 0,
+      "target_qa": {
+        "y_obs_level": {
+          "n": 1350,
+          "nonzero_frac": 1.0,
+          "mean": 0.08840547502040863,
+          "var": 0.31383904814720154
+        },
+        "y_int_level": {
+          "n": 1350,
+          "nonzero_frac": 1.0,
+          "mean": 0.08840547502040863,
+          "var": 0.31383904814720154
+        },
+        "effect": {
+          "n": 1350,
+          "nonzero_frac": 0.0,
+          "mean": 0.0,
+          "var": 0.0
+        },
+        "exactly_zero_effect_frac": 1.0,
+        "query_offsets": [
+          0
+        ]
+      }
+    },
+    "mediator": {
+      "n_episodes": 1350,
+      "null_effect": true,
+      "null_reason": "query offset",
+      "route": {
+        "estimator": "NaiveOLS",
+        "rule": "unadjusted (no confounding)",
+        "identified": true
+      },
+      "valid_estimators": [
+        "NaiveOLS",
+        "do-SVAR",
+        "FrontDoorOLS"
+      ],
+      "n_valid_effect": 0,
+      "target_qa": {
+        "y_obs_level": {
+          "n": 1350,
+          "nonzero_frac": 1.0,
+          "mean": 0.09533147513866425,
+          "var": 0.33037641644477844
+        },
+        "y_int_level": {
+          "n": 1350,
+          "nonzero_frac": 1.0,
+          "mean": 0.09533147513866425,
+          "var": 0.33037641644477844
+        },
+        "effect": {
+          "n": 1350,
+          "nonzero_frac": 0.0,
+          "mean": 0.0,
+          "var": 0.0
+        },
+        "exactly_zero_effect_frac": 1.0,
+        "query_offsets": [
+          0
+        ]
+      }
+    },
+    "front_door": {
+      "n_episodes": 1350,
+      "null_effect": false,
+      "null_reason": null,
+      "route": {
+        "estimator": "FrontDoorOLS",
+        "rule": "front-door adjustment",
+        "identified": true
+      },
+      "valid_estimators": [
+        "FrontDoorOLS"
+      ],
+      "n_valid_effect": 371,
+      "target_qa": {
+        "y_obs_level": {
+          "n": 1350,
+          "nonzero_frac": 1.0,
+          "mean": 0.13271620869636536,
+          "var": 0.3660520315170288
+        },
+        "y_int_level": {
+          "n": 1350,
+          "nonzero_frac": 1.0,
+          "mean": 0.14514607191085815,
+          "var": 0.39443129301071167
+        },
+        "effect": {
+          "n": 1350,
+          "nonzero_frac": 0.6651851851851852,
+          "mean": 0.012429879046976566,
+          "var": 0.06157158687710762
+        },
+        "exactly_zero_effect_frac": 0.3348148148148148,
+        "query_offsets": [
+          0
+        ]
+      }
+    },
+    "confounder_mediator": {
+      "n_episodes": 1350,
+      "null_effect": false,
+      "null_reason": null,
+      "route": {
+        "estimator": "BackDoorOLS",
+        "rule": "back-door adjustment",
+        "identified": true
+      },
+      "valid_estimators": [
+        "BackDoorOLS",
+        "FrontDoorOLS"
+      ],
+      "n_valid_effect": 351,
+      "target_qa": {
+        "y_obs_level": {
+          "n": 1350,
+          "nonzero_frac": 1.0,
+          "mean": 0.1120397076010704,
+          "var": 0.3513976037502289
+        },
+        "y_int_level": {
+          "n": 1350,
+          "nonzero_frac": 1.0,
+          "mean": 0.1258493810892105,
+          "var": 0.4209335148334503
+        },
+        "effect": {
+          "n": 1350,
+          "nonzero_frac": 0.66,
+          "mean": 0.013809671625494957,
+          "var": 0.08081056922674179
+        },
+        "exactly_zero_effect_frac": 0.34,
+        "query_offsets": [
+          0
+        ]
+      }
+    },
+    "instrumental_variable": {
+      "n_episodes": 1350,
+      "null_effect": false,
+      "null_reason": null,
+      "route": {
+        "estimator": "IV2SLS",
+        "rule": "instrumental variable",
+        "identified": true
+      },
+      "valid_estimators": [
+        "IV2SLS"
+      ],
+      "n_valid_effect": 837,
+      "target_qa": {
+        "y_obs_level": {
+          "n": 1350,
+          "nonzero_frac": 1.0,
+          "mean": 0.12342408299446106,
+          "var": 0.3916502892971039
+        },
+        "y_int_level": {
+          "n": 1350,
+          "nonzero_frac": 1.0,
+          "mean": 0.19497300684452057,
+          "var": 0.7693017721176147
+        },
+        "effect": {
+          "n": 1350,
+          "nonzero_frac": 0.8437037037037037,
+          "mean": 0.07154892385005951,
+          "var": 0.49347659945487976
+        },
+        "exactly_zero_effect_frac": 0.1562962962962963,
+        "query_offsets": [
+          0
+        ]
+      }
+    },
+    "unobserved_confounder": {
+      "n_episodes": 1350,
+      "null_effect": true,
+      "null_reason": "dag",
+      "route": {
+        "estimator": null,
+        "rule": "tau = 0 (rule 3: A is not an ancestor of Y)",
+        "identified": true
+      },
+      "valid_estimators": [],
+      "n_valid_effect": 0,
+      "target_qa": {
+        "y_obs_level": {
+          "n": 1350,
+          "nonzero_frac": 1.0,
+          "mean": 0.0864858478307724,
+          "var": 0.24758122861385345
+        },
+        "y_int_level": {
+          "n": 1350,
+          "nonzero_frac": 1.0,
+          "mean": 0.0864858478307724,
+          "var": 0.24758122861385345
+        },
+        "effect": {
+          "n": 1350,
+          "nonzero_frac": 0.0,
+          "mean": 0.0,
+          "var": 0.0
+        },
+        "exactly_zero_effect_frac": 1.0,
+        "query_offsets": [
+          0
+        ]
+      }
+    }
+  },
+  "estimators": {
+    "Zero": {
+      "class": "naive",
+      "per_structure": {
+        "bi_variate": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5413711667060852,
+          "effect_n_valid": 846,
+          "effect_sign_se": 0.017131407933504296,
+          "level_rmse": 0.8929526805877686,
+          "level_sign_acc": 0.0,
+          "level_n_valid": 1144,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.7116662859916687,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "back_door": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5044360160827637,
+          "effect_n_valid": 789,
+          "effect_sign_se": 0.017799770785087786,
+          "level_rmse": 1.0204015970230103,
+          "level_sign_acc": 0.0,
+          "level_n_valid": 1169,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.7669969201087952,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "observed_confounder": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.5671460032463074,
+          "level_sign_acc": 0.0,
+          "level_n_valid": 1096,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "mediator": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.5826358795166016,
+          "level_sign_acc": 0.0,
+          "level_n_valid": 1098,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "front_door": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5094339847564697,
+          "effect_n_valid": 371,
+          "effect_sign_se": 0.02595408551792449,
+          "level_rmse": 0.6445918679237366,
+          "level_sign_acc": 0.0,
+          "level_n_valid": 1165,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.24844734370708466,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "confounder_mediator": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5498575568199158,
+          "effect_n_valid": 351,
+          "effect_sign_se": 0.026555013263494253,
+          "level_rmse": 0.6608870029449463,
+          "level_sign_acc": 0.0,
+          "level_n_valid": 1133,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.2846072316169739,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "instrumental_variable": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5232974886894226,
+          "effect_n_valid": 837,
+          "effect_sign_se": 0.017263757072796693,
+          "level_rmse": 0.8985077738761902,
+          "level_sign_acc": 0.0,
+          "level_n_valid": 1176,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.7061132192611694,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "unobserved_confounder": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.5050356984138489,
+          "level_sign_acc": 0.0,
+          "level_n_valid": 1070,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        }
+      },
+      "status": "ok",
+      "pooled": {
+        "n_episodes": 10800,
+        "effect_sign_acc": 0.5247339010238647,
+        "effect_n_valid": 3194,
+        "effect_sign_se": 0.008836301465433476,
+        "level_rmse": 0.7428282499313354,
+        "level_sign_acc": 0.0,
+        "level_n_valid": 9051,
+        "effect_call_rate": 0.0,
+        "effect_call_se": 0.0,
+        "v_invariant_frac": 1.0,
+        "contrast_sign_acc": 0.0,
+        "contrast_sign_se": 0.0,
+        "contrast_n_calls": 0,
+        "contrast_sign_acc_calls": null,
+        "contrast_sign_se_calls": null,
+        "effect_rmse": 0.4658428430557251
+      }
+    },
+    "Mean": {
+      "class": "naive",
+      "per_structure": {
+        "bi_variate": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.542553186416626,
+          "effect_n_valid": 846,
+          "effect_sign_se": 0.01712798528192154,
+          "level_rmse": 0.7844598889350891,
+          "level_sign_acc": 0.6512237787246704,
+          "level_n_valid": 1144,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.7116662859916687,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "back_door": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5348542332649231,
+          "effect_n_valid": 789,
+          "effect_sign_se": 0.017757170044498786,
+          "level_rmse": 0.8634181022644043,
+          "level_sign_acc": 0.6646706461906433,
+          "level_n_valid": 1169,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.7669969201087952,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "observed_confounder": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.3821096122264862,
+          "level_sign_acc": 0.720802903175354,
+          "level_n_valid": 1096,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "mediator": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.3743567168712616,
+          "level_sign_acc": 0.7058287858963013,
+          "level_n_valid": 1098,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "front_door": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5336927175521851,
+          "effect_n_valid": 371,
+          "effect_sign_se": 0.025899702918711052,
+          "level_rmse": 0.4870795011520386,
+          "level_sign_acc": 0.7064377665519714,
+          "level_n_valid": 1165,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.24844734370708466,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "confounder_mediator": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5128205418586731,
+          "effect_n_valid": 351,
+          "effect_sign_se": 0.026679250967973377,
+          "level_rmse": 0.48457071185112,
+          "level_sign_acc": 0.707855224609375,
+          "level_n_valid": 1133,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.2846072316169739,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "instrumental_variable": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5352449417114258,
+          "effect_n_valid": 837,
+          "effect_sign_se": 0.0172395378584228,
+          "level_rmse": 0.78593909740448,
+          "level_sign_acc": 0.6785714030265808,
+          "level_n_valid": 1176,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.7061132192611694,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "unobserved_confounder": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.3661886751651764,
+          "level_sign_acc": 0.7149532437324524,
+          "level_n_valid": 1070,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        }
+      },
+      "status": "ok",
+      "pooled": {
+        "n_episodes": 10800,
+        "effect_sign_acc": 0.5344395637512207,
+        "effect_n_valid": 3194,
+        "effect_sign_se": 0.008826121014522808,
+        "level_rmse": 0.5990480780601501,
+        "level_sign_acc": 0.693293571472168,
+        "level_n_valid": 9051,
+        "effect_call_rate": 0.0,
+        "effect_call_se": 0.0,
+        "v_invariant_frac": 1.0,
+        "contrast_sign_acc": 0.0,
+        "contrast_sign_se": 0.0,
+        "contrast_n_calls": 0,
+        "contrast_sign_acc_calls": null,
+        "contrast_sign_se_calls": null,
+        "effect_rmse": 0.4658428430557251
+      }
+    },
+    "AR1": {
+      "class": "naive",
+      "per_structure": {
+        "bi_variate": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5283687710762024,
+          "effect_n_valid": 846,
+          "effect_sign_se": 0.01716266264767651,
+          "level_rmse": 0.8834012746810913,
+          "level_sign_acc": 0.5777971744537354,
+          "level_n_valid": 1144,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.7116662859916687,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "back_door": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5247148275375366,
+          "effect_n_valid": 789,
+          "effect_sign_se": 0.017778712199637906,
+          "level_rmse": 1.0024524927139282,
+          "level_sign_acc": 0.5842600464820862,
+          "level_n_valid": 1169,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.7669969201087952,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "observed_confounder": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.5346876978874207,
+          "level_sign_acc": 0.6195255517959595,
+          "level_n_valid": 1096,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "mediator": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.5421236157417297,
+          "level_sign_acc": 0.6220400929450989,
+          "level_n_valid": 1098,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "front_door": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5336927175521851,
+          "effect_n_valid": 371,
+          "effect_sign_se": 0.025899702918711052,
+          "level_rmse": 0.6471183896064758,
+          "level_sign_acc": 0.6051502227783203,
+          "level_n_valid": 1165,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.24844734370708466,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "confounder_mediator": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5584045648574829,
+          "effect_n_valid": 351,
+          "effect_sign_se": 0.026505329615315997,
+          "level_rmse": 0.6209161877632141,
+          "level_sign_acc": 0.6231244206428528,
+          "level_n_valid": 1133,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.2846072316169739,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "instrumental_variable": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5125448107719421,
+          "effect_n_valid": 837,
+          "effect_sign_se": 0.017277087807543067,
+          "level_rmse": 0.8757047653198242,
+          "level_sign_acc": 0.5867347121238708,
+          "level_n_valid": 1176,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.7061132192611694,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "unobserved_confounder": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.48913419246673584,
+          "level_sign_acc": 0.6289719343185425,
+          "level_n_valid": 1070,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        }
+      },
+      "status": "ok",
+      "pooled": {
+        "n_episodes": 10800,
+        "effect_sign_acc": 0.5272385478019714,
+        "effect_n_valid": 3194,
+        "effect_sign_se": 0.008833995032030301,
+        "level_rmse": 0.7224531173706055,
+        "level_sign_acc": 0.6054579615592957,
+        "level_n_valid": 9051,
+        "effect_call_rate": 0.0,
+        "effect_call_se": 0.0,
+        "v_invariant_frac": 1.0,
+        "contrast_sign_acc": 0.0,
+        "contrast_sign_se": 0.0,
+        "contrast_n_calls": 0,
+        "contrast_sign_acc_calls": null,
+        "contrast_sign_se_calls": null,
+        "effect_rmse": 0.4658428430557251
+      }
+    },
+    "VAR-OLS": {
+      "class": "naive",
+      "per_structure": {
+        "bi_variate": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5342789888381958,
+          "effect_n_valid": 846,
+          "effect_sign_se": 0.017149907502188057,
+          "level_rmse": 0.8473120331764221,
+          "level_sign_acc": 0.6468531489372253,
+          "level_n_valid": 1144,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.7116662859916687,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "back_door": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5234473943710327,
+          "effect_n_valid": 789,
+          "effect_sign_se": 0.017780887893119747,
+          "level_rmse": 0.9801232814788818,
+          "level_sign_acc": 0.641573965549469,
+          "level_n_valid": 1169,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.7669969201087952,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "observed_confounder": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.4313890337944031,
+          "level_sign_acc": 0.7043795585632324,
+          "level_n_valid": 1096,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "mediator": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.43998923897743225,
+          "level_sign_acc": 0.687613844871521,
+          "level_n_valid": 1098,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "front_door": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5363881587982178,
+          "effect_n_valid": 371,
+          "effect_sign_se": 0.02588987156907652,
+          "level_rmse": 0.5550714135169983,
+          "level_sign_acc": 0.6523604989051819,
+          "level_n_valid": 1165,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.24844734370708466,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "confounder_mediator": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.4928774833679199,
+          "effect_n_valid": 351,
+          "effect_sign_se": 0.026685317716740382,
+          "level_rmse": 0.5616456270217896,
+          "level_sign_acc": 0.6628420352935791,
+          "level_n_valid": 1133,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.2846072316169739,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "instrumental_variable": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.519713282585144,
+          "effect_n_valid": 837,
+          "effect_sign_se": 0.01726909057347919,
+          "level_rmse": 0.8176751136779785,
+          "level_sign_acc": 0.6454081535339355,
+          "level_n_valid": 1176,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.7061132192611694,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "unobserved_confounder": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.42911437153816223,
+          "level_sign_acc": 0.6794392466545105,
+          "level_n_valid": 1070,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        }
+      },
+      "status": "ok",
+      "pooled": {
+        "n_episodes": 10800,
+        "effect_sign_acc": 0.523481547832489,
+        "effect_n_valid": 3194,
+        "effect_sign_se": 0.008837371139147105,
+        "level_rmse": 0.6646943092346191,
+        "level_sign_acc": 0.6644569635391235,
+        "level_n_valid": 9051,
+        "effect_call_rate": 0.0,
+        "effect_call_se": 0.0,
+        "v_invariant_frac": 1.0,
+        "contrast_sign_acc": 0.0,
+        "contrast_sign_se": 0.0,
+        "contrast_n_calls": 0,
+        "contrast_sign_acc_calls": null,
+        "contrast_sign_se_calls": null,
+        "effect_rmse": 0.4658428430557251
+      }
+    },
+    "NaiveOLS": {
+      "class": "association",
+      "per_structure": {
+        "bi_variate": {
+          "status": "pending"
+        },
+        "back_door": {
+          "status": "pending"
+        },
+        "observed_confounder": {
+          "status": "pending"
+        },
+        "mediator": {
+          "status": "pending"
+        },
+        "front_door": {
+          "status": "pending"
+        },
+        "confounder_mediator": {
+          "status": "pending"
+        },
+        "instrumental_variable": {
+          "status": "pending"
+        },
+        "unobserved_confounder": {
+          "status": "pending"
+        }
+      },
+      "status": "pending",
+      "pooled": null
+    },
+    "do-SVAR": {
+      "class": "do-SVAR",
+      "per_structure": {
+        "bi_variate": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.8226950168609619,
+          "effect_n_valid": 846,
+          "effect_sign_se": 0.013130906915446022,
+          "level_rmse": 0.5535033345222473,
+          "level_sign_acc": 0.7875874042510986,
+          "level_n_valid": 1144,
+          "effect_call_rate": 0.6614814814814814,
+          "effect_call_se": 0.012879030649586832,
+          "v_invariant_frac": 0.08074074074074074,
+          "contrast_sign_acc": 0.8652482032775879,
+          "contrast_sign_se": 0.01173957713879622,
+          "contrast_n_calls": 779,
+          "contrast_sign_acc_calls": 0.939666211605072,
+          "contrast_sign_se_calls": 0.008530969209410962,
+          "effect_rmse": 0.4560542404651642,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "back_door": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.7756654024124146,
+          "effect_n_valid": 789,
+          "effect_sign_se": 0.014850697000827768,
+          "level_rmse": 0.6181004643440247,
+          "level_sign_acc": 0.7288280725479126,
+          "level_n_valid": 1169,
+          "effect_call_rate": 0.5696296296296296,
+          "effect_call_se": 0.013475676707467356,
+          "v_invariant_frac": 0.17777777777777778,
+          "contrast_sign_acc": 0.73384028673172,
+          "contrast_sign_se": 0.015733793049604754,
+          "contrast_n_calls": 641,
+          "contrast_sign_acc_calls": 0.9032761454582214,
+          "contrast_sign_se_calls": 0.01167476247252818,
+          "effect_rmse": 0.500308632850647,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "observed_confounder": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.41367578506469727,
+          "level_sign_acc": 0.67974454164505,
+          "level_n_valid": 1096,
+          "effect_call_rate": 0.3637037037037037,
+          "effect_call_se": 0.013092924852643585,
+          "v_invariant_frac": 0.15259259259259259,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.2174898087978363,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "mediator": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.4073182940483093,
+          "level_sign_acc": 0.7049180269241333,
+          "level_n_valid": 1098,
+          "effect_call_rate": 0.3585185185185185,
+          "effect_call_se": 0.01305211747821176,
+          "v_invariant_frac": 0.16666666666666666,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.23291358351707458,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "front_door": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.6630727648735046,
+          "effect_n_valid": 371,
+          "effect_sign_se": 0.024539273399315147,
+          "level_rmse": 0.5188799500465393,
+          "level_sign_acc": 0.729613721370697,
+          "level_n_valid": 1165,
+          "effect_call_rate": 0.46444444444444444,
+          "effect_call_se": 0.013573825642379904,
+          "v_invariant_frac": 0.16296296296296298,
+          "contrast_sign_acc": 0.6522911190986633,
+          "contrast_sign_se": 0.024725305687849832,
+          "contrast_n_calls": 311,
+          "contrast_sign_acc_calls": 0.7781350612640381,
+          "contrast_sign_se_calls": 0.02356088696377482,
+          "effect_rmse": 0.3774039149284363,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "confounder_mediator": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.6581196784973145,
+          "effect_n_valid": 351,
+          "effect_sign_se": 0.02531838106155446,
+          "level_rmse": 0.4535612463951111,
+          "level_sign_acc": 0.7458075881004333,
+          "level_n_valid": 1133,
+          "effect_call_rate": 0.38592592592592595,
+          "effect_call_se": 0.013249377501076479,
+          "v_invariant_frac": 0.2311111111111111,
+          "contrast_sign_acc": 0.5897436141967773,
+          "contrast_sign_se": 0.02625462019907041,
+          "contrast_n_calls": 255,
+          "contrast_sign_acc_calls": 0.8117647171020508,
+          "contrast_sign_se_calls": 0.02447910362724191,
+          "effect_rmse": 0.2763473391532898,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "instrumental_variable": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.7980884313583374,
+          "effect_n_valid": 837,
+          "effect_sign_se": 0.013875331896331854,
+          "level_rmse": 0.5754692554473877,
+          "level_sign_acc": 0.7542517185211182,
+          "level_n_valid": 1176,
+          "effect_call_rate": 0.5866666666666667,
+          "effect_call_se": 0.013402290818250243,
+          "v_invariant_frac": 0.16,
+          "contrast_sign_acc": 0.7873356938362122,
+          "contrast_sign_se": 0.01414374908041627,
+          "contrast_n_calls": 709,
+          "contrast_sign_acc_calls": 0.929478108882904,
+          "contrast_sign_se_calls": 0.009615202612738426,
+          "effect_rmse": 0.49960359930992126,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "unobserved_confounder": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.4823523461818695,
+          "level_sign_acc": 0.6841121315956116,
+          "level_n_valid": 1070,
+          "effect_call_rate": 0.47703703703703704,
+          "effect_call_se": 0.01359391754866755,
+          "v_invariant_frac": 0.07925925925925927,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.36204513907432556,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        }
+      },
+      "status": "ok",
+      "pooled": {
+        "n_episodes": 10800,
+        "effect_sign_acc": 0.7680025100708008,
+        "effect_n_valid": 3194,
+        "effect_sign_se": 0.00746888043076665,
+        "level_rmse": 0.507965624332428,
+        "level_sign_acc": 0.7276543974876404,
+        "level_n_valid": 9051,
+        "effect_call_rate": 0.4834259259259259,
+        "effect_call_se": 0.004808608215410528,
+        "v_invariant_frac": 0.15138888888888888,
+        "contrast_sign_acc": 0.7573575377464294,
+        "contrast_sign_se": 0.007585189276297731,
+        "contrast_n_calls": 2695,
+        "contrast_sign_acc_calls": 0.8975881338119507,
+        "contrast_sign_se_calls": 0.0058402885743355235,
+        "effect_rmse": 0.3806781470775604
+      }
+    },
+    "BackDoorOLS": {
+      "class": "identification-aware",
+      "per_structure": {
+        "bi_variate": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.542553186416626,
+          "effect_n_valid": 846,
+          "effect_sign_se": 0.01712798528192154,
+          "level_rmse": 0.7844598889350891,
+          "level_sign_acc": 0.6512237787246704,
+          "level_n_valid": 1144,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.7116662859916687,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "back_door": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.8098859190940857,
+          "effect_n_valid": 789,
+          "effect_sign_se": 0.013969490436339044,
+          "level_rmse": 0.6164412498474121,
+          "level_sign_acc": 0.753635585308075,
+          "level_n_valid": 1169,
+          "effect_call_rate": 0.6985185185185185,
+          "effect_call_se": 0.012489711256194854,
+          "v_invariant_frac": 0.0,
+          "contrast_sign_acc": 0.9226869344711304,
+          "contrast_sign_se": 0.009508568307801639,
+          "contrast_n_calls": 789,
+          "contrast_sign_acc_calls": 0.9226869344711304,
+          "contrast_sign_se_calls": 0.009508568307801639,
+          "effect_rmse": 0.4620456099510193,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "observed_confounder": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.49117040634155273,
+          "level_sign_acc": 0.6669707894325256,
+          "level_n_valid": 1096,
+          "effect_call_rate": 0.4785185185185185,
+          "effect_call_se": 0.013595711359574379,
+          "v_invariant_frac": 0.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.31160348653793335,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "mediator": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.3743567168712616,
+          "level_sign_acc": 0.7058287858963013,
+          "level_n_valid": 1098,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "front_door": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5336927175521851,
+          "effect_n_valid": 371,
+          "effect_sign_se": 0.025899702918711052,
+          "level_rmse": 0.4870795011520386,
+          "level_sign_acc": 0.7064377665519714,
+          "level_n_valid": 1165,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.24844734370708466,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "confounder_mediator": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.6780626773834229,
+          "effect_n_valid": 351,
+          "effect_sign_se": 0.024938310379155313,
+          "level_rmse": 0.532654881477356,
+          "level_sign_acc": 0.6796116232872009,
+          "level_n_valid": 1133,
+          "effect_call_rate": 0.5185185185185185,
+          "effect_call_se": 0.013598939622928647,
+          "v_invariant_frac": 0.0,
+          "contrast_sign_acc": 0.7720797657966614,
+          "contrast_sign_se": 0.02239076688550203,
+          "contrast_n_calls": 351,
+          "contrast_sign_acc_calls": 0.7720797657966614,
+          "contrast_sign_se_calls": 0.02239076688550203,
+          "effect_rmse": 0.3818470537662506,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "instrumental_variable": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5352449417114258,
+          "effect_n_valid": 837,
+          "effect_sign_se": 0.0172395378584228,
+          "level_rmse": 0.78593909740448,
+          "level_sign_acc": 0.6785714030265808,
+          "level_n_valid": 1176,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.7061132192611694,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "unobserved_confounder": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.3661887049674988,
+          "level_sign_acc": 0.7149532437324524,
+          "level_n_valid": 1070,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        }
+      },
+      "status": "ok",
+      "pooled": {
+        "n_episodes": 10800,
+        "effect_sign_acc": 0.6205385327339172,
+        "effect_n_valid": 3194,
+        "effect_sign_se": 0.008586195290693623,
+        "level_rmse": 0.575492262840271,
+        "level_sign_acc": 0.6947298645973206,
+        "level_n_valid": 9051,
+        "effect_call_rate": 0.21194444444444444,
+        "effect_call_se": 0.00393257992918206,
+        "v_invariant_frac": 0.625,
+        "contrast_sign_acc": 0.3127739429473877,
+        "contrast_sign_se": 0.008203470781430387,
+        "contrast_n_calls": 1140,
+        "contrast_sign_acc_calls": 0.8763157725334167,
+        "contrast_sign_se_calls": 0.009750683257327013,
+        "effect_rmse": 0.4363457262516022
+      }
+    },
+    "IV2SLS": {
+      "class": "identification-aware",
+      "per_structure": {
+        "bi_variate": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.542553186416626,
+          "effect_n_valid": 846,
+          "effect_sign_se": 0.01712798528192154,
+          "level_rmse": 0.7844598889350891,
+          "level_sign_acc": 0.6512237787246704,
+          "level_n_valid": 1144,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.7116662859916687,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "back_door": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5348542332649231,
+          "effect_n_valid": 789,
+          "effect_sign_se": 0.017757170044498786,
+          "level_rmse": 0.8634181022644043,
+          "level_sign_acc": 0.6646706461906433,
+          "level_n_valid": 1169,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.7669969201087952,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "observed_confounder": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.3821096122264862,
+          "level_sign_acc": 0.720802903175354,
+          "level_n_valid": 1096,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "mediator": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.3743567168712616,
+          "level_sign_acc": 0.7058287858963013,
+          "level_n_valid": 1098,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "front_door": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5336927175521851,
+          "effect_n_valid": 371,
+          "effect_sign_se": 0.025899702918711052,
+          "level_rmse": 0.4870795011520386,
+          "level_sign_acc": 0.7064377665519714,
+          "level_n_valid": 1165,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.24844734370708466,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "confounder_mediator": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5128205418586731,
+          "effect_n_valid": 351,
+          "effect_sign_se": 0.026679250967973377,
+          "level_rmse": 0.48457071185112,
+          "level_sign_acc": 0.707855224609375,
+          "level_n_valid": 1133,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.2846072316169739,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "instrumental_variable": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.6129032373428345,
+          "effect_n_valid": 837,
+          "effect_sign_se": 0.016836158214212277,
+          "level_rmse": 0.759518563747406,
+          "level_sign_acc": 0.6972789168357849,
+          "level_n_valid": 1176,
+          "effect_call_rate": 0.24074074074074073,
+          "effect_call_se": 0.011635979848229377,
+          "v_invariant_frac": 0.6777777777777778,
+          "contrast_sign_acc": 0.2700119614601135,
+          "contrast_sign_se": 0.015345697918245992,
+          "contrast_n_calls": 258,
+          "contrast_sign_acc_calls": 0.8759689927101135,
+          "contrast_sign_se_calls": 0.020521053333700582,
+          "effect_rmse": 0.6716757416725159,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "unobserved_confounder": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.3661887049674988,
+          "level_sign_acc": 0.7149532437324524,
+          "level_n_valid": 1070,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        }
+      },
+      "status": "ok",
+      "pooled": {
+        "n_episodes": 10800,
+        "effect_sign_acc": 0.5547902584075928,
+        "effect_n_valid": 3194,
+        "effect_sign_se": 0.008793854723417097,
+        "level_rmse": 0.5947726964950562,
+        "level_sign_acc": 0.6957242488861084,
+        "level_n_valid": 9051,
+        "effect_call_rate": 0.03009259259259259,
+        "effect_call_se": 0.0016439290238702644,
+        "v_invariant_frac": 0.9597222222222223,
+        "contrast_sign_acc": 0.0707576721906662,
+        "contrast_sign_se": 0.004537156969713777,
+        "contrast_n_calls": 258,
+        "contrast_sign_acc_calls": 0.8759689927101135,
+        "contrast_sign_se_calls": 0.020521053333700582,
+        "effect_rmse": 0.4594328999519348
+      }
+    },
+    "FrontDoorOLS": {
+      "class": "identification-aware",
+      "per_structure": {
+        "bi_variate": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.542553186416626,
+          "effect_n_valid": 846,
+          "effect_sign_se": 0.01712798528192154,
+          "level_rmse": 0.7844598889350891,
+          "level_sign_acc": 0.6512237787246704,
+          "level_n_valid": 1144,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.7116662859916687,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "back_door": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5348542332649231,
+          "effect_n_valid": 789,
+          "effect_sign_se": 0.017757170044498786,
+          "level_rmse": 0.8634181022644043,
+          "level_sign_acc": 0.6646706461906433,
+          "level_n_valid": 1169,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.7669969201087952,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "observed_confounder": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.3821096122264862,
+          "level_sign_acc": 0.720802903175354,
+          "level_n_valid": 1096,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "mediator": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.39935117959976196,
+          "level_sign_acc": 0.687613844871521,
+          "level_n_valid": 1098,
+          "effect_call_rate": 0.15185185185185185,
+          "effect_call_se": 0.00976740106988605,
+          "v_invariant_frac": 0.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.13814488053321838,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "front_door": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.7196765542030334,
+          "effect_n_valid": 371,
+          "effect_sign_se": 0.023319081154975847,
+          "level_rmse": 0.6524668335914612,
+          "level_sign_acc": 0.7115879654884338,
+          "level_n_valid": 1165,
+          "effect_call_rate": 0.31925925925925924,
+          "effect_call_se": 0.012688075026531024,
+          "v_invariant_frac": 0.0,
+          "contrast_sign_acc": 0.8652291297912598,
+          "contrast_sign_se": 0.01772868924968542,
+          "contrast_n_calls": 371,
+          "contrast_sign_acc_calls": 0.8652291297912598,
+          "contrast_sign_se_calls": 0.01772868924968542,
+          "effect_rmse": 0.44826772809028625,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "confounder_mediator": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.7122507095336914,
+          "effect_n_valid": 351,
+          "effect_sign_se": 0.02416406624986288,
+          "level_rmse": 0.45479416847229004,
+          "level_sign_acc": 0.7149161696434021,
+          "level_n_valid": 1133,
+          "effect_call_rate": 0.32296296296296295,
+          "effect_call_se": 0.012726696569348108,
+          "v_invariant_frac": 0.0,
+          "contrast_sign_acc": 0.9059829115867615,
+          "contrast_sign_se": 0.015577933430663628,
+          "contrast_n_calls": 351,
+          "contrast_sign_acc_calls": 0.9059829115867615,
+          "contrast_sign_se_calls": 0.015577933430663628,
+          "effect_rmse": 0.21854954957962036,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "instrumental_variable": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.5352449417114258,
+          "effect_n_valid": 837,
+          "effect_sign_se": 0.0172395378584228,
+          "level_rmse": 0.78593909740448,
+          "level_sign_acc": 0.6785714030265808,
+          "level_n_valid": 1176,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": 0.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.7061132192611694,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        },
+        "unobserved_confounder": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.3661887049674988,
+          "level_sign_acc": 0.7149532437324524,
+          "level_n_valid": 1070,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "trivial"
+        }
+      },
+      "status": "ok",
+      "pooled": {
+        "n_episodes": 10800,
+        "effect_sign_acc": 0.5779586434364319,
+        "effect_n_valid": 3194,
+        "effect_sign_se": 0.00873893342422843,
+        "level_rmse": 0.617525577545166,
+        "level_sign_acc": 0.6926306486129761,
+        "level_n_valid": 9051,
+        "effect_call_rate": 0.09925925925925926,
+        "effect_call_se": 0.002877223113276166,
+        "v_invariant_frac": 0.625,
+        "contrast_sign_acc": 0.2000626176595688,
+        "contrast_sign_se": 0.00707853711937697,
+        "contrast_n_calls": 722,
+        "contrast_sign_acc_calls": 0.8850415349006653,
+        "contrast_sign_se_calls": 0.011870901619717582,
+        "effect_rmse": 0.4823303818702698
+      }
+    },
+    "GraphRouter": {
+      "class": "router",
+      "per_structure": {
+        "bi_variate": {
+          "status": "pending"
+        },
+        "back_door": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.8098859190940857,
+          "effect_n_valid": 789,
+          "effect_sign_se": 0.013969490436339044,
+          "level_rmse": 0.6164412498474121,
+          "level_sign_acc": 0.753635585308075,
+          "level_n_valid": 1169,
+          "effect_call_rate": 0.6985185185185185,
+          "effect_call_se": 0.012489711256194854,
+          "v_invariant_frac": 0.0,
+          "contrast_sign_acc": 0.9226869344711304,
+          "contrast_sign_se": 0.009508568307801639,
+          "contrast_n_calls": 789,
+          "contrast_sign_acc_calls": 0.9226869344711304,
+          "contrast_sign_se_calls": 0.009508568307801639,
+          "effect_rmse": 0.4620456099510193,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "observed_confounder": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.49117040634155273,
+          "level_sign_acc": 0.6669707894325256,
+          "level_n_valid": 1096,
+          "effect_call_rate": 0.4785185185185185,
+          "effect_call_se": 0.013595711359574379,
+          "v_invariant_frac": 0.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.31160348653793335,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "mediator": {
+          "status": "pending"
+        },
+        "front_door": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.7196765542030334,
+          "effect_n_valid": 371,
+          "effect_sign_se": 0.023319081154975847,
+          "level_rmse": 0.6524668335914612,
+          "level_sign_acc": 0.7115879654884338,
+          "level_n_valid": 1165,
+          "effect_call_rate": 0.31925925925925924,
+          "effect_call_se": 0.012688075026531024,
+          "v_invariant_frac": 0.0,
+          "contrast_sign_acc": 0.8652291297912598,
+          "contrast_sign_se": 0.01772868924968542,
+          "contrast_n_calls": 371,
+          "contrast_sign_acc_calls": 0.8652291297912598,
+          "contrast_sign_se_calls": 0.01772868924968542,
+          "effect_rmse": 0.44826772809028625,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "confounder_mediator": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.6780626773834229,
+          "effect_n_valid": 351,
+          "effect_sign_se": 0.024938310379155313,
+          "level_rmse": 0.532654881477356,
+          "level_sign_acc": 0.6796116232872009,
+          "level_n_valid": 1133,
+          "effect_call_rate": 0.5185185185185185,
+          "effect_call_se": 0.013598939622928647,
+          "v_invariant_frac": 0.0,
+          "contrast_sign_acc": 0.7720797657966614,
+          "contrast_sign_se": 0.02239076688550203,
+          "contrast_n_calls": 351,
+          "contrast_sign_acc_calls": 0.7720797657966614,
+          "contrast_sign_se_calls": 0.02239076688550203,
+          "effect_rmse": 0.3818470537662506,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "instrumental_variable": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 0.6129032373428345,
+          "effect_n_valid": 837,
+          "effect_sign_se": 0.016836158214212277,
+          "level_rmse": 0.759518563747406,
+          "level_sign_acc": 0.6972789168357849,
+          "level_n_valid": 1176,
+          "effect_call_rate": 0.24074074074074073,
+          "effect_call_se": 0.011635979848229377,
+          "v_invariant_frac": 0.6777777777777778,
+          "contrast_sign_acc": 0.2700119614601135,
+          "contrast_sign_se": 0.015345697918245992,
+          "contrast_n_calls": 258,
+          "contrast_sign_acc_calls": 0.8759689927101135,
+          "contrast_sign_se_calls": 0.020521053333700582,
+          "effect_rmse": 0.6716757416725159,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "unobserved_confounder": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.3661886751651764,
+          "level_sign_acc": 0.7149532437324524,
+          "level_n_valid": 1070,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": false,
+          "false_effect_label": "rule 3"
+        }
+      },
+      "status": "partial",
+      "pooled": null,
+      "pending_structures": [
+        "bi_variate",
+        "mediator"
+      ]
+    },
+    "Oracle": {
+      "class": "oracle",
+      "per_structure": {
+        "bi_variate": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 1.0,
+          "effect_n_valid": 846,
+          "effect_sign_se": 0.0,
+          "level_rmse": 0.0,
+          "level_sign_acc": 1.0,
+          "level_n_valid": 1144,
+          "effect_call_rate": 0.6266666666666667,
+          "effect_call_se": 0.013164361417198851,
+          "v_invariant_frac": 0.1511111111111111,
+          "contrast_sign_acc": 1.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 846,
+          "contrast_sign_acc_calls": 1.0,
+          "contrast_sign_se_calls": 0.0,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "back_door": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 1.0,
+          "effect_n_valid": 789,
+          "effect_sign_se": 0.0,
+          "level_rmse": 0.0,
+          "level_sign_acc": 1.0,
+          "level_n_valid": 1169,
+          "effect_call_rate": 0.5844444444444444,
+          "effect_call_se": 0.013412794770568308,
+          "v_invariant_frac": 0.19185185185185186,
+          "contrast_sign_acc": 1.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 789,
+          "contrast_sign_acc_calls": 1.0,
+          "contrast_sign_se_calls": 0.0,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "observed_confounder": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.0,
+          "level_sign_acc": 1.0,
+          "level_n_valid": 1096,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "mediator": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.0,
+          "level_sign_acc": 1.0,
+          "level_n_valid": 1098,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "front_door": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 1.0,
+          "effect_n_valid": 371,
+          "effect_sign_se": 0.0,
+          "level_rmse": 0.0,
+          "level_sign_acc": 1.0,
+          "level_n_valid": 1165,
+          "effect_call_rate": 0.2748148148148148,
+          "effect_call_se": 0.012150038328642908,
+          "v_invariant_frac": 0.3348148148148148,
+          "contrast_sign_acc": 1.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 371,
+          "contrast_sign_acc_calls": 1.0,
+          "contrast_sign_se_calls": 0.0,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "confounder_mediator": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 1.0,
+          "effect_n_valid": 351,
+          "effect_sign_se": 0.0,
+          "level_rmse": 0.0,
+          "level_sign_acc": 1.0,
+          "level_n_valid": 1133,
+          "effect_call_rate": 0.26,
+          "effect_call_se": 0.011938112016500704,
+          "v_invariant_frac": 0.34,
+          "contrast_sign_acc": 1.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 351,
+          "contrast_sign_acc_calls": 1.0,
+          "contrast_sign_se_calls": 0.0,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "instrumental_variable": {
+          "n_episodes": 1350,
+          "effect_sign_acc": 1.0,
+          "effect_n_valid": 837,
+          "effect_sign_se": 0.0,
+          "level_rmse": 0.0,
+          "level_sign_acc": 1.0,
+          "level_n_valid": 1176,
+          "effect_call_rate": 0.62,
+          "effect_call_se": 0.013210545731290532,
+          "v_invariant_frac": 0.1562962962962963,
+          "contrast_sign_acc": 1.0,
+          "contrast_sign_se": 0.0,
+          "contrast_n_calls": 837,
+          "contrast_sign_acc_calls": 1.0,
+          "contrast_sign_se_calls": 0.0,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        },
+        "unobserved_confounder": {
+          "n_episodes": 1350,
+          "effect_sign_acc": null,
+          "effect_n_valid": 0,
+          "effect_sign_se": null,
+          "level_rmse": 0.0,
+          "level_sign_acc": 1.0,
+          "level_n_valid": 1070,
+          "effect_call_rate": 0.0,
+          "effect_call_se": 0.0,
+          "v_invariant_frac": 1.0,
+          "contrast_sign_acc": null,
+          "contrast_sign_se": null,
+          "contrast_n_calls": 0,
+          "contrast_sign_acc_calls": null,
+          "contrast_sign_se_calls": null,
+          "effect_rmse": 0.0,
+          "status": "ok",
+          "uses_do_value": true,
+          "false_effect_label": "estimated"
+        }
+      },
+      "status": "ok",
+      "pooled": {
+        "n_episodes": 10800,
+        "effect_sign_acc": 1.0,
+        "effect_n_valid": 3194,
+        "effect_sign_se": 0.0,
+        "level_rmse": 0.0,
+        "level_sign_acc": 1.0,
+        "level_n_valid": 9051,
+        "effect_call_rate": 0.29574074074074075,
+        "effect_call_se": 0.0043914706366417755,
+        "v_invariant_frac": 0.5217592592592593,
+        "contrast_sign_acc": 1.0,
+        "contrast_sign_se": 0.0,
+        "contrast_n_calls": 3194,
+        "contrast_sign_acc_calls": 1.0,
+        "contrast_sign_se_calls": 0.0,
+        "effect_rmse": 0.0
+      }
+    }
+  },
+  "contrasts": {
+    "bi_variate": {
+      "n_valid": 846,
+      "separation": {
+        "diff": null,
+        "reason": "no identification-aware estimator applies"
+      },
+      "vs_best_naive": {
+        "do-SVAR": {
+          "diff": 0.2801418439716312,
+          "ci95": [
+            0.24231678486997643,
+            0.3037825059101654
+          ]
+        },
+        "BackDoorOLS": {
+          "diff": 0.0,
+          "ci95": [
+            -0.03191489361702127,
+            0.0
+          ]
+        },
+        "IV2SLS": {
+          "diff": 0.0,
+          "ci95": [
+            -0.03191489361702127,
+            0.0
+          ]
+        },
+        "FrontDoorOLS": {
+          "diff": 0.0,
+          "ci95": [
+            -0.03191489361702127,
+            0.0
+          ]
+        }
+      },
+      "router_vs_valid": {},
+      "vs_association": {},
+      "router_route": "NaiveOLS",
+      "common_calls_vs_do_svar": {}
+    },
+    "back_door": {
+      "n_valid": 789,
+      "separation": {
+        "best_identification_aware": "BackDoorOLS",
+        "best_naive": "Mean",
+        "diff": 0.27503168567807357,
+        "ci95": [
+          0.23827629911280102,
+          0.3016476552598225
+        ]
+      },
+      "vs_best_naive": {
+        "do-SVAR": {
+          "diff": 0.24081115335868186,
+          "ci95": [
+            0.20405576679340942,
+            0.2686945500633714
+          ]
+        },
+        "BackDoorOLS": {
+          "diff": 0.27503168567807357,
+          "ci95": [
+            0.23827629911280102,
+            0.3016476552598225
+          ]
+        },
+        "IV2SLS": {
+          "diff": 0.0,
+          "ci95": [
+            -0.026615969581749055,
+            0.0
+          ]
+        },
+        "FrontDoorOLS": {
+          "diff": 0.0,
+          "ci95": [
+            -0.026615969581749055,
+            0.0
+          ]
+        },
+        "GraphRouter": {
+          "diff": 0.27503168567807357,
+          "ci95": [
+            0.23827629911280102,
+            0.3016476552598225
+          ]
+        }
+      },
+      "router_vs_valid": {},
+      "vs_association": {},
+      "router_route": "BackDoorOLS",
+      "common_calls_vs_do_svar": {
+        "BackDoorOLS": {
+          "n": 641,
+          "a": 0.9375975039001561,
+          "b": 0.9032761310452418
+        }
+      }
+    },
+    "observed_confounder": {
+      "n_valid": 0,
+      "reason": "no episode has |effect| >= 0.1"
+    },
+    "mediator": {
+      "n_valid": 0,
+      "reason": "no episode has |effect| >= 0.1"
+    },
+    "front_door": {
+      "n_valid": 371,
+      "separation": {
+        "best_identification_aware": "FrontDoorOLS",
+        "best_naive": "VAR-OLS",
+        "diff": 0.18328840970350402,
+        "ci95": [
+          0.12938005390835583,
+          0.21293800539083563
+        ]
+      },
+      "vs_best_naive": {
+        "do-SVAR": {
+          "diff": 0.12668463611859837,
+          "ci95": [
+            0.06738544474393537,
+            0.1617250673854448
+          ]
+        },
+        "BackDoorOLS": {
+          "diff": -0.0026954177897574594,
+          "ci95": [
+            -0.048517520215633436,
+            0.0
+          ]
+        },
+        "IV2SLS": {
+          "diff": -0.0026954177897574594,
+          "ci95": [
+            -0.048517520215633436,
+            0.0
+          ]
+        },
+        "FrontDoorOLS": {
+          "diff": 0.18328840970350402,
+          "ci95": [
+            0.12938005390835583,
+            0.21293800539083563
+          ]
+        },
+        "GraphRouter": {
+          "diff": 0.18328840970350402,
+          "ci95": [
+            0.12938005390835583,
+            0.21293800539083563
+          ]
+        }
+      },
+      "router_vs_valid": {},
+      "vs_association": {},
+      "router_route": "FrontDoorOLS",
+      "common_calls_vs_do_svar": {
+        "FrontDoorOLS": {
+          "n": 311,
+          "a": 0.887459807073955,
+          "b": 0.7781350482315113
+        }
+      }
+    },
+    "confounder_mediator": {
+      "n_valid": 351,
+      "separation": {
+        "best_identification_aware": "FrontDoorOLS",
+        "best_naive": "AR1",
+        "diff": 0.15384615384615385,
+        "ci95": [
+          0.09971509971509973,
+          0.19373219373219375
+        ]
+      },
+      "vs_best_naive": {
+        "do-SVAR": {
+          "diff": 0.09971509971509973,
+          "ci95": [
+            0.042735042735042694,
+            0.13960113960113962
+          ]
+        },
+        "BackDoorOLS": {
+          "diff": 0.11965811965811968,
+          "ci95": [
+            0.05698005698005704,
+            0.16524216524216528
+          ]
+        },
+        "IV2SLS": {
+          "diff": -0.04558404558404561,
+          "ci95": [
+            -0.09686609686609693,
+            -0.01139601139601143
+          ]
+        },
+        "FrontDoorOLS": {
+          "diff": 0.15384615384615385,
+          "ci95": [
+            0.09686609686609693,
+            0.19373219373219375
+          ]
+        },
+        "GraphRouter": {
+          "diff": 0.11965811965811968,
+          "ci95": [
+            0.05698005698005704,
+            0.16524216524216528
+          ]
+        }
+      },
+      "router_vs_valid": {
+        "FrontDoorOLS": {
+          "diff": -0.03418803418803418,
+          "ci95": [
+            -0.07407407407407407,
+            0.008547008547008517
+          ]
+        }
+      },
+      "vs_association": {},
+      "router_route": "BackDoorOLS",
+      "common_calls_vs_do_svar": {
+        "BackDoorOLS": {
+          "n": 255,
+          "a": 0.8117647058823529,
+          "b": 0.8117647058823529
+        },
+        "FrontDoorOLS": {
+          "n": 255,
+          "a": 0.9450980392156862,
+          "b": 0.8117647058823529
+        }
+      }
+    },
+    "instrumental_variable": {
+      "n_valid": 837,
+      "separation": {
+        "best_identification_aware": "IV2SLS",
+        "best_naive": "Mean",
+        "diff": 0.07765830346475511,
+        "ci95": [
+          0.05134408602150534,
+          0.09796893667861406
+        ]
+      },
+      "vs_best_naive": {
+        "do-SVAR": {
+          "diff": 0.2628434886499402,
+          "ci95": [
+            0.2270011947431303,
+            0.2915173237753883
+          ]
+        },
+        "BackDoorOLS": {
+          "diff": 0.0,
+          "ci95": [
+            -0.022700119474312996,
+            0.0
+          ]
+        },
+        "IV2SLS": {
+          "diff": 0.07765830346475511,
+          "ci95": [
+            0.05134408602150534,
+            0.09796893667861406
+          ]
+        },
+        "FrontDoorOLS": {
+          "diff": 0.0,
+          "ci95": [
+            -0.022700119474312996,
+            0.0
+          ]
+        },
+        "GraphRouter": {
+          "diff": 0.07765830346475511,
+          "ci95": [
+            0.05134408602150534,
+            0.09796893667861406
+          ]
+        }
+      },
+      "router_vs_valid": {},
+      "vs_association": {},
+      "router_route": "IV2SLS",
+      "common_calls_vs_do_svar": {
+        "IV2SLS": {
+          "n": 213,
+          "a": 0.8967136150234741,
+          "b": 0.9389671361502347
+        }
+      }
+    },
+    "unobserved_confounder": {
+      "n_valid": 0,
+      "reason": "no episode has |effect| >= 0.1"
+    }
+  },
+  "cross_structure": {},
+  "preregistered": [
+    {
+      "id": "P1",
+      "statement": "every naive effect-sign accuracy lies in [0.4, 0.6]",
+      "parts": [
+        {
+          "estimator": "Zero",
+          "structure": "bi_variate",
+          "value": 0.5413711667060852,
+          "holds": true
+        },
+        {
+          "estimator": "Zero",
+          "structure": "back_door",
+          "value": 0.5044360160827637,
+          "holds": true
+        },
+        {
+          "estimator": "Zero",
+          "structure": "front_door",
+          "value": 0.5094339847564697,
+          "holds": true
+        },
+        {
+          "estimator": "Zero",
+          "structure": "confounder_mediator",
+          "value": 0.5498575568199158,
+          "holds": true
+        },
+        {
+          "estimator": "Zero",
+          "structure": "instrumental_variable",
+          "value": 0.5232974886894226,
+          "holds": true
+        },
+        {
+          "estimator": "Mean",
+          "structure": "bi_variate",
+          "value": 0.542553186416626,
+          "holds": true
+        },
+        {
+          "estimator": "Mean",
+          "structure": "back_door",
+          "value": 0.5348542332649231,
+          "holds": true
+        },
+        {
+          "estimator": "Mean",
+          "structure": "front_door",
+          "value": 0.5336927175521851,
+          "holds": true
+        },
+        {
+          "estimator": "Mean",
+          "structure": "confounder_mediator",
+          "value": 0.5128205418586731,
+          "holds": true
+        },
+        {
+          "estimator": "Mean",
+          "structure": "instrumental_variable",
+          "value": 0.5352449417114258,
+          "holds": true
+        },
+        {
+          "estimator": "AR1",
+          "structure": "bi_variate",
+          "value": 0.5283687710762024,
+          "holds": true
+        },
+        {
+          "estimator": "AR1",
+          "structure": "back_door",
+          "value": 0.5247148275375366,
+          "holds": true
+        },
+        {
+          "estimator": "AR1",
+          "structure": "front_door",
+          "value": 0.5336927175521851,
+          "holds": true
+        },
+        {
+          "estimator": "AR1",
+          "structure": "confounder_mediator",
+          "value": 0.5584045648574829,
+          "holds": true
+        },
+        {
+          "estimator": "AR1",
+          "structure": "instrumental_variable",
+          "value": 0.5125448107719421,
+          "holds": true
+        },
+        {
+          "estimator": "VAR-OLS",
+          "structure": "bi_variate",
+          "value": 0.5342789888381958,
+          "holds": true
+        },
+        {
+          "estimator": "VAR-OLS",
+          "structure": "back_door",
+          "value": 0.5234473943710327,
+          "holds": true
+        },
+        {
+          "estimator": "VAR-OLS",
+          "structure": "front_door",
+          "value": 0.5363881587982178,
+          "holds": true
+        },
+        {
+          "estimator": "VAR-OLS",
+          "structure": "confounder_mediator",
+          "value": 0.4928774833679199,
+          "holds": true
+        },
+        {
+          "estimator": "VAR-OLS",
+          "structure": "instrumental_variable",
+          "value": 0.519713282585144,
+          "holds": true
+        }
+      ],
+      "outcome": "confirmed"
+    },
+    {
+      "id": "P2",
+      "statement": "the best identification-aware estimator beats the best naive one (95% CI above 0) on back_door, confounder_mediator, instrumental_variable and front_door, and none applies on bi_variate, unobserved_confounder or bow_graph",
+      "parts": [
+        {
+          "structure": "back_door",
+          "best_identification_aware": "BackDoorOLS",
+          "diff": 0.27503168567807357,
+          "ci95": [
+            0.23827629911280102,
+            0.3016476552598225
+          ],
+          "holds": true
+        },
+        {
+          "structure": "confounder_mediator",
+          "best_identification_aware": "FrontDoorOLS",
+          "diff": 0.15384615384615385,
+          "ci95": [
+            0.09971509971509973,
+            0.19373219373219375
+          ],
+          "holds": true
+        },
+        {
+          "structure": "instrumental_variable",
+          "best_identification_aware": "IV2SLS",
+          "diff": 0.07765830346475511,
+          "ci95": [
+            0.05134408602150534,
+            0.09796893667861406
+          ],
+          "holds": true
+        },
+        {
+          "structure": "front_door",
+          "best_identification_aware": "FrontDoorOLS",
+          "diff": 0.18328840970350402,
+          "ci95": [
+            0.12938005390835583,
+            0.21293800539083563
+          ],
+          "holds": true
+        },
+        {
+          "structure": "bi_variate",
+          "applicable_identification_aware": [],
+          "holds": true
+        },
+        {
+          "structure": "unobserved_confounder",
+          "applicable_identification_aware": [],
+          "holds": true
+        }
+      ],
+      "outcome": "confirmed"
+    },
+    {
+      "id": "P3",
+      "statement": "the GraphRouter is not significantly worse (95% CI upper bound >= 0) than any other valid estimator on any structure",
+      "parts": [
+        {
+          "structure": "confounder_mediator",
+          "peer": "FrontDoorOLS",
+          "diff": -0.03418803418803418,
+          "ci95": [
+            -0.07407407407407407,
+            0.008547008547008517
+          ],
+          "anticipated_exception": true,
+          "holds": true
+        }
+      ],
+      "outcome": "confirmed"
+    },
+    {
+      "id": "P4",
+      "statement": "on unobserved_confounder the router's tau = 0 has a false-effect rate of exactly 0, while NaiveOLS and do-SVAR exceed 0.1",
+      "parts": [
+        {
+          "estimator": "GraphRouter",
+          "value": 0.0,
+          "label": "rule 3",
+          "holds": true
+        },
+        {
+          "estimator": "NaiveOLS",
+          "value": null,
+          "holds": null
+        },
+        {
+          "estimator": "do-SVAR",
+          "value": 0.47703703703703704,
+          "holds": true
+        }
+      ],
+      "outcome": "confirmed"
+    },
+    {
+      "id": "P5",
+      "statement": "on bow_graph no identification-aware estimator applies, the router reports no identification, and NaiveOLS and do-SVAR lose effect-sign accuracy relative to bi_variate (95% CI of the difference above 0)",
+      "parts": [],
+      "outcome": "not evaluable"
+    },
+    {
+      "id": "E1",
+      "statement": "anticipated exception to P3: on mediator queried after the onset, the router (contemporaneous NaiveOLS) is significantly worse than do-SVAR, which models the lag",
+      "parts": [],
+      "outcome": "not evaluable"
+    },
+    {
+      "id": "E2",
+      "statement": "anticipated exception to P3: on confounder_mediator FrontDoorOLS scores at least as high as the routed BackDoorOLS (point estimates)",
+      "parts": [
+        {
+          "FrontDoorOLS": 0.7122507095336914,
+          "BackDoorOLS": 0.6780626773834229,
+          "holds": true
+        }
+      ],
+      "outcome": "confirmed"
+    },
+    {
+      "id": "E3",
+      "statement": "on observed_confounder the contemporaneous back-door set leaves A(t-1) paths open: BackDoorOLS (the router) makes false effects at a rate >= 0.1, below NaiveOLS, and do-SVAR, which conditions on the lags, makes fewer than BackDoorOLS",
+      "parts": [
+        {
+          "check": "BackDoorOLS false-effect rate >= 0.1",
+          "value": 0.4785185185185185,
+          "holds": true
+        },
+        {
+          "check": "BackDoorOLS below NaiveOLS",
+          "values": [
+            0.4785185185185185,
+            null
+          ],
+          "holds": null
+        },
+        {
+          "check": "do-SVAR below BackDoorOLS",
+          "values": [
+            0.3637037037037037,
+            0.4785185185185185
+          ],
+          "holds": true
+        }
+      ],
+      "outcome": "confirmed"
+    },
+    {
+      "id": "S1",
+      "statement": "do-SVAR beats the best naive estimator (95% CI above 0) on bi_variate and, when it is queried after the onset, on mediator",
+      "parts": [
+        {
+          "structure": "bi_variate",
+          "diff": 0.2801418439716312,
+          "ci95": [
+            0.24231678486997643,
+            0.3037825059101654
+          ],
+          "holds": true
+        }
+      ],
+      "outcome": "confirmed"
+    },
+    {
+      "id": "O1",
+      "statement": "the oracle scores 1 wherever the effect sign is defined and makes no false effect",
+      "parts": [
+        {
+          "structure": "bi_variate",
+          "effect_sign_acc": 1.0,
+          "holds": true
+        },
+        {
+          "structure": "back_door",
+          "effect_sign_acc": 1.0,
+          "holds": true
+        },
+        {
+          "structure": "observed_confounder",
+          "effect_call_rate": 0.0,
+          "holds": true
+        },
+        {
+          "structure": "mediator",
+          "effect_call_rate": 0.0,
+          "holds": true
+        },
+        {
+          "structure": "front_door",
+          "effect_sign_acc": 1.0,
+          "holds": true
+        },
+        {
+          "structure": "confounder_mediator",
+          "effect_sign_acc": 1.0,
+          "holds": true
+        },
+        {
+          "structure": "instrumental_variable",
+          "effect_sign_acc": 1.0,
+          "holds": true
+        },
+        {
+          "structure": "unobserved_confounder",
+          "effect_call_rate": 0.0,
+          "holds": true
+        }
+      ],
+      "outcome": "confirmed"
+    }
+  ],
+  "runtime_s": 22.4
+}

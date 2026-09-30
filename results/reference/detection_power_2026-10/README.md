@@ -189,7 +189,8 @@ parts is confirmed only if every gradable part holds.
 Run from the repository root with the dev environment. In a worktree whose editable
 install points elsewhere, prefix every command with `PYTHONPATH=<checkout>/src`, because
 the script refuses to score with another checkout's `dotime`. The script uses 4 worker
-processes with one thread each, and a full run takes about 2 minutes.
+processes with one thread each. A full run took 25 to 55 seconds on a shared 16-core
+machine, and the self-test takes about 5 seconds.
 
 ```bash
 python results/reference/detection_power_2026-10/scripts/detection_power.py --self-test
@@ -229,7 +230,140 @@ variance) pooled (`reference_table.target_qa`) and per structure before scoring.
 an estimator the package does not register yet are `pending`. The router is `pending` on
 the structures it routes to such an estimator.
 
+## Results
+
+### 1.1.0: the outputs in this folder
+
+`ident_v1_1.md` holds every table. The outputs come from commit `9a19911`, where
+NaiveOLS was not registered yet. Its rows are therefore `pending`, and so are the
+router's cells on `bi_variate` and `mediator`, which route to it. `mediator`,
+`observed_confounder` and `unobserved_confounder` have no episode with an effect of at
+least 0.1 at their 1.1.0 query, so they only score false effects.
+
+Graded outcomes, on the parts that could be graded: P1, P2, P3, P4, E2, E3, S1 and O1
+are confirmed. P5 and E1 need 1.2.0. The parts of P3, P4 and E3 that involve NaiveOLS
+wait for it.
+
+Effect-sign accuracy with binomial SE:
+
+| Structure | n_valid | Naive (range) | do-SVAR | Identification-aware | Router |
+|---|---|---|---|---|---|
+| `bi_variate` | 846 | 0.528 to 0.543 | 0.823 ± 0.013 | none applies | pending |
+| `back_door` | 789 | 0.504 to 0.535 | 0.776 ± 0.015 | BackDoorOLS 0.810 ± 0.014 | 0.810 |
+| `front_door` | 371 | 0.509 to 0.536 | 0.663 ± 0.025 | FrontDoorOLS 0.720 ± 0.023 | 0.720 |
+| `confounder_mediator` | 351 | 0.493 to 0.558 | 0.658 ± 0.025 | FrontDoorOLS 0.712 ± 0.024, BackDoorOLS 0.678 ± 0.025 | 0.678 |
+| `instrumental_variable` | 837 | 0.513 to 0.535 | 0.798 ± 0.014 | IV2SLS 0.613 ± 0.017 | 0.613 |
+
+- **Separation from naive forecasting** (best identification-aware minus best naive,
+  paired 95% CI): `back_door` +0.275 [+0.238, +0.302], `front_door`
+  +0.183 [+0.129, +0.213], `confounder_mediator` +0.154 [+0.100, +0.194],
+  `instrumental_variable` +0.078 [+0.051, +0.098].
+- **False effects.** On `unobserved_confounder` the router's `tau = 0` calls no effect.
+  do-SVAR calls one in 47.7% ± 1.4% of episodes. On `observed_confounder` BackDoorOLS,
+  and so the router, calls one in 47.9% ± 1.4%, do-SVAR in 36.4% ± 1.3%. On `mediator`,
+  whose 1.1.0 query precedes its lagged effect, do-SVAR calls one in 35.9% and
+  FrontDoorOLS in 15.2%.
+- **The router against its valid peers.** On `confounder_mediator` it trails FrontDoorOLS
+  by 0.034 [-0.074, +0.009], within noise.
+- **do-SVAR beats the naive estimators on every structure with an effect** (+0.10 to
+  +0.28, every CI above 0), including where its assumptions fail. On
+  `instrumental_variable` it scores 0.798, above IV2SLS's 0.613. It also has the lowest
+  pooled level RMSE (0.508, against 0.575 for BackDoorOLS and 0.599 for Mean).
+
+### Preview with NaiveOLS and 1.2.0: not outputs of this folder
+
+These numbers come from a scratch run, and the integrator's rerun regenerates them
+into `ident_v1_1.*` and `ident_v1_2.*`. That run must reproduce them exactly. The
+scratch tree was main `9690cf0` plus session A's commit `4f4e513`, which registers
+NaiveOLS, plus these scripts. The 1.2.0 suite was built with `scripts/build_release.py`
+and session A's `release_config_v1_2.yaml` (suite seed 20261719, 12,150 episodes). Its
+seven unchanged structures match the released 1.1.0 bit for bit (`x_obs`, `x_int`,
+`y_true` and query rows of 9,450 episodes). `mediator` differs only in its query, at
+offset 1, and `bow_graph` fills episodes 10800 to 12149 with none diverged. In that
+tree, all 78 non-NaiveOLS cells of 1.1.0 equal this folder's, and gate 3 passes on 77
+cells with no mismatch.
+
+Graded outcomes on the 1.2.0 preview:
+
+- Confirmed: P1, P2, P4, P5, E1, E2, S1 and O1.
+- **P3 is not confirmed.** It fails only on `mediator`, the anticipated exception E1.
+  There the router's contemporaneous NaiveOLS scores 0.536 against do-SVAR's 0.701, a
+  gap of -0.165 [-0.219, -0.111].
+- **E3 is not confirmed.** On `observed_confounder`, BackDoorOLS's false-effect rate
+  (47.9%) is not below unadjusted NaiveOLS's (45.0% ± 1.4%). The contemporaneous
+  back-door set does not remove confounding that runs through `A_{t-1}`.
+
+Effect-sign accuracy of the estimators that were missing or new:
+
+| Structure | n_valid | Best naive | NaiveOLS | do-SVAR | Router |
+|---|---|---|---|---|---|
+| `bi_variate` | 846 | 0.543 | 0.849 | 0.823 | 0.849 |
+| `mediator` (offset 1) | 334 | 0.530 | 0.536 | 0.701 | 0.536 |
+| `bow_graph` | 828 | 0.559 | 0.814 | 0.783 | 0.814 (no identification) |
+| `back_door` | 789 | 0.535 | 0.788 | 0.776 | 0.810 |
+| `front_door` | 371 | 0.536 | 0.698 | 0.663 | 0.720 |
+| `confounder_mediator` | 351 | 0.558 | 0.672 | 0.658 | 0.678 |
+| `instrumental_variable` | 837 | 0.535 | 0.812 | 0.798 | 0.613 |
+
+On `unobserved_confounder`, NaiveOLS calls a false effect in 49.4% ± 1.4% of episodes,
+against 0 for the router.
+
+### What the benchmark separates
+
+1. **Reading the do-value against naive forecasting**, strongly. NaiveOLS, do-SVAR and
+   the identification-aware estimators, where they apply, beat the best naive estimator
+   by +0.08 to +0.31 on every structure with an effect, with every CI above 0. The one
+   exception is `mediator`, where only do-SVAR does (+0.171 [+0.114, +0.204]).
+2. **Graph reasoning against association on the null control**, strongly. Rule 3 gives
+   0 false effects on `unobserved_confounder`, while NaiveOLS gives 49.4% and do-SVAR
+   47.7%.
+3. **Modelling the lag.** On `mediator` at offset 1 only do-SVAR separates, +0.165
+   [+0.111, +0.219] over NaiveOLS.
+4. **Identification-aware adjustment against unadjusted association on effect sign,
+   weakly** (exploratory contrast). BackDoorOLS beats NaiveOLS on `back_door` by +0.022
+   [+0.004, +0.039]. FrontDoorOLS leads by +0.022 [-0.016, +0.057] on `front_door` and
+   +0.040 [-0.006, +0.083] on `confounder_mediator`, neither significant. IV2SLS falls
+   0.200 below NaiveOLS on `instrumental_variable`. Non-identification barely registers:
+   NaiveOLS loses only 0.035 [+0.001, +0.071] from `bi_variate` to `bow_graph`, the same
+   graph plus the hidden U. In this prior, confounding seldom reverses the sign of the
+   effect. On the sign of its own effect, the exploratory contrast below, NaiveOLS is
+   right in 88.5% of `back_door`, 93.2% of `instrumental_variable` and 91.2% of
+   `bow_graph` valid episodes.
+
+### Exploratory results (not pre-registered, added after reading the 1.1.0 results)
+
+These come from commits `eddd3b6`, `ec52141`, `88bcf4f` and `9a19911`, which add columns
+and tables but change no pre-registered metric or criterion.
+
+- **Sign of each estimator's own effect**, `pred(do v) - pred(do a_ref)`. This removes
+  the level-forecast term that the official score also charges. Where they apply, the
+  identification-aware estimators are right more often than do-SVAR. On the valid
+  episodes where both call a direction, the rates are:
+
+  | Structure | Identification-aware | do-SVAR |
+  |---|---|---|
+  | `back_door` | BackDoorOLS 0.938 | 0.903 |
+  | `front_door` | FrontDoorOLS 0.887 | 0.778 |
+  | `confounder_mediator` | FrontDoorOLS 0.945 | 0.812 |
+  | `instrumental_variable` | IV2SLS 0.897 | 0.939 |
+
+  On `confounder_mediator` BackDoorOLS ties with do-SVAR at 0.812. So do-SVAR's high
+  official scores rest partly on its level forecast.
+- **IV2SLS abstains in 67.8% of `instrumental_variable` episodes.** Its first-stage R^2
+  is below 0.1 there, and it predicts the pre-onset mean. On the 258 valid episodes where
+  it calls a direction, it is right in 87.6%.
+- **Effect magnitude.** Against the no-effect baseline, the RMSE of the estimated effect
+  improves for BackDoorOLS on `back_door` (0.462 against 0.767) and for FrontDoorOLS on
+  `confounder_mediator` (0.219 against 0.285). It worsens for FrontDoorOLS on
+  `front_door` (0.448 against 0.248), where a third of the effects are exactly zero.
+
 ## Limitations
+
+- **Effect sign is blind to confounding that keeps the sign.** The official effect-sign
+  score cannot separate an unbiased estimate from a biased one of the same sign. In this
+  prior, confounding bias seldom reverses the effect, so unadjusted association scores
+  close to adjustment on the confounded structures (Results, item 4). The null-effect
+  controls separate them, because there every call is wrong.
 
 - **Temporal adjustment.** The package BackDoorOLS and the new FrontDoorOLS condition on
   contemporaneous variables and the outcome's own lag, which is a valid set only in the

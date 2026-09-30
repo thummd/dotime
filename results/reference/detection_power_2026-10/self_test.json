@@ -1,0 +1,963 @@
+{
+  "gate": 2,
+  "what": "linear Gaussian SVARs with T = 20,000: each estimator recovers the known effect within 0.05 where its assumptions hold, confounded estimators miss it by at least 0.2, declining estimators predict no effect, the oracle returns y_true at v and y_obs at a_ref, and the router follows the DAG",
+  "code": {
+    "git_commit": "9a199117e81d6caea48b9f7072221f670b24f6df",
+    "code_dirty": false,
+    "dotime_version": "0.1.3",
+    "naive_ols_registered": false
+  },
+  "T": 20000,
+  "seed": 20261001,
+  "routes": {
+    "bi_variate": {
+      "estimator": "NaiveOLS",
+      "rule": "unadjusted (no confounding)",
+      "identified": true
+    },
+    "back_door": {
+      "estimator": "BackDoorOLS",
+      "rule": "back-door adjustment",
+      "identified": true
+    },
+    "observed_confounder": {
+      "estimator": "BackDoorOLS",
+      "rule": "back-door adjustment",
+      "identified": true
+    },
+    "mediator": {
+      "estimator": "NaiveOLS",
+      "rule": "unadjusted (no confounding)",
+      "identified": true
+    },
+    "front_door": {
+      "estimator": "FrontDoorOLS",
+      "rule": "front-door adjustment",
+      "identified": true
+    },
+    "confounder_mediator": {
+      "estimator": "BackDoorOLS",
+      "rule": "back-door adjustment",
+      "identified": true
+    },
+    "instrumental_variable": {
+      "estimator": "IV2SLS",
+      "rule": "instrumental variable",
+      "identified": true
+    },
+    "unobserved_confounder": {
+      "estimator": null,
+      "rule": "tau = 0 (rule 3: A is not an ancestor of Y)",
+      "identified": true
+    },
+    "bow_graph": {
+      "estimator": "NaiveOLS",
+      "rule": "no identification (unadjusted estimate)",
+      "identified": false
+    }
+  },
+  "scenarios": [
+    {
+      "scenario": "bi_variate",
+      "structure": "bi_variate",
+      "offset": 0,
+      "tau": 1.0,
+      "estimators": {
+        "Zero": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "Mean": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "AR1": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "VAR-OLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "NaiveOLS": {
+          "expect": "recovers",
+          "status": "pending"
+        },
+        "do-SVAR": {
+          "expect": "recovers",
+          "slope": 0.993625252239993,
+          "error": -0.006374747760007016,
+          "ok": true
+        },
+        "BackDoorOLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "IV2SLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "FrontDoorOLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "GraphRouter": {
+          "expect": "recovers",
+          "status": "pending"
+        },
+        "Oracle": {
+          "expect": "oracle",
+          "slope": 1.0,
+          "error": 0.0,
+          "ok": true
+        }
+      }
+    },
+    {
+      "scenario": "back_door",
+      "structure": "back_door",
+      "offset": 0,
+      "tau": 1.0,
+      "estimators": {
+        "Zero": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "Mean": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "AR1": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "VAR-OLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "NaiveOLS": {
+          "expect": "biased",
+          "status": "pending"
+        },
+        "do-SVAR": {
+          "expect": "biased",
+          "slope": 1.5047772299513573,
+          "error": 0.5047772299513573,
+          "ok": true
+        },
+        "BackDoorOLS": {
+          "expect": "recovers",
+          "slope": 1.003683090209961,
+          "error": 0.0036830902099609375,
+          "ok": true
+        },
+        "IV2SLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "FrontDoorOLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "GraphRouter": {
+          "expect": "recovers",
+          "slope": 1.003683090209961,
+          "error": 0.0036830902099609375,
+          "ok": true
+        },
+        "Oracle": {
+          "expect": "oracle",
+          "slope": 1.0,
+          "error": 0.0,
+          "ok": true
+        }
+      }
+    },
+    {
+      "scenario": "observed_confounder",
+      "structure": "observed_confounder",
+      "offset": 0,
+      "tau": 0.0,
+      "estimators": {
+        "Zero": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": 0.0,
+          "ok": true
+        },
+        "Mean": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": 0.0,
+          "ok": true
+        },
+        "AR1": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": 0.0,
+          "ok": true
+        },
+        "VAR-OLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": 0.0,
+          "ok": true
+        },
+        "NaiveOLS": {
+          "expect": "biased",
+          "status": "pending"
+        },
+        "BackDoorOLS": {
+          "expect": "recovers",
+          "slope": 0.01771087944507599,
+          "error": 0.01771087944507599,
+          "ok": true
+        },
+        "IV2SLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": 0.0,
+          "ok": true
+        },
+        "FrontDoorOLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": 0.0,
+          "ok": true
+        },
+        "GraphRouter": {
+          "expect": "recovers",
+          "slope": 0.01771087944507599,
+          "error": 0.01771087944507599,
+          "ok": true
+        },
+        "Oracle": {
+          "expect": "oracle",
+          "slope": 0.0,
+          "error": 0.0,
+          "ok": true
+        }
+      }
+    },
+    {
+      "scenario": "mediator, query at offset 1",
+      "structure": "mediator",
+      "offset": 1,
+      "tau": 0.9999999999999991,
+      "estimators": {
+        "Zero": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -0.9999999999999991,
+          "ok": true
+        },
+        "Mean": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -0.9999999999999991,
+          "ok": true
+        },
+        "AR1": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -0.9999999999999991,
+          "ok": true
+        },
+        "VAR-OLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -0.9999999999999991,
+          "ok": true
+        },
+        "NaiveOLS": {
+          "expect": "report",
+          "status": "pending"
+        },
+        "do-SVAR": {
+          "expect": "recovers",
+          "slope": 1.0162731869963437,
+          "error": 0.016273186996344613,
+          "ok": true
+        },
+        "BackDoorOLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -0.9999999999999991,
+          "ok": true
+        },
+        "IV2SLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -0.9999999999999991,
+          "ok": true
+        },
+        "FrontDoorOLS": {
+          "expect": "report",
+          "slope": 0.45569372568772093,
+          "error": -0.5443062743122782,
+          "ok": true
+        },
+        "GraphRouter": {
+          "expect": "report",
+          "status": "pending"
+        },
+        "Oracle": {
+          "expect": "oracle",
+          "slope": 1.0,
+          "error": 8.881784197001252e-16,
+          "ok": true
+        }
+      }
+    },
+    {
+      "scenario": "mediator, query at offset 0",
+      "structure": "mediator",
+      "offset": 0,
+      "tau": 0.0,
+      "estimators": {
+        "do-SVAR": {
+          "expect": "recovers",
+          "slope": -0.0010028935515862258,
+          "error": -0.0010028935515862258,
+          "ok": true
+        },
+        "Oracle": {
+          "expect": "oracle",
+          "slope": 0.0,
+          "error": 0.0,
+          "ok": true
+        }
+      }
+    },
+    {
+      "scenario": "front_door",
+      "structure": "front_door",
+      "offset": 0,
+      "tau": 1.0,
+      "estimators": {
+        "Zero": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "Mean": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "AR1": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "VAR-OLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "NaiveOLS": {
+          "expect": "biased",
+          "status": "pending"
+        },
+        "do-SVAR": {
+          "expect": "biased",
+          "slope": 1.4987283299231065,
+          "error": 0.49872832992310645,
+          "ok": true
+        },
+        "BackDoorOLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "IV2SLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "FrontDoorOLS": {
+          "expect": "recovers",
+          "slope": 1.015450881210758,
+          "error": 0.015450881210758105,
+          "ok": true
+        },
+        "GraphRouter": {
+          "expect": "recovers",
+          "slope": 1.015450881210758,
+          "error": 0.015450881210758105,
+          "ok": true
+        },
+        "Oracle": {
+          "expect": "oracle",
+          "slope": 1.0,
+          "error": 0.0,
+          "ok": true
+        }
+      }
+    },
+    {
+      "scenario": "confounder_mediator",
+      "structure": "confounder_mediator",
+      "offset": 0,
+      "tau": 1.0,
+      "estimators": {
+        "Zero": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "Mean": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "AR1": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "VAR-OLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "NaiveOLS": {
+          "expect": "biased",
+          "status": "pending"
+        },
+        "do-SVAR": {
+          "expect": "biased",
+          "slope": 1.5014602843839349,
+          "error": 0.5014602843839349,
+          "ok": true
+        },
+        "BackDoorOLS": {
+          "expect": "recovers",
+          "slope": 1.0042824745178223,
+          "error": 0.004282474517822266,
+          "ok": true
+        },
+        "IV2SLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "FrontDoorOLS": {
+          "expect": "recovers",
+          "slope": 1.008575308863926,
+          "error": 0.00857530886392599,
+          "ok": true
+        },
+        "GraphRouter": {
+          "expect": "recovers",
+          "slope": 1.0042824745178223,
+          "error": 0.004282474517822266,
+          "ok": true
+        },
+        "Oracle": {
+          "expect": "oracle",
+          "slope": 1.0,
+          "error": 0.0,
+          "ok": true
+        }
+      }
+    },
+    {
+      "scenario": "instrumental_variable",
+      "structure": "instrumental_variable",
+      "offset": 0,
+      "tau": 1.0,
+      "estimators": {
+        "Zero": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "Mean": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "AR1": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "VAR-OLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "NaiveOLS": {
+          "expect": "biased",
+          "status": "pending"
+        },
+        "do-SVAR": {
+          "expect": "biased",
+          "slope": 1.35248622378613,
+          "error": 0.3524862237861299,
+          "ok": true
+        },
+        "BackDoorOLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "IV2SLS": {
+          "expect": "recovers",
+          "slope": 1.0058393478393555,
+          "error": 0.005839347839355469,
+          "ok": true
+        },
+        "FrontDoorOLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "GraphRouter": {
+          "expect": "recovers",
+          "slope": 1.0058393478393555,
+          "error": 0.005839347839355469,
+          "ok": true
+        },
+        "Oracle": {
+          "expect": "oracle",
+          "slope": 1.0,
+          "error": 0.0,
+          "ok": true
+        }
+      }
+    },
+    {
+      "scenario": "unobserved_confounder",
+      "structure": "unobserved_confounder",
+      "offset": 0,
+      "tau": 0.0,
+      "estimators": {
+        "Zero": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": 0.0,
+          "ok": true
+        },
+        "Mean": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": 0.0,
+          "ok": true
+        },
+        "AR1": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": 0.0,
+          "ok": true
+        },
+        "VAR-OLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": 0.0,
+          "ok": true
+        },
+        "NaiveOLS": {
+          "expect": "biased",
+          "status": "pending"
+        },
+        "do-SVAR": {
+          "expect": "biased",
+          "slope": 0.524375966029163,
+          "error": 0.524375966029163,
+          "ok": true
+        },
+        "BackDoorOLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": 0.0,
+          "ok": true
+        },
+        "IV2SLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": 0.0,
+          "ok": true
+        },
+        "FrontDoorOLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": 0.0,
+          "ok": true
+        },
+        "GraphRouter": {
+          "expect": "zero",
+          "slope": 0.0,
+          "error": 0.0,
+          "ok": true
+        },
+        "Oracle": {
+          "expect": "oracle",
+          "slope": 0.0,
+          "error": 0.0,
+          "ok": true
+        }
+      }
+    },
+    {
+      "scenario": "bow_graph",
+      "structure": "bow_graph",
+      "offset": 0,
+      "tau": 1.0,
+      "estimators": {
+        "Zero": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "Mean": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "AR1": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "VAR-OLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "NaiveOLS": {
+          "expect": "biased",
+          "status": "pending"
+        },
+        "do-SVAR": {
+          "expect": "biased",
+          "slope": 1.5190911416009945,
+          "error": 0.5190911416009945,
+          "ok": true
+        },
+        "BackDoorOLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "IV2SLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "FrontDoorOLS": {
+          "expect": "declines",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "GraphRouter": {
+          "expect": "biased",
+          "status": "pending"
+        },
+        "Oracle": {
+          "expect": "oracle",
+          "slope": 1.000000238418579,
+          "error": 2.384185791015625e-07,
+          "ok": true
+        }
+      }
+    },
+    {
+      "scenario": "back_door (benchmark-like lags)",
+      "structure": "back_door",
+      "offset": 0,
+      "tau": 1.0,
+      "estimators": {
+        "NaiveOLS": {
+          "expect": "report",
+          "status": "pending"
+        },
+        "do-SVAR": {
+          "expect": "report",
+          "slope": 1.505106190268559,
+          "error": 0.505106190268559,
+          "ok": true
+        },
+        "BackDoorOLS": {
+          "expect": "report",
+          "slope": 1.1306111812591553,
+          "error": 0.13061118125915527,
+          "ok": true
+        },
+        "IV2SLS": {
+          "expect": "report",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "FrontDoorOLS": {
+          "expect": "report",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "GraphRouter": {
+          "expect": "report",
+          "slope": 1.1306111812591553,
+          "error": 0.13061118125915527,
+          "ok": true
+        },
+        "Oracle": {
+          "expect": "oracle",
+          "slope": 0.9999999403953552,
+          "error": -5.960464477539063e-08,
+          "ok": true
+        }
+      }
+    },
+    {
+      "scenario": "observed_confounder (benchmark-like lags)",
+      "structure": "observed_confounder",
+      "offset": 0,
+      "tau": 0.0,
+      "estimators": {
+        "NaiveOLS": {
+          "expect": "report",
+          "status": "pending"
+        },
+        "do-SVAR": {
+          "expect": "report",
+          "slope": -0.0063220435082842474,
+          "error": -0.0063220435082842474,
+          "ok": true
+        },
+        "BackDoorOLS": {
+          "expect": "report",
+          "slope": 0.25139591097831726,
+          "error": 0.25139591097831726,
+          "ok": true
+        },
+        "IV2SLS": {
+          "expect": "report",
+          "slope": 0.0,
+          "error": 0.0,
+          "ok": true
+        },
+        "FrontDoorOLS": {
+          "expect": "report",
+          "slope": 0.0,
+          "error": 0.0,
+          "ok": true
+        },
+        "GraphRouter": {
+          "expect": "report",
+          "slope": 0.25139591097831726,
+          "error": 0.25139591097831726,
+          "ok": true
+        },
+        "Oracle": {
+          "expect": "oracle",
+          "slope": 0.0,
+          "error": 0.0,
+          "ok": true
+        }
+      }
+    },
+    {
+      "scenario": "confounder_mediator (benchmark-like lags)",
+      "structure": "confounder_mediator",
+      "offset": 0,
+      "tau": 1.0,
+      "estimators": {
+        "NaiveOLS": {
+          "expect": "report",
+          "status": "pending"
+        },
+        "do-SVAR": {
+          "expect": "report",
+          "slope": 1.0074919298674057,
+          "error": 0.007491929867405656,
+          "ok": true
+        },
+        "BackDoorOLS": {
+          "expect": "report",
+          "slope": 1.5000175386667252,
+          "error": 0.5000175386667252,
+          "ok": true
+        },
+        "IV2SLS": {
+          "expect": "report",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "FrontDoorOLS": {
+          "expect": "report",
+          "slope": 1.1165001777630221,
+          "error": 0.11650017776302213,
+          "ok": true
+        },
+        "GraphRouter": {
+          "expect": "report",
+          "slope": 1.5000175386667252,
+          "error": 0.5000175386667252,
+          "ok": true
+        },
+        "Oracle": {
+          "expect": "oracle",
+          "slope": 1.0,
+          "error": 0.0,
+          "ok": true
+        }
+      }
+    },
+    {
+      "scenario": "front_door (benchmark-like lags)",
+      "structure": "front_door",
+      "offset": 0,
+      "tau": 1.0,
+      "estimators": {
+        "NaiveOLS": {
+          "expect": "report",
+          "status": "pending"
+        },
+        "do-SVAR": {
+          "expect": "report",
+          "slope": 1.5296817934352478,
+          "error": 0.5296817934352478,
+          "ok": true
+        },
+        "BackDoorOLS": {
+          "expect": "report",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "IV2SLS": {
+          "expect": "report",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "FrontDoorOLS": {
+          "expect": "report",
+          "slope": 1.6432638504869197,
+          "error": 0.6432638504869197,
+          "ok": true
+        },
+        "GraphRouter": {
+          "expect": "report",
+          "slope": 1.6432638504869197,
+          "error": 0.6432638504869197,
+          "ok": true
+        },
+        "Oracle": {
+          "expect": "oracle",
+          "slope": 1.0,
+          "error": 0.0,
+          "ok": true
+        }
+      }
+    },
+    {
+      "scenario": "instrumental_variable (benchmark-like lags)",
+      "structure": "instrumental_variable",
+      "offset": 0,
+      "tau": 1.0,
+      "estimators": {
+        "NaiveOLS": {
+          "expect": "report",
+          "status": "pending"
+        },
+        "do-SVAR": {
+          "expect": "report",
+          "slope": 1.3435264509662685,
+          "error": 0.34352645096626855,
+          "ok": true
+        },
+        "BackDoorOLS": {
+          "expect": "report",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "IV2SLS": {
+          "expect": "report",
+          "slope": 1.3078258037567139,
+          "error": 0.30782580375671387,
+          "ok": true
+        },
+        "FrontDoorOLS": {
+          "expect": "report",
+          "slope": 0.0,
+          "error": -1.0,
+          "ok": true
+        },
+        "GraphRouter": {
+          "expect": "report",
+          "slope": 1.3078258037567139,
+          "error": 0.30782580375671387,
+          "ok": true
+        },
+        "Oracle": {
+          "expect": "oracle",
+          "slope": 1.0,
+          "error": 0.0,
+          "ok": true
+        }
+      }
+    }
+  ],
+  "pending": [
+    "NaiveOLS"
+  ],
+  "failures": [],
+  "passed": true,
+  "runtime_s": 1.6
+}
