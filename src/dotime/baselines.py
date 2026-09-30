@@ -203,10 +203,13 @@ def _canonical_summary_graph(structure: str) -> tuple[list[str], nx.DiGraph, set
     (treatment ``A`` first, outcome ``Y`` last). The summary graph has an edge
     ``u -> v`` when ``u`` drives ``v`` instantaneously or at some lag, so the
     descendants of ``A`` in it are the variables that ``A`` affects at any lag.
+    A driven label adds the driver ``D`` with edges ``D -> A`` and ``D -> Y``
+    (see :mod:`dotime.drivers`), and a hidden ``D`` counts as hidden.
 
     Args:
         structure: A :class:`~dotime.tscm_sampler.TSCMStructure` value, e.g.
-            ``"front_door"``.
+            ``"front_door"``, or a driven label such as
+            ``"back_door+seasonal_observed"``.
 
     Returns:
         ``(names, summary, hidden)``: the variable name of each canonical
@@ -214,16 +217,20 @@ def _canonical_summary_graph(structure: str) -> tuple[list[str], nx.DiGraph, set
         hidden variables.
 
     Raises:
-        ValueError: If ``structure`` is not a named structure.
+        ValueError: If ``structure`` is neither a named structure nor a
+            well-formed driven label.
     """
     # Lazy import: only structure-aware adjustment needs the generator modules.
-    # Building a TSCMPrior draws no random numbers (its generator is private),
+    # Building a TSCMPrior draws no random numbers (its generators are private),
     # so this never perturbs a caller's RNG stream.
+    from dotime.drivers import parse_structure_label
     from dotime.extended import TSCMPrior
     from dotime.tscm_sampler import TSCMStructure
 
-    prior = TSCMPrior(TSCMStructure(structure))
-    dag = prior.sampler._build_dag()
+    base, driver = parse_structure_label(structure)
+    # The pair mode does not change the graph, and a driver requires counterfactual.
+    prior = TSCMPrior(TSCMStructure(base), pair_mode="counterfactual", driver=driver)
+    dag = prior.dag
     topo = list(dag.topo_order)
     summary = nx.DiGraph(dag.G_0)
     for lag in dag.G_lags:
@@ -245,18 +252,22 @@ def _back_door_columns(structure: str) -> tuple[int, int, int, tuple[int, ...]]:
     :func:`_canonical_summary_graph`). For ``back_door``,
     ``observed_confounder`` and ``confounder_mediator`` that is the confounder
     ``X``. It is a valid back-door set only when no hidden variable confounds
-    ``A`` and ``Y``, so callers apply it to the back-door family alone.
+    ``A`` and ``Y``, so callers apply it to the back-door family alone. An
+    observed driver ``D`` is a root outside the descendants of ``A``, so it
+    joins the set: ``{X, D}`` for ``"back_door+seasonal_observed"`` and ``{D}``
+    for ``"bi_variate+trend_observed"``.
 
     Args:
         structure: A :class:`~dotime.tscm_sampler.TSCMStructure` value, e.g.
-            ``"confounder_mediator"``.
+            ``"confounder_mediator"``, or a driven label.
 
     Returns:
         ``(n_vars, treatment_col, outcome_col, adjustment_cols)`` as canonical
         column indices.
 
     Raises:
-        ValueError: If ``structure`` is not a named structure.
+        ValueError: If ``structure`` is neither a named structure nor a
+            well-formed driven label.
     """
     names, summary, hidden = _canonical_summary_graph(structure)
     # The back-door criterion excludes every descendant of A: adjusting for a
@@ -314,11 +325,40 @@ class BackDoorOLSBaseline:
     ``observed_confounder`` and ``confounder_mediator``. The mediator M of
     ``confounder_mediator`` lies on the causal path A -> M -> Y, so it is never
     adjusted for. Applicable to the back-door family; on other structures it
-    falls back to the pre-intervention outcome mean.
+    falls back to the pre-intervention outcome mean. On a driven label (see
+    :mod:`dotime.drivers`) it adjusts for ``{X, D}`` or ``{D}`` when the driver
+    is observed and the base is in the back-door family or ``bi_variate``. A
+    hidden driver leaves the path A <- D -> Y open, so those labels take the mean.
     """
 
     name = "BackDoorOLS"
     _BACK_DOOR: ClassVar[set[str]] = {"back_door", "observed_confounder", "confounder_mediator"}
+    # Bases whose back-door set stays valid once an observed driver joins it: D is
+    # a root outside the descendants of A, so adding it blocks the new path
+    # A <- D -> Y and opens none.
+    _DRIVEN_BASES: ClassVar[set[str]] = _BACK_DOOR | {"bi_variate"}
+
+    @classmethod
+    def _adjusts(cls, structure: str) -> bool:
+        """Whether episodes of ``structure`` get the back-door adjustment.
+
+        Args:
+            structure: The episode's structure label.
+
+        Returns:
+            For a plain label, membership in the back-door family, exactly as
+            before drivers existed. For a driven label, whether its driver is
+            observed and its base is in the back-door family or ``bi_variate``.
+
+        Raises:
+            ValueError: If ``structure`` is a malformed driven label.
+        """
+        if "+" not in structure:
+            return structure in cls._BACK_DOOR
+        from dotime.drivers import parse_structure_label
+
+        base, driver = parse_structure_label(structure)
+        return driver is not None and driver.observed and base in cls._DRIVEN_BASES
 
     @staticmethod
     def _adjustment_set(structure: str, n: int, a: int, y: int) -> list[int]:
@@ -373,7 +413,7 @@ class BackDoorOLSBaseline:
         for q in range(episode.query_target.numel()):
             y = int(episode.query_target[q])
             fit_end = max(2, min(onset, t_len))
-            if episode.structure not in self._BACK_DOOR or fit_end < 4:
+            if episode.structure is None or not self._adjusts(episode.structure) or fit_end < 4:
                 preds.append(float(x[:fit_end, y].mean()))
                 continue
             adj = self._adjustment_set(episode.structure, n, a, y)

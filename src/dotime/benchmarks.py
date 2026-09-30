@@ -609,7 +609,9 @@ def episode_from_sample(
     un-padded to clean ``(T, n_vars)`` here — this is the model-facing/release
     boundary for the padding, so released tensors carry no zero columns. The
     exact row of each query is recorded as ``metadata["query_time_idx"]``,
-    because the two generators encode ``query_time`` differently.
+    because the two generators encode ``query_time`` differently. A sample of a
+    driven structure (see :mod:`dotime.drivers`) also records its driver as
+    ``metadata["driver"]``.
     """
     from dotime.interventions import InterventionType
 
@@ -639,6 +641,11 @@ def episode_from_sample(
         extra["y_causal_effect"] = torch.as_tensor(
             sample["Y_causal_effect"], dtype=torch.float32
         ).reshape(-1)
+    if "driver" in sample:
+        # A hidden driver is zeroed in both released arms, so this record is the
+        # only way a consumer can stratify by it or rebuild it
+        # (dotime.drivers.released_driver_series).
+        extra["driver"] = sample["driver"]
     # Recorded at build time, where the generator's own convention is still
     # known, so no consumer has to decode query_time later.
     extra["query_time_idx"] = _sample_query_time_idx(sample, query_time, int(x_int.shape[0]))

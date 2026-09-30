@@ -1,0 +1,46 @@
+# dot-SeasonalTrend-v1 version 1.0.0: seasonal and trend confounding drivers.
+#
+# Each driven label "<base>+<kind>_<visibility>" adds one exogenous driver D to a
+# named structure (dotime.drivers). D is a sinusoid (seasonal, period U[12, 48),
+# random phase) or a linear ramp (trend, random direction) over burn-in + T,
+# drawn once per episode, shared by both arms, and added to the structural
+# equations of A and Y with loadings +-U[0.5, 1). Canonical columns: A first,
+# base middles, D at N-2, Y at N-1.
+#   observed -> D is a released column with metadata.driver.known_future = true
+#   hidden   -> D is zeroed in both released arms, like the hidden U
+# A hidden driver confounds A and Y through time. It defeats estimators that
+# neither adjust for D nor model time, and estimators that assume stationarity.
+# Trend episodes are non-stationary.
+#
+# The plain bi_variate and back_door strata are the same generator without a
+# driver, so every label can be compared with its base on the same protocol.
+# Drivers need shared-noise pairing (pair_mode: counterfactual). Driver draws
+# come from their own seed stream, so the released suites are unchanged.
+#
+# One suite with an explicit seed equal to the top-level seed + 1000, which is
+# what build_release.py derives for the first (only) suite of this file.
+seed: 20261001
+T: 200
+
+suites:
+
+  dot-SeasonalTrend-v1:
+    version: "1.0.0"
+    generator: identifiability
+    seed: 20262001
+    T: 200
+    pair_mode: counterfactual
+    stability_retries: 3
+    episodes_per_structure: 1000     # 10,000 episodes across 10 labels
+    # label -> difficulty tier (1 = no driver, 2 = observed driver, 3 = hidden driver)
+    structures:
+      bi_variate:                     1
+      back_door:                      1
+      bi_variate+seasonal_observed:   2
+      bi_variate+trend_observed:      2
+      back_door+seasonal_observed:    2
+      back_door+trend_observed:       2
+      bi_variate+seasonal_hidden:     3
+      bi_variate+trend_hidden:        3
+      back_door+seasonal_hidden:      3
+      back_door+trend_hidden:         3

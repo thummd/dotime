@@ -13,6 +13,17 @@ import numpy as np
 import torch
 
 from dotime.batched_tscm import BatchedTSCMSimulator
+from dotime.drivers import (
+    DRIVER_NODE,
+    DriverSpec,
+    add_forcing,
+    attach_driver,
+    draw_driver,
+    driven_dag,
+    driver_generator,
+    driver_mechanism,
+    parse_structure_label,
+)
 from dotime.interventions import InterventionSpec, InterventionType
 from dotime.prior import DoTime
 from dotime.tscm_sampler import TSCMSampler, TSCMStructure
@@ -202,6 +213,17 @@ class TSCMPrior:
 
     Has the same ``generate_pair(T)`` interface so ``ExtendedDoTime``
     can swap it in transparently.
+
+    With a ``driver`` (see :mod:`dotime.drivers`), ``self.dag`` is the base DAG
+    with the driver node ``D`` prepended, the canonical columns are A, the base
+    middle columns, D, then Y, and a hidden ``D`` joins ``hidden_vars``. Each
+    ``generate_pair`` then leaves the JSON-able record of its draw in
+    ``self.last_driver``.
+
+    Raises:
+        ValueError: If ``pair_mode`` is unknown.
+        NotImplementedError: If a ``driver`` is given without
+            ``pair_mode="counterfactual"``.
     """
 
     def __init__(
@@ -213,6 +235,7 @@ class TSCMPrior:
         intervention_scale: float = 2.0,
         sigma_w: float = 0.5,
         pair_mode: str = "interventional",
+        driver: DriverSpec | None = None,
     ):
         self.sampler = TSCMSampler(
             structure,
@@ -235,15 +258,39 @@ class TSCMPrior:
         self.pair_mode = pair_mode
         self.config = {"burn_in": burn_in}
 
+        # The driver is exogenous, so it has to be shared by both arms; only the
+        # frozen-noise path of counterfactual pairing lets both arms consume it.
+        if driver is not None and pair_mode != "counterfactual":
+            raise NotImplementedError(
+                f"the {driver.suffix} driver needs pair_mode='counterfactual', got {pair_mode!r}"
+            )
+        self.driver = driver
+        self.last_driver: dict | None = None
+        self.dag = self.sampler._build_dag()
+        if driver is not None:
+            base_topo = self.dag.topo_order
+            self.dag = driven_dag(self.dag)
+            # Prepending D shifts every base topo index by one, so the hidden set is
+            # rebuilt by name.
+            hidden = {base_topo[h] for h in self.hidden_vars}
+            if not driver.observed:
+                hidden.add(DRIVER_NODE)
+            self.hidden_vars = [i for i, v in enumerate(self.dag.topo_order) if v in hidden]
+            self._seed = seed
+            self.driver_gen = driver_generator(seed)
+            self._driver_mechanism = driver_mechanism(self.dag.K, self.sampler.device)
+
         # Canonical permutation: A at index 0, Y at index N-1, others in between.
         # The permutation maps topo-order indices -> canonical-order indices.
-        # perm[canonical_idx] = topo_idx.
-        self._a_idx_topo = self.sampler.get_intervention_target()
-        self._y_idx_topo = self.sampler.get_outcome_var()
-        dag = self.sampler._build_dag()
-        N = len(dag.topo_order)
-        middle = [i for i in range(N) if i != self._a_idx_topo and i != self._y_idx_topo]
-        self.canonical_perm = [self._a_idx_topo, *middle, self._y_idx_topo]
+        # perm[canonical_idx] = topo_idx. A driver sits at N-2, so A and the base
+        # middle columns keep their canonical index.
+        topo = self.dag.topo_order
+        self._a_idx_topo = topo.index("A")
+        self._y_idx_topo = topo.index("Y")
+        drivers = [topo.index(DRIVER_NODE)] if driver is not None else []
+        N = len(topo)
+        middle = [i for i in range(N) if i not in (self._a_idx_topo, self._y_idx_topo, *drivers)]
+        self.canonical_perm = [self._a_idx_topo, *middle, *drivers, self._y_idx_topo]
         self.canonical_inv_perm = [0] * N
         for canon_idx, topo_idx in enumerate(self.canonical_perm):
             self.canonical_inv_perm[topo_idx] = canon_idx
@@ -270,10 +317,25 @@ class TSCMPrior:
         scm = self.sampler.sample(generator=self.gen)
         len(scm._topo)
 
+        draw = None
+        if self.driver is not None:
+            # Drawn from the driver's own generator, and D's sampler never touches
+            # self.gen, so the base draws below stay exactly the base structure's.
+            draw = draw_driver(self.driver, self.driver_gen)
+            series = draw.series(T + self.burn_in)
+            scm = attach_driver(scm, self.dag, series.to(torch.float32), self._driver_mechanism)
+            self.last_driver = draw.metadata(
+                column=self.canonical_inv_perm[self.dag.topo_order.index(DRIVER_NODE)],
+                burn_in=self.burn_in,
+                generation_seed=self._seed,
+            )
+
         if self.pair_mode == "counterfactual":
             # Frozen on the SCM object so the positivity-aware re-simulation in
             # ExtendedDoTime.generate_sample reuses the same realisation too.
-            scm.freeze_noise(T + self.burn_in, generator=self.gen)
+            noise = scm.freeze_noise(T + self.burn_in, generator=self.gen)
+            if draw is not None:
+                add_forcing(noise, draw, series)
 
         X_obs = scm.sample_observational(T=T, burn_in=self.burn_in, generator=self.gen)
 
@@ -315,7 +377,9 @@ class ExtendedDoTime:
             generation, if a sampled SCM is wider than ``n_max`` (see
             :func:`pad_to_max_nodes`).
         NotImplementedError: If ``pair_mode="counterfactual"`` is requested for
-            the generic prior (``tscm_structure=None``).
+            the generic prior (``tscm_structure=None``), or if a driven label such
+            as ``"back_door+seasonal_hidden"`` (see :mod:`dotime.drivers`) is
+            requested without it.
     """
 
     def __init__(
@@ -401,8 +465,12 @@ class ExtendedDoTime:
             divergence_fallback = "batched" if pair_mode == "counterfactual" else "sequential"
         self.divergence_fallback = divergence_fallback
 
+        # A driven label ("<base>+<kind>_<visibility>") keeps its full text as
+        # self.tscm_structure, which is the released structure label.
+        self.driver: DriverSpec | None = None
         if tscm_structure is not None:
-            structure_enum = TSCMStructure(tscm_structure)
+            base_structure, self.driver = parse_structure_label(tscm_structure)
+            structure_enum = TSCMStructure(base_structure)
             self.prior = TSCMPrior(
                 structure_enum,
                 burn_in=burn_in + dynamics_burn_in,
@@ -410,6 +478,7 @@ class ExtendedDoTime:
                 use_lagged_edges=use_lagged_edges,
                 intervention_scale=intervention_scale,
                 pair_mode=pair_mode,
+                driver=self.driver,
             )
             # Batched simulator for vectorized generation.
             # Hardening knobs (sigma_w, noise_std, max_lag, unit_norm_rows,
@@ -478,6 +547,8 @@ class ExtendedDoTime:
             Y_true: scalar float or (n_queries,) floats
             Y_causal_effect: scalar float or (n_queries,) floats
             num_vars: scalar int
+            driver: dict, only for a driven ``tscm_structure``. The JSON-able
+                record of the episode's driver (see ``TSCMPrior.last_driver``).
         """
         if T is None:
             T = self.sample_T()
@@ -725,7 +796,7 @@ class ExtendedDoTime:
             y_obs_t = torch.tensor(y_obs_vals, dtype=torch.float32)
             y_effect_t = torch.tensor(y_effects, dtype=torch.float32)
 
-        return {
+        sample = {
             "X_obs": X_obs_padded,  # (T, N_max) causally masked (model input)
             "X_obs_full": X_obs_full_padded,  # (T, N_max) unmasked (released data)
             "X_int": X_int_padded,  # (T, N_max)
@@ -745,6 +816,9 @@ class ExtendedDoTime:
             "Y_causal_effect": y_effect_t,
             "num_vars": torch.tensor(N, dtype=torch.long),
         }
+        if self.driver is not None:
+            sample["driver"] = self.prior.last_driver
+        return sample
 
     def generate_batch(
         self,
@@ -781,13 +855,20 @@ class ExtendedDoTime:
         NotImplementedError
             If ``tscm_structure`` is set and ``intervention_source`` is not in
             :data:`BATCHED_INTERVENTION_SOURCES` (see
-            :func:`check_batched_intervention_source`).
+            :func:`check_batched_intervention_source`), or if
+            ``tscm_structure`` is a driven label, which only
+            ``generate_sample`` builds.
         RuntimeError
             With ``divergence_fallback="batched"``, if a sample is still
             diverged after ``_MAX_REDRAW_ROUNDS`` redraws.
         """
         # Before sample_T, so a rejected call leaves every RNG stream where it was.
         check_batched_intervention_source(self.intervention_source, self.tscm_structure)
+        if self.driver is not None:
+            raise NotImplementedError(
+                f"generate_batch cannot build {self.tscm_structure!r}: its vectorized simulator "
+                "has no seasonal or trend drivers. Build driven episodes with generate_sample()."
+            )
         if T is None:
             T = self.sample_T()
 
