@@ -648,7 +648,13 @@ def score(
         models: The estimators, ``None`` where pending.
 
     Returns:
-        ``{"structures": ..., "estimators": ..., "contrasts": ...}``.
+        ``{"structures": ..., "estimators": ..., "contrasts": ...,
+        "cross_structure": ...}``.
+
+    Raises:
+        AssertionError: If an estimator that should ignore the do-value on a
+            structure (it declines it) predicts different levels at ``v`` and
+            ``a_ref``, i.e. its applicability rule disagrees with the package.
     """
     structures = cols.structures()
     info: dict[str, dict[str, Any]] = {}
