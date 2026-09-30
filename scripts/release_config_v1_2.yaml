@@ -1,5 +1,7 @@
-# dot-Identifiability-v1 version 1.2.0 (PREPARED, NOT BUILT/MINTED): the v1.1.0
-# shared-noise suite with a per-structure query offset protocol.
+# dot-Identifiability-v1 version 1.2.0 (PREPARED, NOT YET MINTED): the v1.1.0
+# shared-noise suite with a per-structure query offset protocol and a ninth
+# structure, bow_graph, the non-identified case. Nine structures x 1350 episodes
+# = 12,150 episodes.
 #
 # Evidence (propagation-lag scan on the 1.1.0 files, fraction of episodes with
 # |Y_int - Y_obs| >= 0.1 at the outcome, by offset after onset):
@@ -11,9 +13,15 @@
 #       episode and appears from offset 1 (0.25)  -> query at offset 1
 #   observed_confounder / unobserved_confounder: no A->Y path at any lag; null
 #       effect by construction (controls), offset irrelevant
+#   bow_graph (new): unobserved_confounder plus an instantaneous A->Y edge, so
+#       the hidden U confounds a real effect and nothing observed blocks
+#       A <- U -> Y (not identifiable). Effect present at offset 0 (0.61 of the
+#       first 100 bow_graph episodes of this config, 0.15 exactly zero)
 # The offset draw consumes no RNG for a fixed range, so every structure other
-# than mediator is bit-identical to 1.1.0. Regenerating changes only mediator's
-# query and targets, but it is a new artifact and a release decision.
+# than mediator is bit-identical to 1.1.0. bow_graph is appended last (episodes
+# 10800-12149), so every existing (index, seed) pair is unchanged. Regenerating
+# changes only mediator's query and targets and adds the bow_graph episodes, but
+# it is a new artifact and a release decision.
 seed: 20260719
 T: 200
 
@@ -37,3 +45,4 @@ suites:
       confounder_mediator:     2
       instrumental_variable:   3
       unobserved_confounder:   3
+      bow_graph:               3

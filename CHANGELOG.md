@@ -14,6 +14,18 @@ All notable changes to `dotime` are documented here. The format follows
   edge and is a null-effect control. U is zeroed in both released arms, and the
   DAG-derived back-door adjustment set is empty. The generator builds it; no
   frozen suite contains it yet.
+- `NaiveOLS`, the unadjusted regression baseline: `BackDoorOLS` with an empty
+  adjustment set, that is OLS of `Y_t` on `[1, A_t, Y_{t-1}]` over the
+  pre-intervention window, evaluated at the do-value and averaged over the
+  history. It applies to every structure and to the generic prior, and
+  `dotime-eval-reference` runs it right after `BackDoorOLS`. Its slope carries
+  the omitted-confounder bias that `BackDoorOLS` removes on the back-door
+  structures and that no observed adjustment set removes on `bow_graph`.
+  `scripts/release_config_v1_2.yaml` (prepared, not yet minted) appends
+  `bow_graph` at tier 3 as episodes 10800 to 12149. That makes nine structures
+  and 12,150 episodes, with every 1.1.0 episode index and seed unchanged. In the
+  first 100 `bow_graph` episodes of that config, 61% of the effects reach
+  `|effect| >= 0.1` and none is zeroed.
 - `evaluate(..., dir_target="effect")` and `--dir-target {level,effect}` on
   `dotime-benchmark` and `dotime-eval-submission`: score direction accuracy on
   the sign of the causal effect `y - y_obs` at the query instead of the sign of

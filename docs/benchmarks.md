@@ -22,6 +22,15 @@ distribution and still differ in the effect of `do(A)`.
 ExtendedDoTime(tscm_structure="bow_graph", pair_mode="counterfactual")
 ```
 
+**`dot-Identifiability-v1` 1.2.0 (prepared, not yet minted)** is configured by
+`scripts/release_config_v1_2.yaml`. It keeps the 1.1.0 generator, seeds and
+episode indices and makes two changes. `mediator` is queried one step after the
+onset, because its A→M edge is lagged and its effect at the onset is exactly
+zero. `bow_graph` is appended at tier 3 as episodes 10 800 to 12 149, which
+brings the suite to nine structures and 12 150 episodes. Every other episode is
+identical to 1.1.0, and so are the `mediator` trajectories. Only the `mediator`
+query and target move.
+
 ## Loader
 
 ```python

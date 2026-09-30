@@ -26,7 +26,7 @@ estimates interventional effects.
 - **Four counterfactual sampling modes** — `prior`, `observed_discrete`,
   `observed_normal`, `observed_uniform`, with a positivity guard.
 - **Regime-switching SCMs** as a strict generalization of interrupted-time-series.
-- **Eight named identification structures** (back-door, front-door, IV, …) with
+- **Nine named identification structures** (back-door, front-door, IV, one non-identified, …) with
   exact interventional ground truth. Shared-noise counterfactuals from suite v1.1.0.
 - **Reference baselines** and **four frozen evaluation suites** (released with
   Zenodo DOIs and Croissant metadata).

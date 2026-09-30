@@ -13,6 +13,7 @@ evaluation harness can request a baseline by string (mirroring the
 
 Implemented: the trivial baselines (``Zero``, ``Mean``/TrajMean, ``AR1``,
 ``VAR-OLS``), the classical structural baselines (``BackDoorOLS``, ``IV2SLS``),
+the unadjusted ``NaiveOLS`` (``BackDoorOLS`` with an empty adjustment set),
 ``Oracle`` (stored ground truth), and ``DoOverTimePFN`` (checkpoint-backed, the
 ``[models]`` extra). ``PCMCI+`` / ``BayesianITS`` / ``Chronos`` require the
 ``[baselines]`` extra and raise an actionable error until that dependency and
@@ -446,6 +447,65 @@ class IV2SLSBaseline:
             # Centered prediction: baseline outcome + effect of moving A from its
             # observed mean to the intervention value (robust to extrapolation).
             preds.append(float(y_obs.mean() + beta_a * (a_val - a_obs.mean())))
+        return torch.tensor(preds, dtype=torch.float32)
+
+
+@register("NaiveOLS")
+class NaiveOLSBaseline:
+    """Unadjusted regression: takes E[Y_t | do(A=v)] to be E[ E[Y_t | A=v, Y_{t-1}] ].
+
+    :class:`BackDoorOLSBaseline` with an empty adjustment set. It fits the OLS
+    outcome model ``Y_t ~ A_t + Y_{t-1}`` on the pre-intervention observational
+    data, plugs in the intervention value for A and averages over the observed
+    history. Reading the observational association of A and Y as causal, it
+    carries the omitted-variable bias of every confounder of A and Y. It is the
+    reference for that bias: on ``back_door`` it is what ``BackDoorOLS`` reports
+    without adjusting for X, and on ``bow_graph`` no observed variable blocks
+    A <- U -> Y, so no observed adjustment set removes it. It applies to every
+    episode, the generic prior's included, with the first intervention target
+    as the treatment and the queried variable as the outcome. When the
+    pre-intervention window is too short to fit, it falls back to the
+    pre-intervention outcome mean.
+    """
+
+    name = "NaiveOLS"
+
+    def predict(self, episode: Episode) -> torch.Tensor:
+        """Predict each query's interventional level from the unadjusted regression.
+
+        Args:
+            episode: Episode to predict. Any structure label, or none.
+
+        Returns:
+            1-D float tensor with one prediction per query.
+
+        Raises:
+            IndexError: If the intervention target or a query target is not a
+                column of ``episode.x_obs``.
+        """
+        x = episode.x_obs.detach().cpu().numpy()
+        t_len = x.shape[0]
+        a = episode.intervention.targets[0] if episode.intervention.targets else 0
+        onset = min(episode.intervention.times) if episode.intervention.times else t_len
+        fit_end = max(2, min(onset, t_len))
+        preds = []
+        for q in range(episode.query_target.numel()):
+            y = int(episode.query_target[q])
+            if fit_end < 4:
+                preds.append(float(x[:fit_end, y].mean()))
+                continue
+            # BackDoorOLS's design, fit window, do-value and history average with
+            # the adjustment columns dropped, so the two differ only by what
+            # adjusting for the back-door set removes.
+            a_t = x[1:fit_end, a]
+            y_prev = x[0 : fit_end - 1, y]
+            coef = _ols_fit(np.column_stack([a_t, y_prev]), x[1:fit_end, y])
+            a_val = (
+                float(episode.intervention.values)
+                if isinstance(episode.intervention.values, (int, float))
+                else float(a_t.mean())
+            )
+            preds.append(float(np.mean(coef[0] + coef[1] * a_val + coef[2] * y_prev)))
         return torch.tensor(preds, dtype=torch.float32)
 
 

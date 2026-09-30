@@ -31,7 +31,7 @@ from dotime.benchmarks import load_benchmark
 from dotime.evaluation import direction_accuracy, query_obs_levels
 from dotime.reference._realignment import load_realignment, realign_episodes
 
-CPU_BASELINES = ["Zero", "Mean", "AR1", "VAR-OLS", "BackDoorOLS", "IV2SLS", "Oracle"]
+CPU_BASELINES = ["Zero", "Mean", "AR1", "VAR-OLS", "BackDoorOLS", "NaiveOLS", "IV2SLS", "Oracle"]
 # Same floor as the training-side step-zero check: a level arm that is mostly
 # zero means a masked or diverged target, not data.
 TARGET_QA_MIN_NONZERO = 0.5
