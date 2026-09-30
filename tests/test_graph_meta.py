@@ -560,8 +560,10 @@ def test_from_structure_handles_driven_labels(label):
     assert graph.n == base.n + 1
     d = graph.columns.index("D")
     assert d == graph.n - 2
-    assert graph.columns[0] == "A" and graph.columns[-1] == "Y"
-    assert (d, 0, 0) in graph.edges and (d, graph.n - 1, 0) in graph.edges
+    assert graph.columns[0] == "A"
+    assert graph.columns[-1] == "Y"
+    assert (d, 0, 0) in graph.edges
+    assert (d, graph.n - 1, 0) in graph.edges
     assert all(lag == 0 for src, dst, lag in graph.edges if d in (src, dst))
     assert (d in graph.hidden) == label.endswith("_hidden")
     # The base edges survive with their columns shifted around the inserted D.
