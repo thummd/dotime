@@ -119,14 +119,20 @@ def target_qa(episodes, realignment=None, dir_target="level"):
 def run_baseline(
     name, suite_episodes, checkpoint=None, device="cpu", dir_target="level", realignment=None
 ):
+    from dotime.observation import impute_episode
+
     if name == "DoOverTimePFN":
         model = baselines.get(name, checkpoint=checkpoint, device=device)
     else:
         model = baselines.get(name)
+    # As in dotime.evaluation.evaluate: missing cells are imputed unless the
+    # model reads them itself, and a finite episode passes through unchanged.
+    impute = not getattr(model, "mask_aware", False)
     ep_pred, ep_tgt = [], []
     ep_obs: list[np.ndarray] = []
     for ep in suite_episodes:
-        p = torch.as_tensor(model.predict(ep), dtype=torch.float32).reshape(-1).cpu().numpy()
+        seen = impute_episode(ep) if impute else ep
+        p = torch.as_tensor(model.predict(seen), dtype=torch.float32).reshape(-1).cpu().numpy()
         t = torch.as_tensor(ep.y_true, dtype=torch.float32).reshape(-1).cpu().numpy()
         ep_pred.append(p)
         ep_tgt.append(t)

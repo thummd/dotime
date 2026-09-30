@@ -28,6 +28,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 import torch
 
+from dotime.observation import impute_episode
+
 if TYPE_CHECKING:
     from dotime.baselines import Baseline
     from dotime.benchmarks import BenchmarkSuite
@@ -35,6 +37,7 @@ if TYPE_CHECKING:
 __all__ = [
     "DIR_ACC_EPS",
     "DIR_TARGETS",
+    "NONFINITE_MODES",
     "Results",
     "bootstrap_ci",
     "compute_mae",
@@ -56,6 +59,12 @@ DIR_ACC_EPS = 0.1
 # baseline, so only "effect" measures whether the intervention direction is
 # right.
 DIR_TARGETS = ("level", "effect")
+
+# What evaluate() does with a non-finite prediction. "raise" names the baseline
+# and episode, because a NaN would otherwise poison every pooled metric.
+# "exclude" leaves it out of the level metrics, which need a number, but still
+# scores it as a wrong sign, so abstaining never raises direction accuracy.
+NONFINITE_MODES = ("raise", "exclude")
 
 
 # --------------------------------------------------------------------------- #
@@ -150,16 +159,23 @@ def query_obs_levels(episode) -> torch.Tensor:
     ``dot-Continuous-v1`` stores ``index / (T - 1)``), so a fraction cannot be
     decoded here without knowing which suite wrote it.
 
+    An episode from the observation layer (:mod:`dotime.observation`) records
+    the latent level as ``metadata["y_obs_latent"]``, and that is what this
+    returns: its ``x_obs`` cell at the query is a noisy measurement, while the
+    effect is defined on the latent values, like ``y_true``.
+
     Args:
         episode: A benchmark :class:`~dotime.benchmarks.Episode`.
 
     Returns:
-        Tensor of shape ``(n_queries,)`` with
-        ``x_obs[query_time_idx, query_target]`` per query.
+        Tensor of shape ``(n_queries,)`` with ``metadata["y_obs_latent"]``
+        when recorded, otherwise ``x_obs[query_time_idx, query_target]`` per
+        query.
 
     Raises:
-        ValueError: If the episode records query rows that do not match its
-            queries (see :attr:`~dotime.benchmarks.Episode.query_time_idx`).
+        ValueError: If the episode records query rows, or latent levels, that
+            do not match its queries (see
+            :attr:`~dotime.benchmarks.Episode.query_time_idx`).
 
     .. warning::
         For the archived ``dot-Identifiability-v1`` (v1.0.0) files this reads a
@@ -168,6 +184,16 @@ def query_obs_levels(episode) -> torch.Tensor:
         released realignment sidecar for that suite; later suite versions and
         ``dot-Continuous-v1`` are correctly aligned.
     """
+    latent = episode.metadata.get("y_obs_latent")
+    if latent is not None:
+        levels = torch.as_tensor(latent, dtype=torch.float32).reshape(-1)
+        n_queries = episode.query_target.numel()
+        if levels.numel() != n_queries:
+            raise ValueError(
+                f"episode {episode.scm_id} records {levels.numel()} y_obs_latent values "
+                f"for {n_queries} queries"
+            )
+        return levels
     rows = episode.query_time_idx
     cols = episode.query_target.reshape(-1).long()
     return episode.x_obs[rows, cols].to(torch.float32)
@@ -178,8 +204,21 @@ def direction_accuracy(
 ) -> dict[str, float | int]:
     """Sign-consistent direction accuracy, excluding near-zero targets.
 
-    Returns a dict with ``accuracy`` (fraction of ``|target| >= eps`` samples
-    whose predicted sign matches), ``n_valid`` and ``n_excluded``.
+    A query is scored when ``|target| >= eps``. A target closer to zero has no
+    reliable sign, so it is excluded and counted in ``n_excluded``. A scored
+    query is right when ``sign(pred) == sign(target)``. A prediction with sign
+    0 (exactly zero) or a non-finite prediction has no sign to match and
+    counts as wrong.
+
+    Args:
+        preds: Predictions.
+        targets: Targets, the same shape as ``preds``.
+        eps: Threshold on ``|target|`` below which a query is excluded.
+
+    Returns:
+        Dict with ``accuracy`` (the fraction of scored queries whose sign
+        matches, NaN when none is scored), ``n_valid`` (scored queries) and
+        ``n_excluded``.
     """
     if preds.numel() == 0:
         return {"accuracy": float("nan"), "n_valid": 0, "n_excluded": 0}
@@ -253,8 +292,13 @@ class Results:
             f"Baseline: {self.baseline}",
             f"Episodes: {self.n_episodes}   Queries: {self.n_queries}",
             f"dir_acc scores the sign of the {self.dir_target}",
-            "",
         ]
+        if "n_nonfinite" in self.pooled:
+            lines.append(
+                f"Non-finite predictions: {self.pooled['n_nonfinite']} "
+                "(left out of the level metrics, wrong for dir_acc)"
+            )
+        lines.append("")
         cols = ["rmse", "mae", "nmse", "r2", "dir_acc", "dir_acc_se"]
         header = f"{'group':<22}" + "".join(f"{c:>11}" for c in cols)
         lines.append(header)
@@ -290,8 +334,29 @@ def _aggregate(
     targets: torch.Tensor,
     metrics,
     obs: torch.Tensor | None = None,
+    count_nonfinite: bool = False,
 ) -> dict[str, float]:
-    out = {name: fn(preds, targets) for name, fn in metrics.items()}
+    """Level metrics and direction accuracy of one group of queries.
+
+    Args:
+        preds: Predictions, one per query.
+        targets: Targets aligned with ``preds``.
+        metrics: Level-space metrics by name.
+        obs: Observational levels. When given, direction accuracy scores the
+            sign of the effect (``preds - obs`` against ``targets - obs``).
+        count_nonfinite: Report ``n_nonfinite``, the number of non-finite
+            predictions (``nonfinite="exclude"``).
+
+    Returns:
+        Metric name to value, plus the direction-accuracy fields.
+    """
+    finite = torch.isfinite(preds)
+    if bool(finite.all()):
+        out = {name: fn(preds, targets) for name, fn in metrics.items()}
+    else:
+        # Level metrics need a number: they run over the finite predictions,
+        # while direction accuracy below still scores the others as wrong.
+        out = {name: fn(preds[finite], targets[finite]) for name, fn in metrics.items()}
     # With ``obs`` the sign test scores the effect: subtracting the same
     # observational level from both sides leaves every level metric above
     # unchanged but turns the sign of the level into the sign of the effect.
@@ -309,6 +374,8 @@ def _aggregate(
     out["dir_acc_se"] = (
         math.sqrt(p * (1.0 - p) / n_valid) if n_valid > 0 and p == p else float("nan")
     )
+    if count_nonfinite:
+        out["n_nonfinite"] = int((~finite).sum())
     return out
 
 
@@ -317,12 +384,21 @@ def evaluate(
     suite: BenchmarkSuite,
     metrics: dict[str, Callable[[torch.Tensor, torch.Tensor], float]] | None = None,
     dir_target: str = "level",
+    *,
+    impute: bool = True,
+    nonfinite: str = "raise",
 ) -> Results:
     """Evaluate a baseline over every episode of a suite.
 
     Calls ``model.predict(episode)`` for each episode, pools predictions and
     ground-truth targets across all queries, and reports pooled and
     per-structure metrics.
+
+    Episodes of an observed suite (:mod:`dotime.observation`) have missing
+    (``NaN``) cells. A model that cannot read them gets the episode through
+    :func:`dotime.observation.impute_episode`, which returns a finite episode
+    unchanged, so imputation never alters a latent suite's results. A model
+    whose ``mask_aware`` attribute is true gets the ``NaN`` cells as they are.
 
     Args:
         model: The baseline to evaluate.
@@ -332,9 +408,19 @@ def evaluate(
             interventional level, the v1 protocol) or ``"effect"`` (the sign of
             ``y - y_obs`` at the query, read with :func:`query_obs_levels`). The
             level metrics are the same either way.
+        impute: Impute missing cells for models that are not ``mask_aware``.
+        nonfinite: ``"raise"`` stops at the first non-finite prediction.
+            ``"exclude"`` leaves non-finite predictions out of the level
+            metrics, scores them as wrong in ``dir_acc`` and reports their
+            number as ``n_nonfinite`` in the pooled and per-structure metrics.
+
+    Returns:
+        The pooled and per-structure metrics.
 
     Raises:
-        ValueError: If ``dir_target`` is unknown, or if ``"effect"`` is asked
+        ValueError: If ``dir_target`` or ``nonfinite`` is unknown, if the model
+            returns the wrong number of predictions or, with
+            ``nonfinite="raise"``, a non-finite one, or if ``"effect"`` is asked
             of the archived ``dot-Identifiability-v1`` 1.0.0 files, whose
             ``x_obs`` columns are misaligned. Score those with
             ``dotime-eval-reference --dir-target effect --realignment <sidecar>``.
@@ -342,6 +428,8 @@ def evaluate(
     metrics = metrics or _DEFAULT_METRICS
     if dir_target not in DIR_TARGETS:
         raise ValueError(f"dir_target must be one of {DIR_TARGETS}, got {dir_target!r}")
+    if nonfinite not in NONFINITE_MODES:
+        raise ValueError(f"nonfinite must be one of {NONFINITE_MODES}, got {nonfinite!r}")
     if (
         dir_target == "effect"
         and suite.meta.name == "dot-Identifiability-v1"
@@ -354,6 +442,8 @@ def evaluate(
             "results/reference/dot-Identifiability-v1.0.0_realignment.jsonl"
         )
     effect = dir_target == "effect"
+    use_imputation = impute and not getattr(model, "mask_aware", False)
+    count_nonfinite = nonfinite == "exclude"
 
     all_preds: list[torch.Tensor] = []
     all_targets: list[torch.Tensor] = []
@@ -362,12 +452,20 @@ def evaluate(
 
     n_episodes = 0
     for ep in suite:
-        pred = torch.as_tensor(model.predict(ep), dtype=torch.float32).reshape(-1)
+        seen = impute_episode(ep) if use_imputation else ep
+        pred = torch.as_tensor(model.predict(seen), dtype=torch.float32).reshape(-1)
         target = torch.as_tensor(ep.y_true, dtype=torch.float32).reshape(-1)
         if pred.numel() != target.numel():
             raise ValueError(
                 f"baseline {getattr(model, 'name', model)!r} returned {pred.numel()} "
                 f"predictions for {target.numel()} queries in episode {ep.scm_id}"
+            )
+        n_bad = int((~torch.isfinite(pred)).sum())
+        if n_bad and not count_nonfinite:
+            raise ValueError(
+                f"baseline {getattr(model, 'name', model)!r} returned {n_bad} non-finite "
+                f"prediction(s) for episode {ep.scm_id}; keep impute=True for episodes with "
+                "missing cells, or pass nonfinite='exclude' to score them as errors"
             )
         obs = query_obs_levels(ep).reshape(-1) if effect else None
         all_preds.append(pred)
@@ -390,6 +488,7 @@ def evaluate(
             torch.cat([t for _, t, _ in rows]),
             metrics,
             torch.cat([o for _, _, o in rows if o is not None]) if effect else None,
+            count_nonfinite,
         )
         for struct, rows in by_struct.items()
     }
@@ -399,7 +498,9 @@ def evaluate(
         baseline=getattr(model, "name", type(model).__name__),
         n_episodes=n_episodes,
         n_queries=int(preds.numel()),
-        pooled=_aggregate(preds, targets, metrics, torch.cat(all_obs) if effect else None),
+        pooled=_aggregate(
+            preds, targets, metrics, torch.cat(all_obs) if effect else None, count_nonfinite
+        ),
         per_structure=per_structure,
         dir_target=dir_target,
     )

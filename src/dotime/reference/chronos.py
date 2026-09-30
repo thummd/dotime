@@ -48,6 +48,10 @@ _T0_ISO = "2000-01-01"
 
 
 def _episode_frames(ep, use_covariate):
+    from dotime.observation import require_finite_history
+
+    # Checked before pandas loads: a NaN context would be forecast silently.
+    require_finite_history(ep, "dotime-eval-chronos")
     # pandas ships with the `baselines` extra, not the core package.
     import pandas as pd
 

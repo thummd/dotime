@@ -8,6 +8,7 @@ def per_variable_normalize(
     variable_mask: torch.Tensor,
     eps: float = 1e-2,
     int_onset_idx: torch.Tensor | None = None,
+    obs_mask: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Normalize each variable independently using its observational statistics.
 
@@ -31,6 +32,12 @@ def per_variable_normalize(
     int_onset_idx : (B,) per-sample first post-intervention index. If
         provided, only positions with t < int_onset_idx contribute to the
         per-variable statistics.
+    obs_mask : (B, T, N_max) optional, 1 where a cell was observed and 0
+        where it is missing (NaN in ``X_obs``, see ``dotime.observation``).
+        Missing cells are left out of the statistics and are 0 in ``X_norm``,
+        the variable's normalized mean, for a mask-aware model to read next
+        to the mask. None (the default) treats every cell as observed and
+        returns exactly what earlier versions returned.
 
     Returns
     -------
@@ -49,6 +56,11 @@ def per_variable_normalize(
     # the per-variable count (padded vars are all zero anyway).
     var_mask = variable_mask.unsqueeze(1)  # (B, 1, N)
     use_mask = time_mask * var_mask  # (B, T, N)
+    if obs_mask is not None:
+        observed = obs_mask.to(torch.bool)
+        # torch.where, not a product: NaN * 0 is NaN and would reach the sums.
+        X_obs = torch.where(observed, X_obs, torch.zeros_like(X_obs))
+        use_mask = use_mask * observed.to(X_obs.dtype)
 
     n_valid = use_mask.sum(dim=1).clamp(min=1)  # (B, N)
     means = (X_obs * use_mask).sum(dim=1) / n_valid  # (B, N)
@@ -66,6 +78,8 @@ def per_variable_normalize(
 
     # Zero out padded variables
     X_norm = X_norm * mask.unsqueeze(1)
+    if obs_mask is not None:
+        X_norm = X_norm * observed.to(X_norm.dtype)
 
     return X_norm, means, stds
 

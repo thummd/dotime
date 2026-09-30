@@ -51,7 +51,10 @@ from dotime.reference._realignment import (
 def episode_to_batch_interp(episode, n_max, device, observational=False):
     """_episode_to_batch with interpolation masking + optional obs-mode zeroing."""
     from dotime.normalization import normalize_batch
+    from dotime.observation import require_finite_history
 
+    # A NaN cell would reach the normalization statistics of every query.
+    require_finite_history(episode, "dotime-eval-pfn")
     x_obs = episode.x_obs
     t_len, n = x_obs.shape
     onset = min(episode.intervention.times) if episode.intervention.times else t_len

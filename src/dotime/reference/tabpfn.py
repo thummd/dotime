@@ -64,6 +64,10 @@ FRONT_DOOR = {"front_door", "mediator"}
 
 
 def _series(ep):
+    from dotime.observation import require_finite_history
+
+    # TabPFN would fit on NaN features, and the mean fallback would return NaN.
+    require_finite_history(ep, "dotime-eval-tabpfn")
     x = ep.x_obs.detach().cpu().numpy()
     t_len, n = x.shape
     a = ep.intervention.targets[0] if ep.intervention.targets else 0
