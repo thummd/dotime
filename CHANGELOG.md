@@ -76,6 +76,32 @@ All notable changes to `dotime` are documented here. The format follows
   rescales sampled weights without drawing random numbers. The released suites
   are therefore unchanged, and a hardened prior draws the same graphs,
   interventions and noise as an unhardened one with the same seed.
+- Release config for the wide generic suite `dot-Wide-v1` 1.0.0,
+  `scripts/release_config_wide.yaml`: 10 000 episodes with 12 to 40 variables
+  and up to 8 lags, `RECOMMENDED_HARDENING`, shared-noise counterfactual pairs,
+  and the prior's hidden variables removed from the released columns. It needs
+  new opt-in plumbing, and every default stays byte-identical.
+  - **`DoTime(config={"N_min": n})`** sets the smallest number of variables of
+    diverse and regime-switching SCMs. The default of 3 draws the same numbers
+    as before, and chain SCMs keep 3 to 7 variables.
+  - **`DoTime.generate_pair(pair_mode="counterfactual")`** draws one noise
+    realisation from a generator derived from the seed and shares it across
+    both arms. It draws the same SCM and intervention as the default
+    `"interventional"` mode and needs `regime_switching_prob=0`.
+  - **Generic suite keys** `prior_config`, `chain_prob`,
+    `regime_switching_prob`, `pair_mode`, `latent: drop` and `tier_n_edges`
+    configure the prior of a `generic` suite in a release config.
+    `latent: drop` removes each hidden `u*` variable that is not intervened on
+    before the query is chosen, and records the released and dropped names in
+    `metadata["latent"]`. The suite manifest records the keys a suite sets.
+  - A suite may set its own `seed`, and `build_manifest.json` records each
+    suite's seed.
+
+  On the first 200 episodes none diverged and 14.3% of the variables were
+  hidden and dropped. The query sits at the last step, after the intervention
+  window in 95.5% of them, so the median counterfactual effect at the query is
+  3.3e-6 (see `results/reference/wide/`). A full build projects to about 0.7 h on
+  15 workers.
 - `dot-Identifiability-v1` 1.1.0: regenerated with shared-noise counterfactual
   pairing, aligned `x_obs`, hidden variables zeroed, correct `y_causal_effect`,
   resampled divergences (0 zeroed episodes) and a `diverged` flag. Same base seeds,

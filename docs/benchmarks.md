@@ -46,6 +46,50 @@ Zenodo archive of record (concept DOIs `10.5281/zenodo.20846063`, `.20846073`, `
 against the manifest. Pass `force_download=True` to
 re-fetch. Override the cache with `$DOTIME_CACHE` or `cache_dir=`.
 
+## Wide graphs with latent variables (dot-Wide-v1)
+
+The released suites have at most 10 variables and 3 lags. `dot-Wide-v1` 1.0.0
+draws 10 000 episodes from the generic prior with 12 to 40 variables and 1 to 8
+lags. PFN checkpoints pad to 41 variables, which caps the size at 40. Unhardened,
+about two thirds of such episodes diverge, so every SCM gets
+`RECOMMENDED_HARDENING` (see the troubleshooting guide on large graphs). The two
+arms share one exogenous-noise realisation, so they agree exactly before the
+onset and `y_true - y_obs` is a per-episode counterfactual effect. The prior
+names the variables it hides `u{i}`. `dot-Generic-100k` releases them as
+ordinary columns, while `dot-Wide-v1` removes them from both arms unless the
+intervention targets them, so they are unobserved and never queried. Its
+release config is `scripts/release_config_wide.yaml`:
+
+```bash
+python scripts/build_release.py --config scripts/release_config_wide.yaml
+```
+
+A `generic` suite accepts these opt-in keys. A suite that sets none of them
+builds exactly as before.
+
+| Key | Effect |
+|---|---|
+| `prior_config` | Passed to `DoTime(config=...)`. `dot-Wide-v1` sets `N_min: 12`, `N_max: 40`, `K_max: 8` and the recommended `hardening`. |
+| `pair_mode` | `counterfactual` shares the noise across arms (`DoTime.generate_pair(pair_mode=...)`). It needs `regime_switching_prob: 0`, since regime-switching SCMs draw their noise step by step. |
+| `chain_prob`, `regime_switching_prob` | Shares of chain and regime-switching SCMs. `dot-Wide-v1` sets both to 0. Chain SCMs have 3 to 7 variables whatever `N_min` is. |
+| `latent` | `drop` removes the hidden variables before the query is chosen. |
+| `tier_n_edges` | The tier is 1 plus the number of these edges below the simulated variable count, counted before latents are dropped. `[20, 30]` gives tier 1 for 12 to 20 variables, 2 for 21 to 30 and 3 for 31 to 40. |
+
+Each episode's metadata records `tier`, `diverged`, `pair_mode` and `latent`,
+which is `{"mode": "drop", "columns": [...], "hidden": [...], "n_vars_full": N}`.
+`columns` names the released columns in order and `hidden` the dropped
+variables.
+
+On the first 200 episodes (`results/reference/wide/`), none diverged, 12 to 40
+variables were simulated and 8 to 40 released, and 14.3% of all variables were
+hidden and dropped. The query sits at the last step, as in `dot-Generic-100k`,
+and the intervention window closes before it in 95.5% of those episodes, a
+median 36 steps earlier. The contractive hardened dynamics let the effect decay
+in that time, so the median |`y_true - y_obs`| at the query is 3.3e-6 and 13.5%
+of the queries have an effect of at least 0.1. Score the level targets, or read
+the effect from `x_int - x_obs` inside the window, where 88.5% of the episodes
+have an effect of at least 0.1 at the window's last step.
+
 ## v1.0.0 field semantics and known issues (erratum)
 
 The archived v1.0.0 files are frozen; the issues below are **documented, not
