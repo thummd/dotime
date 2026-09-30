@@ -487,6 +487,8 @@ def cell_metrics(
         ``contrast_*`` keys score the sign of the estimator's own effect,
         ``pred - pred_ref``, on the same valid episodes: over all of them (an
         abstention, a zero contrast, counts as wrong) and over its calls.
+        The exploratory ``effect_rmse`` is the RMSE of that contrast against
+        the true effect over every episode, null ones included.
     """
     eff = direction_accuracy(torch.from_numpy(pred - y_obs), torch.from_numpy(y_true - y_obs))
     lvl = direction_accuracy(torch.from_numpy(pred), torch.from_numpy(y_true))
@@ -519,6 +521,7 @@ def cell_metrics(
         "contrast_n_calls": int(con_calls["n_valid"]),
         "contrast_sign_acc_calls": cc_acc,
         "contrast_sign_se_calls": _binomial_se(cc_acc, int(con_calls["n_valid"])),
+        "effect_rmse": float(np.sqrt(np.mean((contrast - (y_true - y_obs)) ** 2))),
     }
 
 
@@ -1514,6 +1517,12 @@ def render_markdown(result: dict[str, Any]) -> str:
         lines.append(f"| {name} | {' | '.join(cells)} |")
 
     for title, key, digits in (
+        (
+            "Exploratory: effect RMSE, `pred(do v) - pred(do a_ref)` against `y_true - y_obs` "
+            "(the naive rows are the no-effect baseline)",
+            "effect_rmse",
+            3,
+        ),
         ("Level RMSE", "level_rmse", 3),
         ("Level-sign accuracy", "level_sign_acc", 3),
     ):
