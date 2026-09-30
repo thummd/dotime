@@ -1,0 +1,788 @@
+{
+  "config": {
+    "suite": "dot-SeasonalTrend-v1",
+    "version": "1.0.0",
+    "config_file": "scripts/release_config_seasonal_trend.yaml",
+    "config_sha256": "2a0ce8abcbc11111cf257b2a422691a0204ff876561cdb43623055a1ea6a6a39",
+    "suite_seed": 20262001,
+    "T": 200,
+    "per_label": 100,
+    "episodes": 1000,
+    "workers": 4,
+    "effect_eps": 0.1,
+    "package_version": "0.1.3",
+    "git_commit": "5772a554e6525e4633c9d8af5e90e25fc81a8b56",
+    "src_and_scripts_clean": true,
+    "naive_ols_registered": false
+  },
+  "labels": {
+    "bi_variate": {
+      "tier": 1,
+      "n": 100,
+      "diverged_share": 0.0,
+      "targets": {
+        "y_obs": {
+          "nonzero_frac": 1.0,
+          "mean": 0.04360205177217722,
+          "var": 0.2894052391185688,
+          "n": 100
+        },
+        "y_int": {
+          "nonzero_frac": 1.0,
+          "mean": 0.1274766353983432,
+          "var": 0.4985172731326594,
+          "n": 100
+        },
+        "effect": {
+          "nonzero_frac": 0.85,
+          "mean": 0.08387458518147468,
+          "var": 0.3309873831132522,
+          "n": 100
+        }
+      },
+      "effect_sign_accuracy": {
+        "BackDoorOLS": {
+          "accuracy": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "n_valid": 57,
+          "n_zero_contrast": 57
+        },
+        "ols_base_set": {
+          "accuracy": 0.9649122807017544,
+          "ci95": [
+            0.9122807017543859,
+            1.0
+          ],
+          "n_valid": 57,
+          "n_zero_contrast": 0
+        },
+        "ols_unadjusted": {
+          "accuracy": 0.9649122807017544,
+          "ci95": [
+            0.9122807017543859,
+            1.0
+          ],
+          "n_valid": 57,
+          "n_zero_contrast": 0
+        }
+      },
+      "level_rmse": {
+        "Mean": 0.6083514590007304,
+        "AR1": 0.7443011012188002,
+        "VAR-OLS": 0.6618888320097022,
+        "BackDoorOLS": 0.6083514616512808
+      }
+    },
+    "back_door": {
+      "tier": 1,
+      "n": 100,
+      "diverged_share": 0.0,
+      "targets": {
+        "y_obs": {
+          "nonzero_frac": 1.0,
+          "mean": 0.07659898873564089,
+          "var": 0.22931111645736435,
+          "n": 100
+        },
+        "y_int": {
+          "nonzero_frac": 1.0,
+          "mean": 0.15618746143678436,
+          "var": 0.5097187517475165,
+          "n": 100
+        },
+        "effect": {
+          "nonzero_frac": 0.85,
+          "mean": 0.07958847004920244,
+          "var": 0.2964995299637441,
+          "n": 100
+        }
+      },
+      "effect_sign_accuracy": {
+        "BackDoorOLS": {
+          "accuracy": 0.921875,
+          "ci95": [
+            0.859375,
+            0.984375
+          ],
+          "n_valid": 64,
+          "n_zero_contrast": 0
+        },
+        "ols_base_set": {
+          "accuracy": 0.921875,
+          "ci95": [
+            0.859375,
+            0.984375
+          ],
+          "n_valid": 64,
+          "n_zero_contrast": 0
+        },
+        "ols_unadjusted": {
+          "accuracy": 0.921875,
+          "ci95": [
+            0.859375,
+            0.984375
+          ],
+          "n_valid": 64,
+          "n_zero_contrast": 0
+        }
+      },
+      "level_rmse": {
+        "Mean": 0.6752321243613068,
+        "AR1": 0.7682474320264893,
+        "VAR-OLS": 0.7435860519828593,
+        "BackDoorOLS": 0.6453152242129666
+      }
+    },
+    "bi_variate+seasonal_observed": {
+      "tier": 2,
+      "n": 100,
+      "diverged_share": 0.0,
+      "targets": {
+        "y_obs": {
+          "nonzero_frac": 1.0,
+          "mean": 0.056704709827899935,
+          "var": 0.7612472392643881,
+          "n": 100
+        },
+        "y_int": {
+          "nonzero_frac": 1.0,
+          "mean": 0.12219790257513523,
+          "var": 0.7640592022288335,
+          "n": 100
+        },
+        "effect": {
+          "nonzero_frac": 0.81,
+          "mean": 0.06549319289624692,
+          "var": 0.24758466520559813,
+          "n": 100
+        }
+      },
+      "driver_variance_share": {
+        "A": {
+          "median": 0.7387629067203962,
+          "q25": 0.643851527582734,
+          "q75": 0.808150569298112
+        },
+        "Y": {
+          "median": 0.7473566793163947,
+          "q25": 0.6443250390565378,
+          "q75": 0.8282373907196408
+        }
+      },
+      "effect_sign_accuracy": {
+        "BackDoorOLS": {
+          "accuracy": 0.9122807017543859,
+          "ci95": [
+            0.8245614035087719,
+            0.9824561403508771
+          ],
+          "n_valid": 57,
+          "n_zero_contrast": 0
+        },
+        "ols_base_set": {
+          "accuracy": 0.5964912280701754,
+          "ci95": [
+            0.47368421052631576,
+            0.7368421052631579
+          ],
+          "n_valid": 57,
+          "n_zero_contrast": 0
+        },
+        "ols_unadjusted": {
+          "accuracy": 0.5964912280701754,
+          "ci95": [
+            0.47368421052631576,
+            0.7368421052631579
+          ],
+          "n_valid": 57,
+          "n_zero_contrast": 0
+        },
+        "ols_with_D": {
+          "accuracy": 0.9122807017543859,
+          "ci95": [
+            0.8245614035087719,
+            0.9824561403508771
+          ],
+          "n_valid": 57,
+          "n_zero_contrast": 0
+        }
+      },
+      "level_rmse": {
+        "Mean": 0.8094883627399768,
+        "AR1": 0.5915016773852115,
+        "VAR-OLS": 1.0267332840367729,
+        "BackDoorOLS": 0.8032839824978619
+      }
+    },
+    "bi_variate+trend_observed": {
+      "tier": 2,
+      "n": 100,
+      "diverged_share": 0.0,
+      "targets": {
+        "y_obs": {
+          "nonzero_frac": 1.0,
+          "mean": -0.028187831416726112,
+          "var": 0.571709150118036,
+          "n": 100
+        },
+        "y_int": {
+          "nonzero_frac": 1.0,
+          "mean": 0.0458867721632123,
+          "var": 0.9174682131287946,
+          "n": 100
+        },
+        "effect": {
+          "nonzero_frac": 0.86,
+          "mean": 0.07407460413873196,
+          "var": 0.5391001683276698,
+          "n": 100
+        }
+      },
+      "driver_variance_share": {
+        "A": {
+          "median": 0.5768765137487691,
+          "q25": 0.39978900515128923,
+          "q75": 0.6700021372872451
+        },
+        "Y": {
+          "median": 0.5374401717337163,
+          "q25": 0.40880072263531314,
+          "q75": 0.697630108763732
+        }
+      },
+      "effect_sign_accuracy": {
+        "BackDoorOLS": {
+          "accuracy": 0.9014084507042254,
+          "ci95": [
+            0.8309859154929577,
+            0.971830985915493
+          ],
+          "n_valid": 71,
+          "n_zero_contrast": 0
+        },
+        "ols_base_set": {
+          "accuracy": 0.8028169014084507,
+          "ci95": [
+            0.704225352112676,
+            0.8873239436619719
+          ],
+          "n_valid": 71,
+          "n_zero_contrast": 0
+        },
+        "ols_unadjusted": {
+          "accuracy": 0.8028169014084507,
+          "ci95": [
+            0.704225352112676,
+            0.8873239436619719
+          ],
+          "n_valid": 71,
+          "n_zero_contrast": 0
+        },
+        "ols_with_D": {
+          "accuracy": 0.9014084507042254,
+          "ci95": [
+            0.8309859154929577,
+            0.971830985915493
+          ],
+          "n_valid": 71,
+          "n_zero_contrast": 0
+        }
+      },
+      "level_rmse": {
+        "Mean": 0.8908055200294849,
+        "AR1": 0.9191847148814234,
+        "VAR-OLS": 1.2532709420493817,
+        "BackDoorOLS": 0.7404429123258132
+      }
+    },
+    "back_door+seasonal_observed": {
+      "tier": 2,
+      "n": 100,
+      "diverged_share": 0.0,
+      "targets": {
+        "y_obs": {
+          "nonzero_frac": 1.0,
+          "mean": 0.25708938101306555,
+          "var": 0.766887436068128,
+          "n": 100
+        },
+        "y_int": {
+          "nonzero_frac": 1.0,
+          "mean": 0.4794827652908862,
+          "var": 1.052733234933536,
+          "n": 100
+        },
+        "effect": {
+          "nonzero_frac": 0.82,
+          "mean": 0.22239338591694832,
+          "var": 0.6064844083995571,
+          "n": 100
+        }
+      },
+      "driver_variance_share": {
+        "A": {
+          "median": 0.7296221857224876,
+          "q25": 0.6436975155418724,
+          "q75": 0.827697091606379
+        },
+        "Y": {
+          "median": 0.6793410959611996,
+          "q25": 0.5167689414519214,
+          "q75": 0.7971357769424182
+        }
+      },
+      "effect_sign_accuracy": {
+        "BackDoorOLS": {
+          "accuracy": 0.9666666666666667,
+          "ci95": [
+            0.9166666666666666,
+            1.0
+          ],
+          "n_valid": 60,
+          "n_zero_contrast": 0
+        },
+        "ols_base_set": {
+          "accuracy": 0.65,
+          "ci95": [
+            0.5333333333333333,
+            0.7666666666666667
+          ],
+          "n_valid": 60,
+          "n_zero_contrast": 0
+        },
+        "ols_unadjusted": {
+          "accuracy": 0.6666666666666666,
+          "ci95": [
+            0.55,
+            0.7833333333333333
+          ],
+          "n_valid": 60,
+          "n_zero_contrast": 0
+        },
+        "ols_with_D": {
+          "accuracy": 0.9666666666666667,
+          "ci95": [
+            0.9166666666666666,
+            1.0
+          ],
+          "n_valid": 60,
+          "n_zero_contrast": 0
+        }
+      },
+      "level_rmse": {
+        "Mean": 1.0844706414713767,
+        "AR1": 0.9808488916244614,
+        "VAR-OLS": 1.2221410148064937,
+        "BackDoorOLS": 0.8729808609608238
+      }
+    },
+    "back_door+trend_observed": {
+      "tier": 2,
+      "n": 100,
+      "diverged_share": 0.0,
+      "targets": {
+        "y_obs": {
+          "nonzero_frac": 1.0,
+          "mean": 0.04113683551549911,
+          "var": 0.7473532803192073,
+          "n": 100
+        },
+        "y_int": {
+          "nonzero_frac": 1.0,
+          "mean": 0.16194077085703612,
+          "var": 1.117557544207315,
+          "n": 100
+        },
+        "effect": {
+          "nonzero_frac": 0.85,
+          "mean": 0.12080393701791764,
+          "var": 0.5331654844137739,
+          "n": 100
+        }
+      },
+      "driver_variance_share": {
+        "A": {
+          "median": 0.5312267077991906,
+          "q25": 0.3720491702430957,
+          "q75": 0.699285528332577
+        },
+        "Y": {
+          "median": 0.48508141289021667,
+          "q25": 0.29335071186398753,
+          "q75": 0.6655442710030732
+        }
+      },
+      "effect_sign_accuracy": {
+        "BackDoorOLS": {
+          "accuracy": 0.9411764705882353,
+          "ci95": [
+            0.8823529411764706,
+            0.9852941176470589
+          ],
+          "n_valid": 68,
+          "n_zero_contrast": 0
+        },
+        "ols_base_set": {
+          "accuracy": 0.8088235294117647,
+          "ci95": [
+            0.7205882352941176,
+            0.8970588235294118
+          ],
+          "n_valid": 68,
+          "n_zero_contrast": 0
+        },
+        "ols_unadjusted": {
+          "accuracy": 0.7647058823529411,
+          "ci95": [
+            0.6764705882352942,
+            0.8529411764705882
+          ],
+          "n_valid": 68,
+          "n_zero_contrast": 0
+        },
+        "ols_with_D": {
+          "accuracy": 0.9411764705882353,
+          "ci95": [
+            0.8823529411764706,
+            0.9852941176470589
+          ],
+          "n_valid": 68,
+          "n_zero_contrast": 0
+        }
+      },
+      "level_rmse": {
+        "Mean": 0.9829057070023527,
+        "AR1": 1.059573846842675,
+        "VAR-OLS": 1.4382688117716969,
+        "BackDoorOLS": 0.7084122050223216
+      }
+    },
+    "bi_variate+seasonal_hidden": {
+      "tier": 3,
+      "n": 100,
+      "diverged_share": 0.0,
+      "targets": {
+        "y_obs": {
+          "nonzero_frac": 1.0,
+          "mean": 0.22432665660977363,
+          "var": 0.83713630485437,
+          "n": 100
+        },
+        "y_int": {
+          "nonzero_frac": 1.0,
+          "mean": 0.3397652603127062,
+          "var": 1.2157650699923905,
+          "n": 100
+        },
+        "effect": {
+          "nonzero_frac": 0.87,
+          "mean": 0.11543860234320164,
+          "var": 0.7952763250993073,
+          "n": 100
+        }
+      },
+      "driver_variance_share": {
+        "A": {
+          "median": 0.7282847729084015,
+          "q25": 0.6019725809901033,
+          "q75": 0.8115712554431816
+        },
+        "Y": {
+          "median": 0.7250855741138891,
+          "q25": 0.5901374104537946,
+          "q75": 0.8311432832542285
+        }
+      },
+      "effect_sign_accuracy": {
+        "BackDoorOLS": {
+          "accuracy": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "n_valid": 64,
+          "n_zero_contrast": 64
+        },
+        "ols_base_set": {
+          "accuracy": 0.609375,
+          "ci95": [
+            0.484375,
+            0.734375
+          ],
+          "n_valid": 64,
+          "n_zero_contrast": 0
+        },
+        "ols_unadjusted": {
+          "accuracy": 0.609375,
+          "ci95": [
+            0.484375,
+            0.734375
+          ],
+          "n_valid": 64,
+          "n_zero_contrast": 0
+        },
+        "ols_with_D": {
+          "accuracy": 0.96875,
+          "ci95": [
+            0.921875,
+            1.0
+          ],
+          "n_valid": 64,
+          "n_zero_contrast": 0
+        }
+      },
+      "level_rmse": {
+        "Mean": 1.1497129330248257,
+        "AR1": 1.0677334233761597,
+        "VAR-OLS": 1.4673767164907243,
+        "BackDoorOLS": 1.1497129449815175
+      }
+    },
+    "bi_variate+trend_hidden": {
+      "tier": 3,
+      "n": 100,
+      "diverged_share": 0.0,
+      "targets": {
+        "y_obs": {
+          "nonzero_frac": 1.0,
+          "mean": 0.13969394344836472,
+          "var": 0.31878035036169994,
+          "n": 100
+        },
+        "y_int": {
+          "nonzero_frac": 1.0,
+          "mean": 0.15426286265254022,
+          "var": 1.0082058266734146,
+          "n": 100
+        },
+        "effect": {
+          "nonzero_frac": 0.86,
+          "mean": 0.01456891868263483,
+          "var": 0.729696798218636,
+          "n": 100
+        }
+      },
+      "driver_variance_share": {
+        "A": {
+          "median": 0.5895448356217177,
+          "q25": 0.4549610939973866,
+          "q75": 0.6877075733651459
+        },
+        "Y": {
+          "median": 0.5129566015310332,
+          "q25": 0.3951574489152296,
+          "q75": 0.7003021417803772
+        }
+      },
+      "effect_sign_accuracy": {
+        "BackDoorOLS": {
+          "accuracy": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "n_valid": 70,
+          "n_zero_contrast": 70
+        },
+        "ols_base_set": {
+          "accuracy": 0.9142857142857143,
+          "ci95": [
+            0.8428571428571429,
+            0.9714285714285714
+          ],
+          "n_valid": 70,
+          "n_zero_contrast": 0
+        },
+        "ols_unadjusted": {
+          "accuracy": 0.9142857142857143,
+          "ci95": [
+            0.8428571428571429,
+            0.9714285714285714
+          ],
+          "n_valid": 70,
+          "n_zero_contrast": 0
+        },
+        "ols_with_D": {
+          "accuracy": 0.9571428571428572,
+          "ci95": [
+            0.9142857142857143,
+            1.0
+          ],
+          "n_valid": 70,
+          "n_zero_contrast": 0
+        }
+      },
+      "level_rmse": {
+        "Mean": 1.0299071448609718,
+        "AR1": 0.9981090213911772,
+        "VAR-OLS": 1.124458230152991,
+        "BackDoorOLS": 1.0299071482897317
+      }
+    },
+    "back_door+seasonal_hidden": {
+      "tier": 3,
+      "n": 100,
+      "diverged_share": 0.0,
+      "targets": {
+        "y_obs": {
+          "nonzero_frac": 1.0,
+          "mean": 0.020010920497588812,
+          "var": 0.8000086585721082,
+          "n": 100
+        },
+        "y_int": {
+          "nonzero_frac": 1.0,
+          "mean": 0.08703791700303555,
+          "var": 1.3029271904008437,
+          "n": 100
+        },
+        "effect": {
+          "nonzero_frac": 0.85,
+          "mean": 0.0670269950479269,
+          "var": 0.5275538786377156,
+          "n": 100
+        }
+      },
+      "driver_variance_share": {
+        "A": {
+          "median": 0.7340600036257658,
+          "q25": 0.6443608011340675,
+          "q75": 0.8302441466424558
+        },
+        "Y": {
+          "median": 0.6996912206126765,
+          "q25": 0.5386556203114692,
+          "q75": 0.8145095503925074
+        }
+      },
+      "effect_sign_accuracy": {
+        "BackDoorOLS": {
+          "accuracy": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "n_valid": 61,
+          "n_zero_contrast": 61
+        },
+        "ols_base_set": {
+          "accuracy": 0.6721311475409836,
+          "ci95": [
+            0.5573770491803278,
+            0.7868852459016393
+          ],
+          "n_valid": 61,
+          "n_zero_contrast": 0
+        },
+        "ols_unadjusted": {
+          "accuracy": 0.6721311475409836,
+          "ci95": [
+            0.5569672131147541,
+            0.7868852459016393
+          ],
+          "n_valid": 61,
+          "n_zero_contrast": 0
+        },
+        "ols_with_D": {
+          "accuracy": 0.9344262295081968,
+          "ci95": [
+            0.8688524590163934,
+            0.9836065573770492
+          ],
+          "n_valid": 61,
+          "n_zero_contrast": 0
+        }
+      },
+      "level_rmse": {
+        "Mean": 1.0334235150745814,
+        "AR1": 0.9359055880476348,
+        "VAR-OLS": 1.1541222196087662,
+        "BackDoorOLS": 1.0334235191569645
+      }
+    },
+    "back_door+trend_hidden": {
+      "tier": 3,
+      "n": 100,
+      "diverged_share": 0.0,
+      "targets": {
+        "y_obs": {
+          "nonzero_frac": 1.0,
+          "mean": 0.040927333233412355,
+          "var": 0.9486094928073728,
+          "n": 100
+        },
+        "y_int": {
+          "nonzero_frac": 1.0,
+          "mean": 0.04361706539522856,
+          "var": 1.3628839518651865,
+          "n": 100
+        },
+        "effect": {
+          "nonzero_frac": 0.8,
+          "mean": 0.002689731193240732,
+          "var": 0.2983417672335375,
+          "n": 100
+        }
+      },
+      "driver_variance_share": {
+        "A": {
+          "median": 0.5424832122271037,
+          "q25": 0.3871917043284132,
+          "q75": 0.6207468375205405
+        },
+        "Y": {
+          "median": 0.5550911354947898,
+          "q25": 0.34685815450427043,
+          "q75": 0.6816457204666247
+        }
+      },
+      "effect_sign_accuracy": {
+        "BackDoorOLS": {
+          "accuracy": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "n_valid": 63,
+          "n_zero_contrast": 63
+        },
+        "ols_base_set": {
+          "accuracy": 0.7936507936507936,
+          "ci95": [
+            0.6984126984126984,
+            0.8888888888888888
+          ],
+          "n_valid": 63,
+          "n_zero_contrast": 0
+        },
+        "ols_unadjusted": {
+          "accuracy": 0.7936507936507936,
+          "ci95": [
+            0.6984126984126984,
+            0.8888888888888888
+          ],
+          "n_valid": 63,
+          "n_zero_contrast": 0
+        },
+        "ols_with_D": {
+          "accuracy": 0.9365079365079365,
+          "ci95": [
+            0.873015873015873,
+            0.9841269841269841
+          ],
+          "n_valid": 63,
+          "n_zero_contrast": 0
+        }
+      },
+      "level_rmse": {
+        "Mean": 0.9066850141747617,
+        "AR1": 0.7230909363664522,
+        "VAR-OLS": 0.95000659389514,
+        "BackDoorOLS": 0.9066850062877683
+      }
+    }
+  }
+}
