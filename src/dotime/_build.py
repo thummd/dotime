@@ -26,6 +26,8 @@ _OPT_IN_SPEC_KEYS = (
     "pair_mode",
     "latent",
     "tier_n_edges",
+    "schedules",
+    "record_obs_times",
 )
 
 
@@ -236,11 +238,28 @@ def make_episode(spec: dict):
         )
         return _with_graph(spec, ep, ("identifiability", spec["structure"]))
     if kind == "continuous":
+        from dotime._observation_grids import draw_grid, schedule_for
         from dotime.continuous import ContinuousExtendedPrior
 
-        s = ContinuousExtendedPrior(tscm_structure=spec["structure"], seed=seed).generate_sample(
-            T=t_len
-        )
+        # Opt-in ``schedules``: episode idx takes entry idx % len. A regular
+        # entry makes the frozen dot-Continuous-v1 call.
+        sched = schedule_for(spec.get("schedules"), idx)
+        if sched is None or sched["kind"] == "regular":
+            prior = ContinuousExtendedPrior(tscm_structure=spec["structure"], seed=seed)
+        else:
+            # A fixed grid draws nothing from the prior's generators, so the
+            # episode keeps the SCM, window and value draws of the regular
+            # episode with this seed. dt, the mean gap, floors the window.
+            times = draw_grid(sched, t_len, seed)
+            prior = ContinuousExtendedPrior(
+                tscm_structure=spec["structure"],
+                seed=seed,
+                schedule="fixed",
+                fixed_times=times,
+                dt=float(times[-1] - times[0]) / (t_len - 1),
+                num_substeps=int(sched["num_substeps"]),
+            )
+        s = prior.generate_sample(T=t_len)
         tier = 1
         if "intervention_time_start" in s and "intervention_time_end" in s:
             frac = float(s["intervention_time_end"] - s["intervention_time_start"])
@@ -258,7 +277,15 @@ def make_episode(spec: dict):
             "query_in_window": bool(float(s["t_int_start"]) <= q_abs <= float(s["t_int_end"])),
             "window_end_idx": int((s["times"] <= float(s["t_int_end"])).sum().item()) - 1,
         }
-        ep = episode_from_sample(s, structure=spec["structure"], scm_id=idx, metadata=meta)
+        if sched is not None:
+            meta["schedule"] = sched["name"]
+        ep = episode_from_sample(
+            s,
+            structure=spec["structure"],
+            scm_id=idx,
+            metadata=meta,
+            record_obs_times=bool(spec.get("record_obs_times", False)),
+        )
         return _with_graph(spec, ep, ("continuous", spec["structure"]))
     if kind == "generic_configured":
         return _make_configured_generic_episode(spec)

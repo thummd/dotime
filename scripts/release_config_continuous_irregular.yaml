@@ -1,0 +1,41 @@
+# dot-ContinuousIrregular-v1 version 1.0.0: dot-Continuous-v1 on irregular
+# observation grids. Prepared, not built.
+#
+# Same generator, structures, T and episode count as dot-Continuous-v1
+# (release_config.yaml), and the same suite seed 20263719. The suite sets it
+# explicitly as the top-level seed + 1000, which is also what build_release.py
+# derives for the first suite in the list.
+#
+# Episode idx takes schedules[idx % 3], so each structure gets 1,111 episodes
+# of each schedule and no random draw assigns them:
+#   regular   the unchanged dot-Continuous-v1 call. These 3,333 episodes are
+#             the released dot-Continuous-v1 rows with the same idx, bit for bit.
+#   jittered  gaps dt * (1 + jitter * U) with U ~ Uniform(-1, 1), in [0.5, 1.5].
+#   poisson   Exp(rate) gaps truncated to [0.001, max_gap], mean gap 0.93.
+# The irregular grids come from a generator of their own
+# (dotime._observation_grids), so an irregular episode keeps the SCM,
+# intervention window, kind and value of the regular episode with its seed.
+# num_substeps splits each gap into Euler sub-steps of at most 1.0, the step of
+# the frozen grid: mean-reversion rates reach 2, and an Euler step h keeps a
+# variable bounded only while rate * h <= 2. Continuous episodes are never
+# retried.
+#
+# record_obs_times stores each episode's grid (schema 2, column obs_times).
+# query_time is (t_q - t_0) / (t_last - t_0), the "time/span" encoding.
+seed: 20262719
+T: 200
+
+suites:
+
+  dot-ContinuousIrregular-v1:
+    version: "1.0.0"
+    generator: continuous
+    seed: 20263719
+    T: 200
+    structures: [back_door, front_door, instrumental_variable]
+    n_episodes: 10000
+    record_obs_times: true
+    schedules:
+      - {name: regular, kind: regular}
+      - {name: jittered, kind: jittered, dt: 1.0, jitter: 0.5, num_substeps: 2}
+      - {name: poisson, kind: poisson, rate: 1.0, max_gap: 4.0, num_substeps: 4}

@@ -266,7 +266,7 @@ def _row_to_episode(row: dict, query_time_encoding: str | None = None) -> Episod
         # Resolved once, in memory, so every consumer reads the same row; the
         # frozen files themselves are never rewritten.
         metadata["query_time_idx"] = query_time_to_index(
-            row["query_time"], length, query_time_encoding
+            row["query_time"], length, query_time_encoding, times=row.get("obs_times")
         )
     return Episode(
         x_obs=x_obs,

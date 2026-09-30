@@ -130,7 +130,7 @@ def test_query_time_to_index_encodings_and_guards():
     # ...but is unchanged for steps and index / T fractions.
     assert query_time_to_index([row, row / t_len], t_len) == [row, row]
     assert query_time_to_index([250.0, -3.0], t_len, "step") == [t_len - 1, 0]
-    assert set(QUERY_TIME_ENCODINGS) == {"step", "index/T", "index/(T-1)"}
+    assert set(QUERY_TIME_ENCODINGS) == {"step", "index/T", "index/(T-1)", "time/span"}
     with pytest.raises(ValueError, match="unknown query_time encoding"):
         query_time_to_index([0.5], t_len, "fraction")
     with pytest.raises(ValueError, match="not a whole row"):

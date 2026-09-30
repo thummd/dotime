@@ -50,12 +50,62 @@ __all__ = [
 #: ``"step"`` stores the row index itself (generic and regime generators),
 #: ``"index/T"`` stores ``index / T`` (``ExtendedDoTime``, the identifiability
 #: suite) and ``"index/(T-1)"`` stores ``index / (T - 1)``, which is the continuous
-#: prior's normalized observation time on its regular grid.
-QUERY_TIME_ENCODINGS = ("step", "index/T", "index/(T-1)")
+#: prior's normalized observation time on its regular grid. ``"time/span"``
+#: stores that normalized time on any grid, ``(t_q - t_0) / (t_last - t_0)``, and
+#: needs the episode's observation times to resolve.
+QUERY_TIME_ENCODINGS = ("step", "index/T", "index/(T-1)", "time/span")
+
+# Largest distance between a "time/span" query time and its row's normalized
+# time. The continuous prior normalizes in float32 (error ~1e-7), and the
+# smallest gap of an irregular grid (0.001 over a span near 200, 5e-6) is more
+# than twice this, so no query can match two rows.
+_TIME_SPAN_TOL = 1e-6
+
+
+def _time_span_rows(
+    query_time: torch.Tensor | Sequence[float],
+    length: int,
+    times: torch.Tensor | Sequence[float] | None,
+) -> list[int]:
+    """Rows of ``"time/span"`` query times on an episode's observation grid.
+
+    Args:
+        query_time: Encoded query time of each query.
+        length: Number of rows ``T``.
+        times: The ``T`` observation times.
+
+    Returns:
+        The row whose normalized time matches each query.
+
+    Raises:
+        ValueError: If ``times`` is missing or does not have ``T`` entries, or
+            a query time is not the normalized time of any row.
+    """
+    if times is None:
+        raise ValueError(
+            "query_time encoding 'time/span' needs the episode's observation times (obs_times)"
+        )
+    grid = torch.as_tensor(times, dtype=torch.float64).reshape(-1)
+    if grid.numel() != length:
+        raise ValueError(f"got {grid.numel()} observation times for T={length}")
+    span = float(grid[-1] - grid[0])
+    frac = (grid - grid[0]) / span if span > 0 else torch.zeros_like(grid)
+    values = torch.as_tensor(query_time, dtype=torch.float64).reshape(-1, 1)
+    dist, rows = (frac.reshape(1, -1) - values).abs().min(dim=1)
+    for v, d in zip(values.reshape(-1).tolist(), dist.tolist(), strict=True):
+        if d > _TIME_SPAN_TOL:
+            raise ValueError(
+                f"query_time {v!r} is not an observation time under encoding 'time/span' "
+                f"for T={length}; the declared encoding does not match the data"
+            )
+    return [int(r) for r in rows.tolist()]
 
 
 def query_time_to_index(
-    query_time: torch.Tensor | Sequence[float], length: int, encoding: str | None = None
+    query_time: torch.Tensor | Sequence[float],
+    length: int,
+    encoding: str | None = None,
+    times: torch.Tensor | Sequence[float] | None = None,
 ) -> list[int]:
     """Map encoded query times to row indices of a ``length``-step trajectory.
 
@@ -71,6 +121,9 @@ def query_time_to_index(
         up to 1 are then read as ``index / T`` and larger values as steps. That
         guess is wrong for ``dot-Continuous-v1``, which is why every registered
         suite declares its encoding.
+    times:
+        Observation time of each row (``Episode.obs_times``). Only
+        ``"time/span"`` reads it, and it needs it.
 
     Returns
     -------
@@ -80,9 +133,10 @@ def query_time_to_index(
     Raises
     ------
     ValueError
-        If ``length`` is not positive, if ``encoding`` is unknown, or if a
+        If ``length`` is not positive, if ``encoding`` is unknown, if a
         declared encoding does not land a query on a whole row, which is the
-        signature of a suite declared with the wrong encoding.
+        signature of a suite declared with the wrong encoding, or if
+        ``"time/span"`` comes without ``times``.
     """
     if length < 1:
         raise ValueError(f"trajectory length must be positive, got {length}")
@@ -90,6 +144,8 @@ def query_time_to_index(
         raise ValueError(
             f"unknown query_time encoding {encoding!r}; expected one of {QUERY_TIME_ENCODINGS}"
         )
+    if encoding == "time/span":
+        return _time_span_rows(query_time, length, times)
     scale = {"step": 1.0, "index/T": float(length), "index/(T-1)": float(length - 1)}
     # Positions are rebuilt from float32 values (relative error 2**-24), so a
     # correct declaration lands within ~length * 6e-8 of a whole row, while the
@@ -270,8 +326,9 @@ class Episode:
         Encoded query time per query, shape ``(n_queries,)``. The encoding
         depends on the generator (see :data:`QUERY_TIME_ENCODINGS`): a step for
         the generic and regime suites, ``index / T`` for identifiability and
-        ``index / (T - 1)`` for continuous. Read rows through
-        :attr:`query_time_idx` rather than decoding this field.
+        ``index / (T - 1)`` for continuous, which is ``"time/span"`` on an
+        irregular grid. Read rows through :attr:`query_time_idx` rather than
+        decoding this field.
     structure:
         Identification structure label (``"back_door"``, ...), if applicable.
     scm_id:
@@ -612,6 +669,7 @@ def episode_from_sample(
     structure: str | None = None,
     scm_id: int | None = None,
     metadata: dict | None = None,
+    record_obs_times: bool = False,
 ) -> Episode:
     """Build an :class:`Episode` from a generator ``generate_sample`` dict.
 
@@ -625,6 +683,21 @@ def episode_from_sample(
     because the two generators encode ``query_time`` differently. A sample of a
     driven structure (see :mod:`dotime.drivers`) also records its driver as
     ``metadata["driver"]``.
+
+    Args:
+        sample: A ``generate_sample`` dict.
+        structure: Identification structure label.
+        scm_id: Stable id of the episode within its suite.
+        metadata: Extra metadata, merged under the recorded keys.
+        record_obs_times: Store the sample's observation grid ``times`` as
+            float64 :attr:`Episode.obs_times`. Only continuous samples have one.
+
+    Returns:
+        The episode.
+
+    Raises:
+        ValueError: If ``record_obs_times`` is set for a sample without
+            ``times``, or a continuous query time is not on the sample's grid.
     """
     from dotime.interventions import InterventionType
 
@@ -662,6 +735,11 @@ def episode_from_sample(
     # Recorded at build time, where the generator's own convention is still
     # known, so no consumer has to decode query_time later.
     extra["query_time_idx"] = _sample_query_time_idx(sample, query_time, int(x_int.shape[0]))
+    obs_times = None
+    if record_obs_times:
+        if "times" not in sample:
+            raise ValueError("record_obs_times needs a sample with an observation grid 'times'")
+        obs_times = torch.as_tensor(sample["times"]).to(torch.float64).reshape(-1).clone()
     return Episode(
         x_obs=x_obs,
         x_int=x_int,
@@ -672,6 +750,7 @@ def episode_from_sample(
         structure=structure,
         scm_id=scm_id,
         metadata={**(metadata or {}), "y_oracle": y_true, **extra},
+        obs_times=obs_times,
     )
 
 

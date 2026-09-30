@@ -42,6 +42,7 @@ DoT-PFN behaviour.
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -139,6 +140,7 @@ from .continuous_scm import (
 )
 from .time_schedule import (
     exponential_schedule,
+    from_times,
     jittered_schedule,
     regular_schedule,
 )
@@ -161,14 +163,39 @@ def _build_schedule(
     jitter: float,
     exp_rate: float,
     generator: torch.Generator | None,
+    fixed_times: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """Dispatch to the requested schedule family."""
+    """Dispatch to the requested schedule family.
+
+    Args:
+        schedule: ``"regular"``, ``"jittered"``, ``"exponential"`` or ``"fixed"``.
+        T: Number of observations.
+        dt: Gap of ``regular`` and mean gap of ``jittered``.
+        jitter: Relative gap perturbation of ``jittered``.
+        exp_rate: Inter-arrival rate of ``exponential``.
+        generator: Draws the ``jittered`` and ``exponential`` gaps.
+        fixed_times: The grid of ``fixed``, strictly increasing, of length ``T``.
+
+    Returns:
+        ``(times, dts)`` of shapes ``(T,)`` and ``(T - 1,)``.
+
+    Raises:
+        ValueError: If ``schedule`` is unknown, or the ``fixed`` grid is
+            missing or does not have ``T`` points.
+    """
     if schedule == "regular":
         return regular_schedule(T=T, dt=dt)
     if schedule == "jittered":
         return jittered_schedule(T=T, dt=dt, jitter=jitter, generator=generator)
     if schedule == "exponential":
         return exponential_schedule(T=T, rate=exp_rate, generator=generator)
+    if schedule == "fixed":
+        if fixed_times is None or fixed_times.numel() != T:
+            n = None if fixed_times is None else fixed_times.numel()
+            raise ValueError(f"schedule 'fixed' needs a grid of T={T} times, got {n}")
+        # A copy per sample, so a caller that edits sample["times"] in place
+        # cannot change the grid of later samples.
+        return from_times(fixed_times.clone())
     raise ValueError(f"unknown schedule: {schedule!r}")
 
 
@@ -188,12 +215,16 @@ class ContinuousExtendedPrior:
         DoT-PFN's CausalChamber-motivated default.
     t_range : tuple of int
         Uniform prior on ``T`` (number of observations).
-    schedule : {"regular", "jittered", "exponential"}
+    schedule : {"regular", "jittered", "exponential", "fixed"}
         Observation schedule family.  ``regular`` reproduces the
-        discrete-time behaviour at ``dt=1.0``.
+        discrete-time behaviour at ``dt=1.0``.  ``fixed`` replays
+        ``fixed_times`` for every sample and draws nothing for the grid,
+        so the sample's other random draws come out exactly as on the
+        regular grid.
     dt : float
         Mean inter-observation gap for ``regular`` / ``jittered``
-        schedules.
+        schedules.  It also sets the floor of the intervention window
+        (``2 * dt``), so a ``fixed`` grid should pass its mean gap.
     jitter : float
         Used only by ``jittered``; see :func:`jittered_schedule`.
     exp_rate : float
@@ -231,6 +262,10 @@ class ContinuousExtendedPrior:
     theta_range, sigma_range, weight_scale : forwarded to :class:`ContinuousTSCMSampler`.
     seed : int
         Seeds the initial ``torch.Generator`` and ``numpy`` RNG.
+    fixed_times : torch.Tensor or sequence of float, optional
+        Strictly increasing observation times for ``schedule="fixed"``,
+        stored as float32 like every other schedule.  They also fix
+        ``T`` to their length.  Must be ``None`` for the other schedules.
     """
 
     _INT_KIND_ORDER = (
@@ -262,9 +297,15 @@ class ContinuousExtendedPrior:
         p_no_context: float = 0.0,
         vectorize: bool = False,
         seed: int = 42,
+        fixed_times: torch.Tensor | Sequence[float] | None = None,
     ) -> None:
         if pair_mode not in ("counterfactual", "interventional"):
             raise ValueError(f"invalid pair_mode: {pair_mode!r}")
+        if (schedule == "fixed") != (fixed_times is not None):
+            raise ValueError(
+                f"fixed_times goes with schedule='fixed' and only with it, got "
+                f"schedule={schedule!r} and {'no' if fixed_times is None else 'a'} grid"
+            )
         if not isinstance(num_substeps, int) or num_substeps < 1:
             raise ValueError(f"num_substeps must be a positive int, got {num_substeps}")
         if not 0.0 <= p_no_context <= 1.0:
@@ -284,6 +325,13 @@ class ContinuousExtendedPrior:
         self.n_max = n_max
         self.t_range = tuple(t_range)
         self.schedule = schedule
+        # Validated once here (from_times raises on a non-increasing grid), in
+        # the simulator's float32 so the recorded times are the simulated ones.
+        self.fixed_times: torch.Tensor | None = None
+        if fixed_times is not None:
+            self.fixed_times, _ = from_times(
+                torch.as_tensor(fixed_times, dtype=torch.float32).clone()
+            )
         self.dt = float(dt)
         self.jitter = float(jitter)
         self.exp_rate = float(exp_rate)
@@ -349,7 +397,12 @@ class ContinuousExtendedPrior:
         return []
 
     def sample_T(self) -> int:
-        """Sample a trajectory length uniformly from ``t_range``."""
+        """Sample a trajectory length uniformly from ``t_range``.
+
+        A ``fixed`` grid has one length, which is returned without a draw.
+        """
+        if self.fixed_times is not None:
+            return int(self.fixed_times.numel())
         return int(self._np_rng.randint(self.t_range[0], self.t_range[1] + 1))
 
     @staticmethod
@@ -397,6 +450,7 @@ class ContinuousExtendedPrior:
             jitter=self.jitter,
             exp_rate=self.exp_rate,
             generator=self._torch_gen,
+            fixed_times=self.fixed_times,
         )
         span = float((times[-1] - times[0]).item())
 

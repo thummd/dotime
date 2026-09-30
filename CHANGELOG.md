@@ -39,6 +39,32 @@ All notable changes to `dotime` are documented here. The format follows
   (`SUPPORTED_SCHEMA_VERSIONS`), the Croissant descriptor of a schema-2 suite
   lists the two fields, `evaluation.realign_episode` permutes `obs_mask` with
   `x_obs`, and episode metadata may hold numpy scalars and arrays.
+- Irregular observation grids for continuous suites, opt-in through the
+  suite-config keys `schedules` and `record_obs_times`. Episode `idx` uses
+  `schedules[idx % len(schedules)]`: `regular` (the unchanged
+  `dot-Continuous-v1` call), `jittered` (gaps `dt * (1 + jitter * U)`) or
+  `poisson` (`Exp(rate)` gaps truncated to `[0.001, max_gap]`). The irregular
+  grids come from a generator of their own (`dotime._observation_grids`) and
+  are replayed by the new `ContinuousExtendedPrior(schedule="fixed",
+  fixed_times=...)`, so an irregular episode keeps the SCM and intervention of
+  the regular episode with the same seed. A config whose Euler sub-steps
+  (`num_substeps`) can exceed 1.0 is refused. `metadata["schedule"]` names the
+  schedule, and `record_obs_times` stores the grid as `Episode.obs_times`
+  (`episode_from_sample(..., record_obs_times=True)`). The query-time encoding
+  `"time/span"` resolves rows from `obs_times`
+  (`query_time_to_index(..., times=...)`). Suite-config keys reach the episode
+  specs through `dotime._build._OPT_IN_SPEC_KEYS`. Released configs set none,
+  so their specs and episodes are unchanged.
+- `scripts/release_config_continuous_irregular.yaml` prepares
+  `dot-ContinuousIrregular-v1` 1.0.0 (not built): the structures, `T`, episode
+  count and suite seed of `dot-Continuous-v1`, one third each on the `regular`,
+  `jittered` (`jitter` 0.5, 2 sub-steps) and `poisson` (`rate` 1, `max_gap` 4,
+  4 sub-steps) schedules, and `record_obs_times`. Its regular third is the
+  released `dot-Continuous-v1` rows with the same index, bit for bit. On 300
+  episodes per structure and schedule, no irregular episode exceeds |x| = 10,
+  against 3.7% of the regular third. The regular third keeps the single Euler
+  step of `dot-Continuous-v1`, so its amplitudes and effects differ from the
+  sub-stepped thirds (`results/reference/continuous_irregular/`).
 - `TSCMStructure.BOW_GRAPH` (`"bow_graph"`), a structure whose effect is not
   identifiable: hidden U -> A, U -> Y and a causal edge A -> Y. It is
   `unobserved_confounder` plus A -> Y, so it takes over the role the paper gave

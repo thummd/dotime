@@ -398,3 +398,60 @@ frozen suites and their checksums do not change. This package reads both
 schemas. Earlier releases read only schema 1 and refuse a schema-2 suite rather
 than misread it. `evaluation.realign_episode` permutes `obs_mask` together with
 `x_obs`.
+
+## Irregular grids
+
+A continuous suite config can opt into irregular observation grids with a
+`schedules` list. Episode `idx` uses entry `idx % len(schedules)`, so every
+structure gets a balanced share of each schedule and no random draw assigns
+them.
+
+| Kind | Parameters | Gap between observations |
+|---|---|---|
+| `regular` | none | 1, the grid of `dot-Continuous-v1` |
+| `jittered` | `dt`, `jitter`, `num_substeps` | `dt * (1 + jitter * U)` with `U ~ Uniform(-1, 1)` |
+| `poisson` | `rate`, `max_gap`, `num_substeps` | `Exp(rate)` truncated to `[0.001, max_gap]` |
+
+A `regular` entry builds its episode exactly as `dot-Continuous-v1` does. A
+`jittered` or `poisson` grid comes from a generator of its own, derived from
+the episode seed, and the continuous prior replays it as a fixed grid
+(`ContinuousExtendedPrior(schedule="fixed", fixed_times=...)`). The prior's own
+generators then start exactly as on the regular grid. An irregular episode
+therefore keeps the SCM and the intervention window, kind and value of the
+regular episode with the same seed. `num_substeps` splits every gap into Euler
+sub-steps, and a config whose sub-steps can exceed 1.0, the step of the frozen
+grid, is refused. The mean-reversion rates of the prior reach 2, and an Euler
+step of size `h` keeps a variable bounded only while `rate * h <= 2`.
+`metadata["schedule"]` names each episode's schedule, and `record_obs_times:
+true` stores its grid as `Episode.obs_times`, which makes the suite schema 2.
+
+The continuous prior stores `query_time` as `(t_q - t_0) / (t_last - t_0)`. On
+the regular grid this equals `index / (T - 1)`. On an irregular grid no
+fraction of `T` recovers the row, so a suite with irregular grids declares the
+`"time/span"` encoding, which resolves each row from `obs_times`.
+
+`scripts/release_config_continuous_irregular.yaml` prepares
+`dot-ContinuousIrregular-v1` 1.0.0, which is not built yet. It has the
+structures, `T = 200`, episode count (9,999) and suite seed of
+`dot-Continuous-v1`, with one third of the episodes on each schedule: `regular`,
+`jittered` (`dt = 1`, `jitter = 0.5`, 2 sub-steps) and `poisson` (`rate = 1`,
+`max_gap = 4`, 4 sub-steps). Its regular third reproduces the
+`dot-Continuous-v1` rows with the same index bit for bit.
+
+On 300 episodes per structure and schedule, every value stays finite and no
+episode of the irregular schedules exceeds |x| = 10. Without sub-steps, 30% of
+the jittered and 83% of the poisson episodes do
+(`results/reference/continuous_irregular/`). The same measurement shows that
+the thirds differ in more than their grids. The regular third keeps the single
+Euler step of `dot-Continuous-v1`, which sits on the stability edge for
+mean-reversion rates near 2, while the sub-stepped irregular thirds follow the
+continuous-time dynamics more closely. The regular third therefore has larger
+amplitudes (median max |x| 2.65 against 1.7) and more persistent effects (41% of
+queries see a zero effect, against 52 to 54%). The regular grid integrated with
+sub-steps matches the irregular thirds, so a `jittered` entry with `jitter: 0`
+and `num_substeps: 2` isolates the effect of the grid.
+
+VAR-OLS, BackDoorOLS and Chronos read the rows of `x_obs` as equally spaced
+steps and ignore `obs_times`. On the irregular thirds their scores therefore
+include the cost of a grid they cannot see. Report scores per schedule
+(`metadata["schedule"]`).
