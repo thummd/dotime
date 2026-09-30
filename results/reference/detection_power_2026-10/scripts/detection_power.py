@@ -49,7 +49,8 @@ from dotime.baselines import _canonical_summary_graph
 from dotime.benchmarks import _SUITE_REGISTRY, Episode, load_benchmark
 from dotime.evaluation import DIR_ACC_EPS, direction_accuracy, query_obs_levels
 from dotime.interventions import InterventionSpec, InterventionType
-from dotime.reference.reference_table import _arm_stats, target_qa
+from dotime.qa import arm_stats as _arm_stats
+from dotime.reference.reference_table import target_qa
 
 ANALYSIS_DIR = Path(__file__).resolve().parent.parent
 REPO_ROOT = ANALYSIS_DIR.parents[2]

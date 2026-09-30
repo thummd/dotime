@@ -56,7 +56,7 @@ which is queried at the onset.
 | Mean | naive | Pre-onset mean of Y (TrajMean) | never |
 | AR1 | naive | Last pre-onset Y | never |
 | VAR-OLS | naive | Package VAR(3). It fits the whole observational trajectory and forecasts one step past its end | never |
-| NaiveOLS | association | Package baseline from session A: OLS `Y_t ~ 1 + A_t + Y_{t-1}` before the onset, at `do(A = v)`, averaged over the history. It is `pending` until the package registers it, and it is never reimplemented here | every structure |
+| NaiveOLS | association | Package baseline from session A: OLS `Y_t ~ 1 + A_t + Y_{t-1}` before the onset, at `do(A = v)`, averaged over the history. It was `pending` until the package registered it, and it is never reimplemented here | every structure |
 | do-SVAR | do-SVAR | Recursive structural VAR ported from the private do-over-time-pfn `svar_forecast`: p = 3, ridge 1e-2, pre-onset columns standardised with the loader statistics, all-zero hidden columns dropped, canonical order (A first, Y last), A clamped to `v` at the onset row and rolled to the query row. Histories shorter than 3 times the parameters per equation fall back to the pre-onset mean | every structure |
 | BackDoorOLS | identification-aware | Package baseline: `Y_t ~ 1 + A_t + X_t + Y_{t-1}` with X the DAG's back-door set | `back_door`, `observed_confounder`, `confounder_mediator` |
 | IV2SLS | identification-aware | Package baseline: two-stage least squares with every column other than A and Y as instruments (the zeroed hidden U contributes nothing). It falls back to the mean when the first-stage R^2 < 0.1 | `instrumental_variable` |
@@ -235,33 +235,37 @@ the structures it routes to such an estimator.
 ### 1.1.0: the outputs in this folder
 
 `ident_v1_1.md` holds every table, and each output records the commit that produced it
-(`code.git_commit`). They were produced before NaiveOLS was registered, so the NaiveOLS
-rows are `pending`. The router's cells on `bi_variate` and `mediator`, which route to
-NaiveOLS, are pending too. `mediator`,
-`observed_confounder` and `unobserved_confounder` have no episode with an effect of at
-least 0.1 at their 1.1.0 query, so they only score false effects.
+(`code.git_commit`). The outputs were regenerated once the package registered NaiveOLS
+(the integration of session A), so no cell is `pending`. Gate 1 passed on that run, and
+the 78 cells that do not involve NaiveOLS equal those of the run made before the
+registration. `mediator`, `observed_confounder` and `unobserved_confounder` have no
+episode with an effect of at least 0.1 at their 1.1.0 query, so they only score false
+effects.
 
-Graded outcomes, on the parts that could be graded: P1, P2, P3, P4, E2, E3, S1 and O1
-are confirmed. P5 and E1 need 1.2.0. The parts of P3, P4 and E3 that involve NaiveOLS
-wait for it.
+Graded outcomes: P1, P2, P3, P4, E2, S1 and O1 are confirmed. E3 is not confirmed. On
+`observed_confounder` BackDoorOLS's false-effect rate (0.479 ± 0.014) is not below
+NaiveOLS's (0.450 ± 0.014), so the contemporaneous back-door set does not remove the
+confounding that runs through `A_{t-1}`. do-SVAR's rate there is 0.364 ± 0.013. P5 and
+E1 need 1.2.0.
 
 Effect-sign accuracy with binomial SE:
 
-| Structure | n_valid | Naive (range) | do-SVAR | Identification-aware | Router |
-|---|---|---|---|---|---|
-| `bi_variate` | 846 | 0.528 to 0.543 | 0.823 ± 0.013 | none applies | pending |
-| `back_door` | 789 | 0.504 to 0.535 | 0.776 ± 0.015 | BackDoorOLS 0.810 ± 0.014 | 0.810 |
-| `front_door` | 371 | 0.509 to 0.536 | 0.663 ± 0.025 | FrontDoorOLS 0.720 ± 0.023 | 0.720 |
-| `confounder_mediator` | 351 | 0.493 to 0.558 | 0.658 ± 0.025 | FrontDoorOLS 0.712 ± 0.024, BackDoorOLS 0.678 ± 0.025 | 0.678 |
-| `instrumental_variable` | 837 | 0.513 to 0.535 | 0.798 ± 0.014 | IV2SLS 0.613 ± 0.017 | 0.613 |
+| Structure | n_valid | Naive (range) | NaiveOLS | do-SVAR | Identification-aware | Router |
+|---|---|---|---|---|---|---|
+| `bi_variate` | 846 | 0.528 to 0.543 | 0.849 ± 0.012 | 0.823 ± 0.013 | none applies | 0.849 |
+| `back_door` | 789 | 0.504 to 0.535 | 0.788 ± 0.015 | 0.776 ± 0.015 | BackDoorOLS 0.810 ± 0.014 | 0.810 |
+| `front_door` | 371 | 0.509 to 0.536 | 0.698 ± 0.024 | 0.663 ± 0.025 | FrontDoorOLS 0.720 ± 0.023 | 0.720 |
+| `confounder_mediator` | 351 | 0.493 to 0.558 | 0.672 ± 0.025 | 0.658 ± 0.025 | FrontDoorOLS 0.712 ± 0.024, BackDoorOLS 0.678 ± 0.025 | 0.678 |
+| `instrumental_variable` | 837 | 0.513 to 0.535 | 0.812 ± 0.013 | 0.798 ± 0.014 | IV2SLS 0.613 ± 0.017 | 0.613 |
 
 - **Separation from naive forecasting** (best identification-aware minus best naive,
   paired 95% CI): `back_door` +0.275 [+0.238, +0.302], `front_door`
   +0.183 [+0.129, +0.213], `confounder_mediator` +0.154 [+0.100, +0.194],
   `instrumental_variable` +0.078 [+0.051, +0.098].
 - **False effects.** On `unobserved_confounder` the router's `tau = 0` calls no effect.
-  do-SVAR calls one in 47.7% ± 1.4% of episodes. On `observed_confounder` BackDoorOLS,
-  and so the router, calls one in 47.9% ± 1.4%, do-SVAR in 36.4% ± 1.3%. On `mediator`,
+  NaiveOLS calls one in 49.4% ± 1.4% of episodes and do-SVAR in 47.7% ± 1.4%. On
+  `observed_confounder` BackDoorOLS, and so the router, calls one in 47.9% ± 1.4%,
+  NaiveOLS in 45.0% ± 1.4% and do-SVAR in 36.4% ± 1.3%. On `mediator`,
   whose 1.1.0 query precedes its lagged effect, do-SVAR calls one in 35.9% and
   FrontDoorOLS in 15.2%.
 - **The router against its valid peers.** On `confounder_mediator` it trails FrontDoorOLS
@@ -271,10 +275,11 @@ Effect-sign accuracy with binomial SE:
   `instrumental_variable` it scores 0.798, above IV2SLS's 0.613. It also has the lowest
   pooled level RMSE (0.508, against 0.575 for BackDoorOLS and 0.599 for Mean).
 
-### Preview with NaiveOLS and 1.2.0: not outputs of this folder
+### Preview of 1.2.0: not yet outputs of this folder
 
-These numbers come from a scratch run, and the integrator's rerun regenerates them
-into `ident_v1_1.*` and `ident_v1_2.*`. That run must reproduce them exactly. The
+These numbers come from a scratch run. Its 1.1.0 half is reproduced above, cell for
+cell. The integrator's run on the built 1.2.0 suite regenerates the rest into
+`ident_v1_2.*`, and that run must reproduce these numbers exactly. The
 scratch tree was main at "Models: load checkpoints with readout, token-lag and horizon
 options" plus session A's commit "Identifiability 1.2.0: NaiveOLS baseline and bow_graph
 in the config", which registers NaiveOLS, plus these scripts. The 1.2.0 suite was built with `scripts/build_release.py`

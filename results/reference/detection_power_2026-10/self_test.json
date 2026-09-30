@@ -2,10 +2,10 @@
   "gate": 2,
   "what": "linear Gaussian SVARs with T = 20,000: each estimator recovers the known effect within 0.05 where its assumptions hold, confounded estimators miss it by at least 0.2, declining estimators predict no effect, the oracle returns y_true at v and y_obs at a_ref, and the router follows the DAG",
   "code": {
-    "git_commit": "9a199117e81d6caea48b9f7072221f670b24f6df",
-    "code_dirty": false,
+    "git_commit": "dfce909af88ae3bd76d9428cb1a34ce964daff9b",
+    "code_dirty": true,
     "dotime_version": "0.1.3",
-    "naive_ols_registered": false
+    "naive_ols_registered": true
   },
   "T": 20000,
   "seed": 20261001,
@@ -89,7 +89,9 @@
         },
         "NaiveOLS": {
           "expect": "recovers",
-          "status": "pending"
+          "slope": 0.9926312118768692,
+          "error": -0.007368788123130798,
+          "ok": true
         },
         "do-SVAR": {
           "expect": "recovers",
@@ -117,7 +119,9 @@
         },
         "GraphRouter": {
           "expect": "recovers",
-          "status": "pending"
+          "slope": 0.9926312118768692,
+          "error": -0.007368788123130798,
+          "ok": true
         },
         "Oracle": {
           "expect": "oracle",
@@ -159,7 +163,9 @@
         },
         "NaiveOLS": {
           "expect": "biased",
-          "status": "pending"
+          "slope": 1.501993179321289,
+          "error": 0.5019931793212891,
+          "ok": true
         },
         "do-SVAR": {
           "expect": "biased",
@@ -231,7 +237,9 @@
         },
         "NaiveOLS": {
           "expect": "biased",
-          "status": "pending"
+          "slope": 0.4273671507835388,
+          "error": 0.4273671507835388,
+          "ok": true
         },
         "BackDoorOLS": {
           "expect": "recovers",
@@ -297,7 +305,9 @@
         },
         "NaiveOLS": {
           "expect": "report",
-          "status": "pending"
+          "slope": 0.5316391289234161,
+          "error": -0.468360871076583,
+          "ok": true
         },
         "do-SVAR": {
           "expect": "recovers",
@@ -325,7 +335,9 @@
         },
         "GraphRouter": {
           "expect": "report",
-          "status": "pending"
+          "slope": 0.5316391289234161,
+          "error": -0.468360871076583,
+          "ok": true
         },
         "Oracle": {
           "expect": "oracle",
@@ -387,7 +399,9 @@
         },
         "NaiveOLS": {
           "expect": "biased",
-          "status": "pending"
+          "slope": 1.4470555782318115,
+          "error": 0.4470555782318115,
+          "ok": true
         },
         "do-SVAR": {
           "expect": "biased",
@@ -459,7 +473,9 @@
         },
         "NaiveOLS": {
           "expect": "biased",
-          "status": "pending"
+          "slope": 1.4919157028198242,
+          "error": 0.4919157028198242,
+          "ok": true
         },
         "do-SVAR": {
           "expect": "biased",
@@ -531,7 +547,9 @@
         },
         "NaiveOLS": {
           "expect": "biased",
-          "status": "pending"
+          "slope": 1.3452763557434082,
+          "error": 0.3452763557434082,
+          "ok": true
         },
         "do-SVAR": {
           "expect": "biased",
@@ -603,7 +621,9 @@
         },
         "NaiveOLS": {
           "expect": "biased",
-          "status": "pending"
+          "slope": 0.4351751506328583,
+          "error": 0.4351751506328583,
+          "ok": true
         },
         "do-SVAR": {
           "expect": "biased",
@@ -675,7 +695,9 @@
         },
         "NaiveOLS": {
           "expect": "biased",
-          "status": "pending"
+          "slope": 1.4917798042297363,
+          "error": 0.49177980422973633,
+          "ok": true
         },
         "do-SVAR": {
           "expect": "biased",
@@ -703,7 +725,9 @@
         },
         "GraphRouter": {
           "expect": "biased",
-          "status": "pending"
+          "slope": 1.4917798042297363,
+          "error": 0.49177980422973633,
+          "ok": true
         },
         "Oracle": {
           "expect": "oracle",
@@ -721,7 +745,9 @@
       "estimators": {
         "NaiveOLS": {
           "expect": "report",
-          "status": "pending"
+          "slope": 1.706020474433899,
+          "error": 0.7060204744338989,
+          "ok": true
         },
         "do-SVAR": {
           "expect": "report",
@@ -769,7 +795,9 @@
       "estimators": {
         "NaiveOLS": {
           "expect": "report",
-          "status": "pending"
+          "slope": 0.39480650424957275,
+          "error": 0.39480650424957275,
+          "ok": true
         },
         "do-SVAR": {
           "expect": "report",
@@ -817,7 +845,9 @@
       "estimators": {
         "NaiveOLS": {
           "expect": "report",
-          "status": "pending"
+          "slope": 1.4747801423072815,
+          "error": 0.4747801423072815,
+          "ok": true
         },
         "do-SVAR": {
           "expect": "report",
@@ -865,7 +895,9 @@
       "estimators": {
         "NaiveOLS": {
           "expect": "report",
-          "status": "pending"
+          "slope": 2.091005325317383,
+          "error": 1.0910053253173828,
+          "ok": true
         },
         "do-SVAR": {
           "expect": "report",
@@ -913,7 +945,9 @@
       "estimators": {
         "NaiveOLS": {
           "expect": "report",
-          "status": "pending"
+          "slope": 1.2715739607810974,
+          "error": 0.2715739607810974,
+          "ok": true
         },
         "do-SVAR": {
           "expect": "report",
@@ -954,10 +988,8 @@
       }
     }
   ],
-  "pending": [
-    "NaiveOLS"
-  ],
+  "pending": [],
   "failures": [],
   "passed": true,
-  "runtime_s": 1.6
+  "runtime_s": 1.5
 }
