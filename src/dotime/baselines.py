@@ -14,7 +14,8 @@ evaluation harness can request a baseline by string (mirroring the
 Implemented: the trivial baselines (``Zero``, ``Mean``/TrajMean, ``AR1``,
 ``VAR-OLS``), the classical structural baselines (``BackDoorOLS``, ``IV2SLS``),
 the unadjusted ``NaiveOLS`` (``BackDoorOLS`` with an empty adjustment set),
-``Oracle`` (stored ground truth), and ``DoOverTimePFN`` (checkpoint-backed, the
+``TimeOLS`` (``NaiveOLS`` plus trend and seasonal terms, for confounding by
+time), ``Oracle`` (stored ground truth), and ``DoOverTimePFN`` (checkpoint-backed, the
 ``[models]`` extra). ``PCMCI+`` / ``BayesianITS`` / ``Chronos`` require the
 ``[baselines]`` extra and raise an actionable error until that dependency and
 their wiring are present.
@@ -547,6 +548,167 @@ class NaiveOLSBaseline:
             )
             preds.append(float(np.mean(coef[0] + coef[1] * a_val + coef[2] * y_prev)))
         return torch.tensor(preds, dtype=torch.float32)
+
+
+def _time_columns(tt: np.ndarray, center: float, scale: float, period: float | None) -> np.ndarray:
+    """Trend column, and a seasonal sine and cosine when ``period`` is set.
+
+    Args:
+        tt: Observation times of the rows.
+        center: Time the trend column is centred on.
+        scale: Time span the trend column is divided by.
+        period: Seasonal period in time units, or ``None`` for the trend alone.
+
+    Returns:
+        Array of shape ``(len(tt), 1)`` or ``(len(tt), 3)``.
+    """
+    cols = [(tt - center) / scale]
+    if period is not None:
+        omega = 2.0 * np.pi / period
+        cols += [np.sin(omega * tt), np.cos(omega * tt)]
+    return np.column_stack(cols)
+
+
+@register("TimeOLS")
+class TimeOLSBaseline:
+    """Unadjusted regression that models time: NaiveOLS plus a trend and a seasonal term.
+
+    Fits ``Y_t ~ 1 + A_t + Y_{t-1} + t`` on the pre-intervention rows, optionally
+    with ``sin(2 pi t / P) + cos(2 pi t / P)``. Whether to add the harmonic, and
+    its period ``P``, are chosen by the Bayesian information criterion over a
+    geometric grid of periods, from four sampling intervals up to the span of
+    the fit window, with the period counted as a parameter. The prediction is
+    made at the query's own time: ``1, v, Y_{t_q - 1}`` and the time terms at
+    ``t_q``. A query later than the first post-onset step rolls the fitted
+    equation forward from the last pre-onset row, with ``A`` at the do-value on
+    intervened steps and at its pre-onset mean elsewhere, so no post-onset data
+    is read.
+
+    It targets confounding by time (:mod:`dotime.drivers`). A seasonal or trend
+    driver ``D`` is a sinusoid or a straight line in time, so it lies in the span
+    of the time columns once the period is found. Regressing on them then blocks
+    the path ``A <- D -> Y`` whether ``D`` is released or hidden, which
+    :class:`NaiveOLSBaseline` leaves open. It adjusts for nothing else: other
+    confounders, such as ``X`` of ``back_door`` or ``U`` of ``bow_graph``, bias it
+    exactly as they bias ``NaiveOLS``. One harmonic and a linear trend cover the
+    released drivers but not every seasonal shape. It applies to every episode,
+    with the first intervention target as the treatment and ``Episode.obs_times``
+    as the time axis when present. Below four fit rows per parameter of the
+    trend-only model it returns ``NaiveOLS``'s prediction for that query.
+    """
+
+    name = "TimeOLS"
+    n_periods: ClassVar[int] = 40
+    min_rows_per_param: ClassVar[int] = 4
+
+    def predict(self, episode: Episode) -> torch.Tensor:
+        """Predict each query's interventional level from the time-aware regression.
+
+        Args:
+            episode: Episode to predict. Any structure label, or none.
+
+        Returns:
+            1-D float tensor with one prediction per query.
+
+        Raises:
+            IndexError: If the intervention target or a query target is not a
+                column of ``episode.x_obs``.
+            ValueError: If the episode records query rows that do not match its
+                queries (see :attr:`~dotime.benchmarks.Episode.query_time_idx`).
+        """
+        x = episode.x_obs.detach().cpu().numpy().astype(np.float64)
+        t_len = x.shape[0]
+        if episode.obs_times is not None:
+            tt = episode.obs_times.detach().cpu().numpy().astype(np.float64)
+        else:
+            tt = np.arange(t_len, dtype=np.float64)
+        a = episode.intervention.targets[0] if episode.intervention.targets else 0
+        times = set(episode.intervention.times)
+        onset = min(times) if times else t_len
+        fit_end = max(2, min(onset, t_len))
+        n_rows = fit_end - 1
+        values = episode.intervention.values
+        a_pre = x[1:fit_end, a]
+        # NaiveOLS's do-value rule, so the two differ only by the time terms.
+        a_val = float(values) if isinstance(values, (int, float)) else float(a_pre.mean())
+        a_bar = float(a_pre.mean())
+        rows = episode.query_time_idx.tolist()
+        fallback: torch.Tensor | None = None
+        preds = []
+        for q in range(episode.query_target.numel()):
+            y, t_q = int(episode.query_target[q]), int(rows[q])
+            if n_rows < 4 * self.min_rows_per_param or t_q < 1:
+                if fallback is None:
+                    fallback = NaiveOLSBaseline().predict(episode)
+                preds.append(float(fallback[q]))
+                continue
+            coef, time_of = self._fit(x, tt, a, y, fit_end)
+
+            def step(s: int, y_lag: float, coef=coef, time_of=time_of) -> float:
+                a_s = a_val if not times or s in times else a_bar
+                return float(coef[0] + coef[1] * a_s + coef[2] * y_lag + time_of(tt[s : s + 1])[0])
+
+            if t_q <= fit_end:
+                preds.append(step(t_q, float(x[t_q - 1, y])))
+                continue
+            y_lag = float(x[fit_end - 1, y])
+            for s in range(fit_end, t_q + 1):
+                y_lag = step(s, y_lag)
+            preds.append(y_lag)
+        return torch.tensor(preds, dtype=torch.float32)
+
+    def _fit(
+        self, x: np.ndarray, tt: np.ndarray, a: int, y: int, fit_end: int
+    ) -> tuple[np.ndarray, Callable[[np.ndarray], np.ndarray]]:
+        """Fit the regression with the BIC-selected time terms on the pre-onset rows.
+
+        Args:
+            x: Observational trajectory, shape ``(T, N)``.
+            tt: Observation time of each row.
+            a: Treatment column.
+            y: Outcome column.
+            fit_end: First post-onset row; rows ``1 .. fit_end - 1`` are fitted.
+
+        Returns:
+            ``(coef, time_of)``: the coefficients of ``[1, A_t, Y_{t-1}]`` followed
+            by the time terms, and a function giving the time terms' contribution
+            ``time columns @ coefficients`` at given times.
+        """
+        target = x[1:fit_end, y]
+        base = np.column_stack([x[1:fit_end, a], x[0 : fit_end - 1, y]])
+        ts = tt[1:fit_end]
+        n_rows = len(ts)
+        center, scale = float(ts.mean()), max(float(ts.std()), 1e-8)
+        periods: list[float] = []
+        if n_rows >= 7 * self.min_rows_per_param:
+            step = float(np.median(np.diff(tt[:fit_end])))
+            lo, hi = 4.0 * step, float(tt[fit_end - 1] - tt[0])
+            if hi > lo:
+                periods = [float(p) for p in np.geomspace(lo, hi, self.n_periods)]
+        candidates: list[float | None] = [None, *periods]
+
+        def score(period: float | None) -> tuple[float, np.ndarray, float | None]:
+            design = np.column_stack([base, _time_columns(ts, center, scale, period)])
+            coef = _ols_fit(design, target)
+            resid = target - coef[0] - design @ coef[1:]
+            k = 1 + design.shape[1] + (period is not None)
+            bic = n_rows * np.log(float(resid @ resid) / n_rows + 1e-12) + k * np.log(n_rows)
+            return float(bic), coef, period
+
+        best = min((score(p) for p in candidates), key=lambda r: r[0])
+        chosen = best[2]
+        if chosen is not None:
+            # Refine between the neighbouring grid points: a period a few percent
+            # off leaves part of the season, and so part of the confounding, in.
+            ratio = (periods[-1] / periods[0]) ** (1.0 / (self.n_periods - 1))
+            fine = np.geomspace(chosen / ratio, chosen * ratio, self.n_periods)
+            best = min([best, *(score(float(p)) for p in fine)], key=lambda r: r[0])
+        _, coef, period = best
+
+        def time_of(t: np.ndarray) -> np.ndarray:
+            return _time_columns(t, center, scale, period) @ coef[3:]
+
+        return coef, time_of
 
 
 # --------------------------------------------------------------------------- #
