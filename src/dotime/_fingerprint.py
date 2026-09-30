@@ -246,19 +246,29 @@ def portable_summary(ep: Episode) -> dict[str, Any]:
 
 
 def summary_mismatches(
-    expected: Any, actual: Any, *, rel_tol: float = 1e-5, path: str = "summary"
+    expected: Any,
+    actual: Any,
+    *,
+    rel_tol: float = 1e-4,
+    abs_tol: float = 1e-7,
+    path: str = "summary",
 ) -> list[str]:
     """List where two portable summaries disagree.
 
-    Floats are compared with a relative tolerance because the stored summary
-    is rounded and a platform may compute the unrounded value one ulp apart.
-    Everything else, including every integer, must be equal.
+    Floats are compared with a tolerance because the stored summary is rounded
+    and because a platform computes some values differently: the float32
+    trajectories of time-varying interventions go through the platform's
+    ``sin`` and ``exp``, and macOS arm64 and x86 Linux disagree on them by up
+    to about 1e-5 relative, which the rounding of :func:`portable_summary`
+    (seven significant digits) does not hide. Everything else, including every
+    integer, must be equal.
 
     Args:
         expected: The stored summary (or a part of it).
         actual: The regenerated summary (or the matching part).
-        rel_tol: Relative tolerance for float leaves. The default is ten times
-            the rounding error of :func:`portable_summary`.
+        rel_tol: Relative tolerance for float leaves, ten times the largest
+            cross-platform difference seen so far.
+        abs_tol: Absolute tolerance for float leaves near zero.
         path: Dotted location of ``expected``, used in the messages.
 
     Returns:
@@ -271,7 +281,7 @@ def summary_mismatches(
         out: list[str] = []
         for key in expected:
             out += summary_mismatches(
-                expected[key], actual[key], rel_tol=rel_tol, path=f"{path}.{key}"
+                expected[key], actual[key], rel_tol=rel_tol, abs_tol=abs_tol, path=f"{path}.{key}"
             )
         return out
     if isinstance(expected, list) and isinstance(actual, list):
@@ -279,13 +289,15 @@ def summary_mismatches(
             return [f"{path}: length {len(expected)} != {len(actual)}"]
         out = []
         for i, (e, a) in enumerate(zip(expected, actual, strict=True)):
-            out += summary_mismatches(e, a, rel_tol=rel_tol, path=f"{path}[{i}]")
+            out += summary_mismatches(e, a, rel_tol=rel_tol, abs_tol=abs_tol, path=f"{path}[{i}]")
         return out
     floats = isinstance(expected, float) or isinstance(actual, float)
     numbers = all(_is_int(v) or isinstance(v, float) for v in (expected, actual))
     if floats and numbers:
         e, a = float(expected), float(actual)
-        if (math.isnan(e) and math.isnan(a)) or math.isclose(e, a, rel_tol=rel_tol, abs_tol=0.0):
+        if (math.isnan(e) and math.isnan(a)) or math.isclose(
+            e, a, rel_tol=rel_tol, abs_tol=abs_tol
+        ):
             return []
     elif type(expected) is type(actual) and expected == actual:
         return []
