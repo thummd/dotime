@@ -1,0 +1,3 @@
+# The repository ignores *.parquet (suites ship from Zenodo). The per-episode
+# predictions of this analysis are a small result file that the PFN re-test reads.
+!*.parquet
