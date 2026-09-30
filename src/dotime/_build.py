@@ -14,9 +14,19 @@ the canonical generation scheme for the released suites.
 
 from __future__ import annotations
 
-# Build-config keys that episode_specs copies into every spec. Each one switches
-# on a behaviour the frozen configs never set, so their specs stay unchanged.
-_OPT_IN_SPEC_KEYS = ("record_graph",)
+# Build-config keys that episode_specs copies into every spec of a suite that
+# sets them. Each one switches on a behaviour the frozen configs never set
+# (pair_mode excepted: their identifiability specs already carry it with the
+# same value), so their specs stay unchanged.
+_OPT_IN_SPEC_KEYS = (
+    "record_graph",
+    "prior_config",
+    "chain_prob",
+    "regime_switching_prob",
+    "pair_mode",
+    "latent",
+    "tier_n_edges",
+)
 
 
 def scaled(n: int, scale: float) -> int:
@@ -250,6 +260,8 @@ def make_episode(spec: dict):
         }
         ep = episode_from_sample(s, structure=spec["structure"], scm_id=idx, metadata=meta)
         return _with_graph(spec, ep, ("continuous", spec["structure"]))
+    if kind == "generic_configured":
+        return _make_configured_generic_episode(spec)
     raise ValueError(f"unknown spec kind {kind!r}")
 
 
@@ -277,10 +289,11 @@ def episode_specs(cfg: dict, suite_seed: int, scale: float) -> list[dict]:
     retries = int(cfg.get("stability_retries", 0))
     specs: list[dict] = []
     if gen == "generic":
+        kind = _generic_spec_kind(cfg)
         for i in range(scaled(cfg["n_episodes"], scale)):
             specs.append(
                 {
-                    "kind": "generic",
+                    "kind": kind,
                     "idx": i,
                     "seed": episode_seed(suite_seed, i),
                     "T": t_len,
@@ -358,3 +371,179 @@ def build_suite(cfg: dict, seed: int, scale: float, workers: int) -> list:
     chunk = max(1, len(specs) // (workers * 8) or 1)
     with ProcessPoolExecutor(max_workers=workers) as ex:
         return list(ex.map(make_episode, specs, chunksize=chunk))
+
+
+# The opt-in keys that reconfigure the generic prior. Setting any of them moves
+# a generic suite to the "generic_configured" spec kind.
+_GENERIC_PRIOR_KEYS = (
+    "prior_config",
+    "chain_prob",
+    "regime_switching_prob",
+    "pair_mode",
+    "latent",
+    "tier_n_edges",
+)
+# Options DoTime reads from its config on top of the DEFAULT_CONFIG keys.
+_EXTRA_PRIOR_CONFIG_KEYS = ("N_min", "hardening", "regime_canonical_weights")
+
+
+def _generic_spec_kind(cfg: dict) -> str:
+    """Validate the opt-in prior options of a generic suite and pick its spec kind.
+
+    The checks run while the specs are built, so a bad release config fails
+    before any worker starts.
+
+    Args:
+        cfg: The config of a suite with ``generator: generic``.
+
+    Returns:
+        ``"generic_configured"`` when ``cfg`` sets any of the options, which
+        :func:`make_episode` builds with :func:`_make_configured_generic_episode`.
+        Otherwise ``"generic"``, the legacy path of the released suites.
+
+    Raises:
+        ValueError: If ``prior_config`` is not a mapping or sets a key the prior
+            does not read, if ``chain_prob`` or ``regime_switching_prob`` is not
+            a probability, if ``pair_mode`` or ``latent`` has an unknown value,
+            if ``pair_mode`` is ``"counterfactual"`` without
+            ``regime_switching_prob: 0``, or if ``tier_n_edges`` is not a
+            strictly ascending list of ints.
+    """
+    from itertools import pairwise
+
+    from dotime.utils import DEFAULT_CONFIG
+
+    if not any(k in cfg for k in _GENERIC_PRIOR_KEYS):
+        return "generic"
+    prior_config = cfg.get("prior_config", {})
+    if not isinstance(prior_config, dict):
+        raise ValueError(f"prior_config must be a mapping, got {type(prior_config).__name__}")
+    # A misspelt key would otherwise be merged into the config and ignored.
+    unknown = set(prior_config) - set(DEFAULT_CONFIG) - set(_EXTRA_PRIOR_CONFIG_KEYS)
+    if unknown:
+        raise ValueError(
+            f"unknown prior_config keys {sorted(map(str, unknown))}; valid keys are "
+            f"{sorted([*DEFAULT_CONFIG, *_EXTRA_PRIOR_CONFIG_KEYS])}"
+        )
+    for key in ("chain_prob", "regime_switching_prob"):
+        p = cfg.get(key, 0.0)
+        if isinstance(p, bool) or not isinstance(p, (int, float)) or not 0.0 <= p <= 1.0:
+            raise ValueError(f"{key} must be a probability in [0, 1], got {p!r}")
+    pair_mode = cfg.get("pair_mode", "interventional")
+    if pair_mode not in ("interventional", "counterfactual"):
+        raise ValueError(f"pair_mode must be interventional or counterfactual, got {pair_mode!r}")
+    # DoTime's own default draws regime-switching SCMs, whose arms cannot
+    # share noise, so a counterfactual suite has to switch them off itself.
+    if pair_mode == "counterfactual" and cfg.get("regime_switching_prob") != 0:
+        raise ValueError("pair_mode: counterfactual needs regime_switching_prob: 0")
+    if cfg.get("latent", "drop") != "drop":
+        raise ValueError(f"latent must be 'drop', got {cfg['latent']!r}")
+    edges = cfg.get("tier_n_edges", [])
+    if (
+        not isinstance(edges, (list, tuple))
+        or any(isinstance(e, bool) or not isinstance(e, int) for e in edges)
+        or any(a >= b for a, b in pairwise(edges))
+    ):
+        raise ValueError(f"tier_n_edges must be a strictly ascending list of ints, got {edges!r}")
+    return "generic_configured"
+
+
+def _make_configured_generic_episode(spec: dict):
+    """Build one episode of a generic suite that configures the prior.
+
+    The retry rule is the legacy generic branch's: attempt ``a > 0`` reseeds
+    both the global torch RNG and the prior with ``seed * 100003 + a``, and an
+    episode is resampled while either arm is zeroed. Options the spec does not
+    set keep the defaults of :class:`~dotime.prior.DoTime`.
+
+    Args:
+        spec: A ``"generic_configured"`` spec from :func:`episode_specs`, with
+            the opt-in keys the suite sets.
+
+    Returns:
+        The :class:`~dotime.benchmarks.Episode`. Its metadata holds ``tier``
+        (1 plus the number of ``tier_n_edges`` below the SCM's full variable
+        count), ``diverged``, ``pair_mode`` and, with ``latent: drop``, the
+        ``latent`` record of :func:`_drop_latent_columns`.
+
+    Raises:
+        TypeError: If ``prior_config`` holds a value of the wrong type (see
+            :class:`~dotime.prior.DoTime`).
+        ValueError: If ``prior_config`` holds an invalid value, or if
+            ``pair_mode`` is ``"counterfactual"`` while the prior may draw
+            regime-switching SCMs.
+    """
+    import torch as _torch
+
+    from dotime import DoTime
+    from dotime.benchmarks import episode_from_pair
+
+    seed, t_len = spec["seed"], spec["T"]
+    retries = int(spec.get("stability_retries", 0))
+    pair_mode = spec.get("pair_mode", "interventional")
+    prior_kwargs = {k: spec[k] for k in ("chain_prob", "regime_switching_prob") if k in spec}
+    for attempt in range(retries + 1):
+        s = seed if attempt == 0 else seed * 100003 + attempt
+        _torch.manual_seed(s)
+        prior = DoTime(config=spec.get("prior_config"), seed=s, **prior_kwargs)
+        x_obs, x_int, iv, scm = prior.generate_pair(T=t_len, pair_mode=pair_mode)
+        if attempt == retries or not arms_zeroed(x_obs, x_int):
+            break
+    n_vars_full = int(x_obs.shape[1])
+    metadata: dict = {
+        # Tiers follow the size of the simulated graph, hidden variables
+        # included, so dropping latents does not move an episode between tiers.
+        "tier": 1 + sum(edge < n_vars_full for edge in spec.get("tier_n_edges", ())),
+        "diverged": arms_zeroed(x_obs, x_int),
+        "pair_mode": pair_mode,
+    }
+    if spec.get("latent") == "drop":
+        # Before episode_from_pair, so the query is chosen among the columns
+        # that are released.
+        x_obs, x_int, iv, metadata["latent"] = _drop_latent_columns(
+            x_obs, x_int, iv, list(scm._topo)
+        )
+    return episode_from_pair(x_obs, x_int, iv, scm_id=spec["idx"], metadata=metadata)
+
+
+def _drop_latent_columns(x_obs, x_int, intervention, names: list[str]) -> tuple:
+    """Remove the hidden variables of a sampled SCM from both arms of a pair.
+
+    The generic graph builder names the nodes it hides ``u{i}``. Released as
+    ordinary columns they would make every variable observed, so they are
+    dropped. A hidden node that the intervention targets stays, because the
+    experimenter sets and therefore observes it. Chain and regime-switching SCMs
+    name their nodes ``X{i}``, so nothing is dropped from them.
+
+    Args:
+        x_obs: Observational arm, shape ``(T, N)`` with columns in SCM order.
+        x_int: Interventional arm, same shape.
+        intervention: The pair's :class:`~dotime.interventions.InterventionSpec`.
+            Its targets index the columns.
+        names: The SCM's node names in column order (``scm._topo``).
+
+    Returns:
+        ``(x_obs, x_int, intervention, latent)``: both arms restricted to the
+        released columns, a copy of the intervention with its targets
+        re-indexed to them, and the record ``{"mode": "drop", "columns",
+        "hidden", "n_vars_full"}``, where ``columns`` and ``hidden`` list the
+        released and the dropped node names in SCM order.
+
+    Raises:
+        KeyError: If an intervention target is not a column index.
+    """
+    import dataclasses
+
+    targets = set(intervention.targets)
+    keep = [i for i, name in enumerate(names) if not name.startswith("u") or i in targets]
+    position = {old: new for new, old in enumerate(keep)}
+    latent = {
+        "mode": "drop",
+        "columns": [names[i] for i in keep],
+        "hidden": [name for i, name in enumerate(names) if i not in position],
+        "n_vars_full": len(names),
+    }
+    remapped = dataclasses.replace(
+        intervention, targets=[position[t] for t in intervention.targets]
+    )
+    return x_obs[:, keep], x_int[:, keep], remapped, latent

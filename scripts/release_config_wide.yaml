@@ -1,0 +1,50 @@
+# dot-Wide-v1 version 1.0.0: wide generic graphs with latent variables.
+#
+# The released suites have at most 10 variables and 3 lags. This suite draws
+# 12 to 40 variables and 1 to 8 lags from the generic prior. Unhardened, about
+# two thirds of such episodes diverge, so every SCM gets the recommended
+# stability hardening (dotime.hardening.RECOMMENDED_HARDENING). PFN
+# checkpoints pad to 41 variables, which caps N_max at 40.
+#
+#   pair_mode: counterfactual  -> one exogenous-noise realisation per episode is
+#                                 shared by both arms, so they agree exactly
+#                                 before the onset and y_true - y_obs is a
+#                                 per-episode counterfactual effect
+#   chain_prob: 0.0            -> chain SCMs have 3 to 7 variables whatever
+#                                 N_min is
+#   regime_switching_prob: 0.0 -> regime-switching SCMs draw their noise step by
+#                                 step and cannot share it across arms
+#   latent: drop               -> the prior's hidden variables (u*) are removed
+#                                 from the released columns unless they are
+#                                 intervened on, so the query is always observed
+#                                 and the latents are truly unobserved
+#   tier_n_edges: [20, 30]     -> tier 1 for 12-20 variables, 2 for 21-30 and 3
+#                                 for 31-40, counted before latents are dropped
+#
+# The suite sets its own seed (top-level seed + 1000), so it keeps that seed
+# whether it is built alone or next to other suites.
+seed: 20261002
+T: 200
+
+suites:
+
+  dot-Wide-v1:
+    version: "1.0.0"
+    generator: generic
+    seed: 20262002
+    T: 200
+    n_episodes: 10000
+    stability_retries: 10
+    pair_mode: counterfactual
+    chain_prob: 0.0
+    regime_switching_prob: 0.0
+    prior_config:
+      N_min: 12
+      N_max: 40
+      K_max: 8
+      hardening:
+        unit_norm_rows: true
+        spectral_rho: 0.9
+        bounded_square: true
+    latent: drop
+    tier_n_edges: [20, 30]

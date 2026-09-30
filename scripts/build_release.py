@@ -40,7 +40,7 @@ import torch
 import yaml
 
 from dotime import __version__, _release_io
-from dotime._build import build_suite
+from dotime._build import _OPT_IN_SPEC_KEYS, build_suite
 from dotime.benchmarks import SuiteMetadata
 from dotime.qa import target_qa
 
@@ -112,6 +112,30 @@ def croissant_metadata(meta: SuiteMetadata, manifest: dict) -> dict:
 # --------------------------------------------------------------------------- #
 # Driver
 # --------------------------------------------------------------------------- #
+
+
+def suite_seed(cfg: dict, base_seed: int, position: int) -> int:
+    """Seed of one suite: its own ``seed`` when it sets one, else one derived from its place.
+
+    The derived seed depends on the suite's position in the config, not in the
+    list being built, so ``--suite X`` builds X with the seed that a full build
+    gives it.
+
+    Args:
+        cfg: The suite's config.
+        base_seed: The config's top-level ``seed``.
+        position: Index of the suite in the config's ``suites`` mapping.
+
+    Returns:
+        ``cfg["seed"]`` if set, otherwise ``base_seed + 1000 * (position + 1)``.
+
+    Raises:
+        TypeError: If ``cfg["seed"]`` is neither a number nor a string.
+        ValueError: If ``cfg["seed"]`` is a string that is not an integer.
+    """
+    if "seed" in cfg:
+        return int(cfg["seed"])
+    return base_seed + 1000 * (position + 1)
 
 
 def _suite_metadata(name: str, cfg: dict, n_episodes: int) -> SuiteMetadata:
@@ -214,13 +238,13 @@ def main(argv: list[str] | None = None) -> int:
     names = [args.suite] if args.suite else list(suites)
     built = []
     failed = None
-    for offset, name in enumerate(names):
+    for name in names:
         if name not in suites:
             raise SystemExit(f"unknown suite {name!r}; available: {list(suites)}")
         cfg = suites[name]
         if args.stability_retries is not None:
             cfg = {**cfg, "stability_retries": args.stability_retries}
-        seed = base_seed + 1000 * (offset + 1)
+        seed = suite_seed(cfg, base_seed, list(suites).index(name))
         print(
             f"[build_release] generating {name} (scale={args.scale}, seed={seed}, "
             f"workers={workers}, stability_retries={cfg.get('stability_retries', 0)}) ...",
@@ -256,6 +280,10 @@ def main(argv: list[str] | None = None) -> int:
                 "config_hash": config_hash,
                 "scale": args.scale,
                 "scheme": "perepisode",
+                # Every opt-in key reaches the episode specs, so the manifest
+                # records each one a suite sets. Legacy suites set none and
+                # keep their manifest keys.
+                **{k: cfg[k] for k in _OPT_IN_SPEC_KEYS if k in cfg},
                 "target_qa": qa,
             },
         )
@@ -267,6 +295,7 @@ def main(argv: list[str] | None = None) -> int:
         built.append(
             {
                 "name": name,
+                "seed": seed,
                 "n_episodes": len(episodes),
                 "dir": suite_dir.name,
                 "target_qa": {k: qa[k] for k in ("mode", "passed", "problems") if k in qa},

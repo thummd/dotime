@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import zlib
 from typing import Any
 
+import numpy as np
 import torch
 import torch.nn as nn
 
@@ -39,11 +41,21 @@ class Square(nn.Module):
         return torch.pow(x, 2)
 
 
+_PAIR_MODES = ("interventional", "counterfactual")
+# Salts the seed of the counterfactual noise generator, so that its stream is
+# unrelated to self.generator even though both derive from the same seed.
+_COUNTERFACTUAL_SALT = zlib.crc32(b"dotime.prior.counterfactual")
+
+
 class DoTime:
     """
     Prior distribution over temporal SCMs with interventions.
 
-    Main interface for generating synthetic causal time series data.
+    Main interface for generating synthetic causal time series data. Two opt-in
+    options leave the default draws unchanged: ``config["N_min"]`` raises the
+    smallest number of variables of a sampled graph, and
+    ``generate_pair(pair_mode="counterfactual")`` shares one exogenous-noise
+    realisation across the observational and interventional arms.
     """
 
     def __init__(
@@ -63,6 +75,12 @@ class DoTime:
             sampled SCM so that large graphs simulate without diverging (see
             :mod:`dotime.hardening`). It is off by default, which keeps the
             released suites reproducible, and it draws no random numbers.
+            An optional ``"N_min"`` entry, an int in ``[3, N_max]`` that is not
+            part of ``DEFAULT_CONFIG``, is the smallest number of variables of a
+            diverse or regime-switching SCM. Their size is uniform on
+            ``[N_min, N_max]``, and the default of 3 draws exactly the numbers
+            the prior drew before the option existed. Chain SCMs keep their own
+            length of 3 to 7 variables whatever ``N_min`` and ``N_max`` are.
         seed : int
             Random seed for reproducibility.
         chain_prob : float
@@ -78,11 +96,12 @@ class DoTime:
         Raises
         ------
         TypeError
-            If ``config["regime_canonical_weights"]`` is not a bool, or if
-            ``config["hardening"]`` is not a dict or holds a value of the wrong
-            type.
+            If ``config["regime_canonical_weights"]`` is not a bool, if
+            ``config["N_min"]`` is not an int, or if ``config["hardening"]`` is
+            not a dict or holds a value of the wrong type.
         ValueError
-            If ``config["hardening"]`` has unknown keys or a non-positive
+            If ``config["N_min"]`` lies outside ``[3, N_max]``, or if
+            ``config["hardening"]`` has unknown keys or a non-positive
             ``spectral_rho`` (see :func:`dotime.hardening.validate_hardening`).
         """
         # Merge config with defaults
@@ -91,6 +110,18 @@ class DoTime:
             self.config.update(config)
         # Validated before any draw, so a bad config fails without touching RNG.
         self.hardening = validate_hardening(self.config.get("hardening"))
+        # A bool is an int in Python, so it is refused explicitly instead of
+        # being read as 0 or 1. The floor of 3 is structural: the graph builder
+        # resamples until its target node has a parent and a child, which two
+        # nodes can never satisfy.
+        n_min = self.config.get("N_min", 3)
+        if isinstance(n_min, bool) or not isinstance(n_min, int):
+            raise TypeError(f"config['N_min'] must be an int, got {type(n_min).__name__}")
+        if not 3 <= n_min <= self.config["N_max"]:
+            raise ValueError(
+                f"config['N_min'] must lie in [3, N_max={self.config['N_max']}], got {n_min}"
+            )
+        self.n_min = n_min
 
         self.seed = seed
         self.chain_prob = chain_prob
@@ -105,6 +136,9 @@ class DoTime:
         self.regime_canonical_weights = canonical
         self.generator = torch.Generator()
         self.generator.manual_seed(seed)
+        # Created on the first counterfactual pair, so interventional use never
+        # pays for it (see _counterfactual_generator).
+        self._cf_generator: torch.Generator | None = None
 
         # Activation functions (from paper + Do-PFN)
         self.activations = [
@@ -151,7 +185,9 @@ class DoTime:
         elif rand_val < self.chain_prob + self.regime_switching_prob:
             # Sample regime-switching SCM
             N = int(
-                torch.randint(3, self.config["N_max"] + 1, (1,), generator=self.generator).item()
+                torch.randint(
+                    self.n_min, self.config["N_max"] + 1, (1,), generator=self.generator
+                ).item()
             )
             K = int(
                 torch.randint(1, self.config["K_max"] + 1, (1,), generator=self.generator).item()
@@ -173,7 +209,9 @@ class DoTime:
             # Sample diverse nonlinear SCM
             # Sample hyperparameters
             N = int(
-                torch.randint(3, self.config["N_max"] + 1, (1,), generator=self.generator).item()
+                torch.randint(
+                    self.n_min, self.config["N_max"] + 1, (1,), generator=self.generator
+                ).item()
             )
             K = int(
                 torch.randint(1, self.config["K_max"] + 1, (1,), generator=self.generator).item()
@@ -214,9 +252,30 @@ class DoTime:
             harden_scm(scm, **self.hardening)
         return scm
 
+    def _counterfactual_generator(self) -> torch.Generator:
+        """Return the generator of the shared counterfactual noise, creating it on first use.
+
+        It is seeded from ``np.random.SeedSequence([seed, salt])`` rather than
+        from ``self.generator``, so a counterfactual pair takes exactly the SCM
+        and intervention draws of an interventional pair with the same seed.
+        The generator persists across calls, so successive pairs get fresh
+        noise.
+
+        Returns:
+            The prior's counterfactual noise generator.
+        """
+        if self._cf_generator is None:
+            # SeedSequence refuses negative entropy, and the mask keeps any
+            # Python int seed usable.
+            entropy = [self.seed & (2**64 - 1), _COUNTERFACTUAL_SALT]
+            state = np.random.SeedSequence(entropy).generate_state(1, dtype=np.uint64)[0]
+            self._cf_generator = torch.Generator().manual_seed(int(state))
+        return self._cf_generator
+
     def generate_pair(
         self,
         T: int | None = None,
+        pair_mode: str = "interventional",
     ) -> tuple[torch.Tensor, torch.Tensor, InterventionSpec, TemporalSCM]:
         """Generate a pair of observational and interventional time series.
 
@@ -224,12 +283,41 @@ class DoTime:
         ----------
         T : int, optional
             Length of time series. If None, uses config default.
+        pair_mode : str
+            ``"interventional"`` (the default, which the released suites use)
+            simulates the two arms with independent noise drawn from the global
+            torch RNG. ``"counterfactual"`` draws one exogenous-noise
+            realisation for the whole pair from a separate generator seeded from
+            ``seed``, and freezes it on the SCM (see
+            :meth:`TemporalSCM.freeze_noise`). The arms then agree exactly
+            before the intervention onset, and their difference is a
+            per-episode counterfactual effect. Both modes draw the same SCM and
+            intervention from ``self.generator``.
 
         Returns
         -------
         Tuple[torch.Tensor, torch.Tensor, InterventionSpec, TemporalSCM]
             (X_obs, X_int, intervention_spec, scm)
+
+        Raises
+        ------
+        ValueError
+            If ``pair_mode`` is unknown, or if it is ``"counterfactual"`` while
+            ``regime_switching_prob`` is not zero. Regime-switching SCMs draw
+            their noise step by step from the global numpy RNG, so their arms
+            cannot share it.
         """
+        # Validated before any draw, so a bad call leaves every RNG untouched.
+        if pair_mode not in _PAIR_MODES:
+            raise ValueError(
+                f"pair_mode must be interventional or counterfactual, got {pair_mode!r}"
+            )
+        if pair_mode == "counterfactual" and self.regime_switching_prob != 0:
+            raise ValueError(
+                "pair_mode='counterfactual' needs regime_switching_prob=0, because "
+                "regime-switching SCMs cannot share noise across arms; got "
+                f"{self.regime_switching_prob}"
+            )
         if T is None:
             T = self.config["T"]
 
@@ -244,6 +332,11 @@ class DoTime:
             generator=self.generator,
         )
         intervention = intervention_sampler.sample()
+
+        if pair_mode == "counterfactual":
+            # After the intervention draw and from its own generator, so
+            # self.generator ends in the state an interventional pair leaves.
+            scm.freeze_noise(T + self.config["burn_in"], generator=self._counterfactual_generator())
 
         # Generate observational data
         X_obs = scm.sample_observational(
@@ -275,7 +368,11 @@ class DoTime:
         if T is None:
             T = self.config["T"]
 
-        N = int(torch.randint(3, self.config["N_max"] + 1, (1,), generator=self.generator).item())
+        N = int(
+            torch.randint(
+                self.n_min, self.config["N_max"] + 1, (1,), generator=self.generator
+            ).item()
+        )
         K = int(torch.randint(1, self.config["K_max"] + 1, (1,), generator=self.generator).item())
         rs_builder = RegimeSwitchingSCMBuilder(
             num_nodes=N,

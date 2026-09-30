@@ -222,6 +222,12 @@ All notable changes to `dotime` are documented here. The format follows
   batches and random streams are unchanged.
 
 ### Fixed
+- `scripts/build_release.py --suite X` seeded a suite by its position in the
+  list being built, which for a single suite is always the first. Every suite
+  built alone therefore got the first suite's seed (base seed + 1000) instead of
+  the seed a full build gives it. The seed now comes from the suite's position
+  in the config, or from the suite's own `seed` key when it sets one. Full
+  builds keep their seeds, and `build_manifest.json` records each suite's seed.
 - `dotime-eval-reference` and `dotime-eval-pfn` always loaded the registry's
   current version, `dot-Identifiability-v1` 1.1.0 since 2026-09-09, and applied
   `--realignment` rows by episode id alone. Passing the 1.0.0 sidecar as
