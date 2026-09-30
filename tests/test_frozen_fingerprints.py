@@ -50,7 +50,6 @@ V1_COLUMNS = (
     "y_true",
     "metadata_json",
 )
-SCHEMA2_COLUMNS = (*V1_COLUMNS, "obs_times", "obs_mask")
 
 # Columns that may differ from the release, and the versions where they may.
 _DOCUMENTED = {
@@ -79,22 +78,16 @@ def test_fingerprints_cover_every_released_version() -> None:
     """Every frozen version is pinned, with the v1 columns and only documented differences."""
     assert sorted(_DATA["versions"]) == [
         "dot-Continuous-v1-1.0.0",
-        "dot-ContinuousIrregular-v1-1.0.0",
         "dot-Generic-100k-1.0.0",
         "dot-Identifiability-v1-1.0.0",
         "dot-Identifiability-v1-1.1.0",
-        "dot-Identifiability-v1-1.2.0",
-        "dot-Observed-v1-1.0.0",
         "dot-RegimeSwitch-v1-1.0.0",
-        "dot-SeasonalTrend-v1-1.0.0",
-        "dot-Wide-v1-1.0.0",
     ]
     assert tuple(_DATA["columns"]) == V1_COLUMNS
     for key, version in _DATA["versions"].items():
-        assert len(version["rows"]) >= 12, key
+        assert len(version["rows"]) >= 20, key
         for row in version["rows"]:
-            # Schema-2 suites (irregular grids, observation masks) add two columns.
-            assert tuple(row["hashes"]) in (V1_COLUMNS, SCHEMA2_COLUMNS), key
+            assert tuple(row["hashes"]) == V1_COLUMNS
             for col, ok in row["release_match"].items():
                 versions = _DOCUMENTED.get(col, set())
                 allowed = versions is None or key in versions
