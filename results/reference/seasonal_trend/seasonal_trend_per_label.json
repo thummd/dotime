@@ -1,0 +1,359 @@
+{
+ "suite": "dot-SeasonalTrend-v1",
+ "version": "1.0.0",
+ "group": "structure",
+ "protocol": "dotime.evaluation.evaluate(dir_target='effect', impute=True)",
+ "n_episodes": 10000,
+ "groups": {
+  "bi_variate": {
+   "n_episodes": 1000,
+   "baselines": {
+    "Mean": {
+     "rmse": 0.7575727105140686,
+     "dir_acc": 0.5455999970436096,
+     "dir_n_valid": 625
+    },
+    "AR1": {
+     "rmse": 0.8488213419914246,
+     "dir_acc": 0.5184000134468079,
+     "dir_n_valid": 625
+    },
+    "VAR-OLS": {
+     "rmse": 0.7768430709838867,
+     "dir_acc": 0.5440000295639038,
+     "dir_n_valid": 625
+    },
+    "NaiveOLS": {
+     "rmse": 0.563707709312439,
+     "dir_acc": 0.8191999793052673,
+     "dir_n_valid": 625
+    },
+    "BackDoorOLS": {
+     "rmse": 0.7575727105140686,
+     "dir_acc": 0.5455999970436096,
+     "dir_n_valid": 625
+    },
+    "IV2SLS": {
+     "rmse": 0.7575727105140686,
+     "dir_acc": 0.5455999970436096,
+     "dir_n_valid": 625
+    }
+   }
+  },
+  "back_door": {
+   "n_episodes": 1000,
+   "baselines": {
+    "Mean": {
+     "rmse": 0.8131022453308105,
+     "dir_acc": 0.540669858455658,
+     "dir_n_valid": 627
+    },
+    "AR1": {
+     "rmse": 0.9553965330123901,
+     "dir_acc": 0.519936203956604,
+     "dir_n_valid": 627
+    },
+    "VAR-OLS": {
+     "rmse": 0.8833751082420349,
+     "dir_acc": 0.5247209072113037,
+     "dir_n_valid": 627
+    },
+    "NaiveOLS": {
+     "rmse": 0.6575905084609985,
+     "dir_acc": 0.7687400579452515,
+     "dir_n_valid": 627
+    },
+    "BackDoorOLS": {
+     "rmse": 0.6429694890975952,
+     "dir_acc": 0.7878788113594055,
+     "dir_n_valid": 627
+    },
+    "IV2SLS": {
+     "rmse": 0.8131022453308105,
+     "dir_acc": 0.540669858455658,
+     "dir_n_valid": 627
+    }
+   }
+  },
+  "bi_variate+seasonal_observed": {
+   "n_episodes": 1000,
+   "baselines": {
+    "Mean": {
+     "rmse": 1.0432418584823608,
+     "dir_acc": 0.5341812372207642,
+     "dir_n_valid": 629
+    },
+    "AR1": {
+     "rmse": 0.905773937702179,
+     "dir_acc": 0.5421303510665894,
+     "dir_n_valid": 629
+    },
+    "VAR-OLS": {
+     "rmse": 1.2396490573883057,
+     "dir_acc": 0.5341812372207642,
+     "dir_n_valid": 629
+    },
+    "NaiveOLS": {
+     "rmse": 1.286266803741455,
+     "dir_acc": 0.5850556492805481,
+     "dir_n_valid": 629
+    },
+    "BackDoorOLS": {
+     "rmse": 0.8810738921165466,
+     "dir_acc": 0.7217805981636047,
+     "dir_n_valid": 629
+    },
+    "IV2SLS": {
+     "rmse": 1.0432418584823608,
+     "dir_acc": 0.5341812372207642,
+     "dir_n_valid": 629
+    }
+   }
+  },
+  "bi_variate+trend_observed": {
+   "n_episodes": 1000,
+   "baselines": {
+    "Mean": {
+     "rmse": 0.8996710777282715,
+     "dir_acc": 0.5341812372207642,
+     "dir_n_valid": 629
+    },
+    "AR1": {
+     "rmse": 0.8247426152229309,
+     "dir_acc": 0.519872784614563,
+     "dir_n_valid": 629
+    },
+    "VAR-OLS": {
+     "rmse": 1.1793678998947144,
+     "dir_acc": 0.523052453994751,
+     "dir_n_valid": 629
+    },
+    "NaiveOLS": {
+     "rmse": 0.8400055766105652,
+     "dir_acc": 0.7201907634735107,
+     "dir_n_valid": 629
+    },
+    "BackDoorOLS": {
+     "rmse": 0.7436261773109436,
+     "dir_acc": 0.7662957310676575,
+     "dir_n_valid": 629
+    },
+    "IV2SLS": {
+     "rmse": 0.8996710777282715,
+     "dir_acc": 0.5341812372207642,
+     "dir_n_valid": 629
+    }
+   }
+  },
+  "back_door+seasonal_observed": {
+   "n_episodes": 1000,
+   "baselines": {
+    "Mean": {
+     "rmse": 0.9936169981956482,
+     "dir_acc": 0.5129982829093933,
+     "dir_n_valid": 577
+    },
+    "AR1": {
+     "rmse": 0.9065157771110535,
+     "dir_acc": 0.5459272265434265,
+     "dir_n_valid": 577
+    },
+    "VAR-OLS": {
+     "rmse": 1.258049726486206,
+     "dir_acc": 0.5337954759597778,
+     "dir_n_valid": 577
+    },
+    "NaiveOLS": {
+     "rmse": 1.2296477556228638,
+     "dir_acc": 0.6135181784629822,
+     "dir_n_valid": 577
+    },
+    "BackDoorOLS": {
+     "rmse": 0.8702170848846436,
+     "dir_acc": 0.7192374467849731,
+     "dir_n_valid": 577
+    },
+    "IV2SLS": {
+     "rmse": 0.9936169981956482,
+     "dir_acc": 0.5129982829093933,
+     "dir_n_valid": 577
+    }
+   }
+  },
+  "back_door+trend_observed": {
+   "n_episodes": 1000,
+   "baselines": {
+    "Mean": {
+     "rmse": 0.9550330638885498,
+     "dir_acc": 0.5226891040802002,
+     "dir_n_valid": 595
+    },
+    "AR1": {
+     "rmse": 0.99120032787323,
+     "dir_acc": 0.5478991866111755,
+     "dir_n_valid": 595
+    },
+    "VAR-OLS": {
+     "rmse": 1.3489118814468384,
+     "dir_acc": 0.49747899174690247,
+     "dir_n_valid": 595
+    },
+    "NaiveOLS": {
+     "rmse": 0.8656532764434814,
+     "dir_acc": 0.7142857313156128,
+     "dir_n_valid": 595
+    },
+    "BackDoorOLS": {
+     "rmse": 0.7528883218765259,
+     "dir_acc": 0.75126051902771,
+     "dir_n_valid": 595
+    },
+    "IV2SLS": {
+     "rmse": 0.955033004283905,
+     "dir_acc": 0.5226891040802002,
+     "dir_n_valid": 595
+    }
+   }
+  },
+  "bi_variate+seasonal_hidden": {
+   "n_episodes": 1000,
+   "baselines": {
+    "Mean": {
+     "rmse": 1.0146902799606323,
+     "dir_acc": 0.569331169128418,
+     "dir_n_valid": 613
+    },
+    "AR1": {
+     "rmse": 0.9306150078773499,
+     "dir_acc": 0.5399673581123352,
+     "dir_n_valid": 613
+    },
+    "VAR-OLS": {
+     "rmse": 1.2005988359451294,
+     "dir_acc": 0.5220228433609009,
+     "dir_n_valid": 613
+    },
+    "NaiveOLS": {
+     "rmse": 1.3019111156463623,
+     "dir_acc": 0.6166394948959351,
+     "dir_n_valid": 613
+    },
+    "BackDoorOLS": {
+     "rmse": 1.0146902799606323,
+     "dir_acc": 0.569331169128418,
+     "dir_n_valid": 613
+    },
+    "IV2SLS": {
+     "rmse": 1.0146902799606323,
+     "dir_acc": 0.569331169128418,
+     "dir_n_valid": 613
+    }
+   }
+  },
+  "bi_variate+trend_hidden": {
+   "n_episodes": 1000,
+   "baselines": {
+    "Mean": {
+     "rmse": 0.9449113607406616,
+     "dir_acc": 0.5069552063941956,
+     "dir_n_valid": 647
+    },
+    "AR1": {
+     "rmse": 0.8540424108505249,
+     "dir_acc": 0.5146831274032593,
+     "dir_n_valid": 647
+    },
+    "VAR-OLS": {
+     "rmse": 1.167157530784607,
+     "dir_acc": 0.5177743434906006,
+     "dir_n_valid": 647
+    },
+    "NaiveOLS": {
+     "rmse": 0.832579493522644,
+     "dir_acc": 0.7217928767204285,
+     "dir_n_valid": 647
+    },
+    "BackDoorOLS": {
+     "rmse": 0.9449113607406616,
+     "dir_acc": 0.5069552063941956,
+     "dir_n_valid": 647
+    },
+    "IV2SLS": {
+     "rmse": 0.9449113607406616,
+     "dir_acc": 0.5069552063941956,
+     "dir_n_valid": 647
+    }
+   }
+  },
+  "back_door+seasonal_hidden": {
+   "n_episodes": 1000,
+   "baselines": {
+    "Mean": {
+     "rmse": 1.0402919054031372,
+     "dir_acc": 0.5116666555404663,
+     "dir_n_valid": 600
+    },
+    "AR1": {
+     "rmse": 0.85261070728302,
+     "dir_acc": 0.5766666531562805,
+     "dir_n_valid": 600
+    },
+    "VAR-OLS": {
+     "rmse": 1.257497787475586,
+     "dir_acc": 0.5083333253860474,
+     "dir_n_valid": 600
+    },
+    "NaiveOLS": {
+     "rmse": 1.272482991218567,
+     "dir_acc": 0.5950000286102295,
+     "dir_n_valid": 600
+    },
+    "BackDoorOLS": {
+     "rmse": 1.0402920246124268,
+     "dir_acc": 0.5116666555404663,
+     "dir_n_valid": 600
+    },
+    "IV2SLS": {
+     "rmse": 1.0402920246124268,
+     "dir_acc": 0.5116666555404663,
+     "dir_n_valid": 600
+    }
+   }
+  },
+  "back_door+trend_hidden": {
+   "n_episodes": 1000,
+   "baselines": {
+    "Mean": {
+     "rmse": 0.9433887004852295,
+     "dir_acc": 0.519262969493866,
+     "dir_n_valid": 597
+    },
+    "AR1": {
+     "rmse": 0.816131055355072,
+     "dir_acc": 0.5075376629829407,
+     "dir_n_valid": 597
+    },
+    "VAR-OLS": {
+     "rmse": 1.1990855932235718,
+     "dir_acc": 0.48073703050613403,
+     "dir_n_valid": 597
+    },
+    "NaiveOLS": {
+     "rmse": 0.9201229214668274,
+     "dir_acc": 0.6834170818328857,
+     "dir_n_valid": 597
+    },
+    "BackDoorOLS": {
+     "rmse": 0.9433887004852295,
+     "dir_acc": 0.519262969493866,
+     "dir_n_valid": 597
+    },
+    "IV2SLS": {
+     "rmse": 0.9433887004852295,
+     "dir_acc": 0.519262969493866,
+     "dir_n_valid": 597
+    }
+   }
+  }
+ }
+}

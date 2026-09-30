@@ -1,0 +1,26 @@
+{
+ "n_episodes": 10000,
+ "diverged": 0,
+ "abs_effect_median": 0.44885412603616714,
+ "abs_effect_p90": 1.2293711543083192,
+ "share_abs_ge_0.01": 0.9846,
+ "share_abs_ge_0.1": 0.8927,
+ "query_row": [
+  "window_end"
+ ],
+ "n_vars_released": {
+  "min": 6,
+  "median": 22.0,
+  "max": 40
+ },
+ "n_vars_simulated": {
+  "min": 12,
+  "median": 26.0,
+  "max": 40
+ },
+ "tiers": {
+  "1": 3116,
+  "2": 3541,
+  "3": 3343
+ }
+}

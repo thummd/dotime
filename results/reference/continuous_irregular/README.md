@@ -72,3 +72,25 @@ Reproduce with
 PYTHONPATH=src python results/reference/continuous_irregular/measure_irregular_grids.py \
     --cache ~/.cache/dotime/dot-Continuous-v1-1.0.0 --workers 4
 ```
+
+## Reference rows on the built suite
+
+`continuous_irregular_cpu_effect.json` holds the pooled and per-structure rows of the
+eight CPU baselines on the built `dot-ContinuousIrregular-v1` 1.0.0 (9,999 episodes),
+scored with the packaged protocol (`dotime-eval-reference --dir-target effect`), and
+`continuous_irregular_per_schedule.json` splits six of them by schedule
+(`../audit_2026-09/scripts/per_group_baselines.py --group schedule`). Effect-sign
+accuracy, 3,333 episodes per schedule, scored on the episodes with an effect of at
+least 0.1 in absolute value:
+
+| Schedule | n | Mean | AR1 | VAR-OLS | NaiveOLS | BackDoorOLS | IV2SLS |
+|---|---|---|---|---|---|---|---|
+| `regular` | 3333 | 0.606 | 0.584 | 0.567 | 0.733 | 0.652 | 0.625 |
+| `jittered` | 3333 | 0.545 | 0.544 | 0.531 | 0.811 | 0.626 | 0.563 |
+| `poisson` | 3333 | 0.544 | 0.546 | 0.561 | 0.829 | 0.634 | 0.567 |
+
+The baselines treat the rows as equally spaced. The `regular` third scores lower for
+NaiveOLS and higher for the naive baselines than the two irregular thirds. As the
+measurement above explains, it keeps the single Euler step of `dot-Continuous-v1` and
+its larger amplitudes, so the thirds differ in their integration as well as in their
+grid, and scores should be compared within a third.

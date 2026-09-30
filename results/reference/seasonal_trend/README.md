@@ -137,3 +137,37 @@ records the config's sha256, the suite seed and the commit the numbers were
 produced at (`git_commit`, with `src_and_scripts_clean`). Cherry-picking
 changes commit ids, so on another commit rerun the script and compare: every
 entry under `labels` should come out identical while the generator code is.
+
+## Reference rows on the built suite
+
+The suite was built on 2026-09-30 (10,000 episodes, none diverged).
+`seasonal_trend_cpu_effect.json` holds the pooled and per-structure rows of the eight CPU
+baselines under the packaged protocol (`dotime-eval-reference --dir-target effect`), and
+`seasonal_trend_per_label.json` splits six of them by label
+(`../audit_2026-09/scripts/per_group_baselines.py --group structure`). Effect-sign
+accuracy, 1,000 episodes per label, scored on the episodes with an effect of at least
+0.1 in absolute value:
+
+| Label | n | Mean | AR1 | VAR-OLS | NaiveOLS | BackDoorOLS | IV2SLS |
+|---|---|---|---|---|---|---|---|
+| `bi_variate` | 1000 | 0.546 | 0.518 | 0.544 | 0.819 | 0.546 | 0.546 |
+| `back_door` | 1000 | 0.541 | 0.520 | 0.525 | 0.769 | 0.788 | 0.541 |
+| `bi_variate+seasonal_observed` | 1000 | 0.534 | 0.542 | 0.534 | 0.585 | 0.722 | 0.534 |
+| `bi_variate+trend_observed` | 1000 | 0.534 | 0.520 | 0.523 | 0.720 | 0.766 | 0.534 |
+| `back_door+seasonal_observed` | 1000 | 0.513 | 0.546 | 0.534 | 0.614 | 0.719 | 0.513 |
+| `back_door+trend_observed` | 1000 | 0.523 | 0.548 | 0.497 | 0.714 | 0.751 | 0.523 |
+| `bi_variate+seasonal_hidden` | 1000 | 0.569 | 0.540 | 0.522 | 0.617 | 0.569 | 0.569 |
+| `bi_variate+trend_hidden` | 1000 | 0.507 | 0.515 | 0.518 | 0.722 | 0.507 | 0.507 |
+| `back_door+seasonal_hidden` | 1000 | 0.512 | 0.577 | 0.508 | 0.595 | 0.512 | 0.512 |
+| `back_door+trend_hidden` | 1000 | 0.519 | 0.508 | 0.481 | 0.683 | 0.519 | 0.519 |
+
+These numbers are lower than the effect-contrast columns above because the protocols
+differ. The packaged protocol scores `sign(pred - y_obs)`, where `pred` is the predicted
+interventional level, so an estimator that averages the driver over the pre-onset rows
+instead of reading it at the query (BackDoorOLS, finding 6) pays for that offset. The
+contrast `pred(do v) - pred(do a_obs)` cancels it. The ordering is the same under both:
+a hidden seasonal driver takes NaiveOLS from 0.819 and 0.769 on the plain structures to
+0.617 and 0.595, a hidden trend to 0.722 and 0.683, and on the observed labels
+BackDoorOLS, which adjusts for D, scores 0.719 to 0.766 against 0.585 to 0.720 for the
+regression that ignores it. BackDoorOLS declines the plain `bi_variate` and the hidden
+labels and then equals the Mean row.

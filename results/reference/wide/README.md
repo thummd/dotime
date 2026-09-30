@@ -93,6 +93,31 @@ accuracy on the effect sign is defined on 88.5% of the episodes.
 `wide_qa.json` holds every number above, the histograms, the effect record of
 each episode, and the machine load during the run.
 
+## The full build (2026-09-30)
+
+`scripts/build_release.py --config scripts/release_config_wide.yaml --workers 7
+--target-qa enforce` built the suite in 83 minutes on a shared 16-core machine.
+`wide_full_effect_share.json` summarises the built rows and
+`wide_cpu_effect.json` holds the CPU reference rows (`dotime-eval-reference
+--dir-target effect`, with NaiveOLS).
+
+| Quantity | Value |
+|---|---|
+| Episodes | 10,000, none diverged |
+| Simulated variables | 12 to 40, median 26 |
+| Released variables | 6 to 40, median 22 |
+| Tiers 1, 2 and 3 | 3,116, 3,541 and 3,343 episodes |
+| \|effect\| at the query | median 0.45, 90th percentile 1.23 |
+| Queries with \|effect\| >= 0.01 | 98.5% |
+| Queries with \|effect\| >= 0.1 | 89.3% |
+| Effect-sign accuracy, NaiveOLS / BackDoorOLS / IV2SLS | 0.624 / 0.612 / 0.612 |
+| Effect-sign accuracy, best naive (Zero, Mean, AR1, VAR-OLS) | 0.612 |
+
+The validity invariants of `../audit_2026-09/suite_invariants_2026_10.json` hold in
+every episode: both arms agree before the onset, every hard intervention places its
+do-value, and no arm is zeroed. The generic builder stores no effect field, so the
+effect identity is not checked here.
+
 ## Reproduce
 
 From the repository root:

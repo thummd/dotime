@@ -1,0 +1,191 @@
+{
+  "suite": "dot-Wide-v1",
+  "suite_version": "1.0.0",
+  "realigned": false,
+  "realignment_sidecar": null,
+  "n_episodes": 10000,
+  "exclude_self_queries": false,
+  "target_qa": {
+    "y_obs_level": {
+      "n": 10000,
+      "n_nonfinite": 0,
+      "nonzero_frac": 1.0,
+      "mean": 0.32004370474353344,
+      "var": 0.929633748558283,
+      "abs_max": 10.471041679382324
+    },
+    "y_int_level": {
+      "n": 10000,
+      "n_nonfinite": 0,
+      "nonzero_frac": 1.0,
+      "mean": 0.3898533541345641,
+      "var": 1.2396517726553444,
+      "abs_max": 10.644948959350586
+    },
+    "effect": {
+      "n": 10000,
+      "n_nonfinite": 0,
+      "nonzero_frac": 0.9927,
+      "mean": 0.0698096493910307,
+      "var": 0.6392894515222001,
+      "abs_max": 8.279152542352676
+    },
+    "min_nonzero_frac": 0.5,
+    "passed": true,
+    "problems": [],
+    "notes": [],
+    "dir_target": "effect",
+    "check_effect": true,
+    "thresholds": {
+      "min_level_nonzero_frac": 0.5,
+      "min_effect_nonzero_frac": 0.05,
+      "min_group_n": 10,
+      "min_pooled_n": 2
+    },
+    "label": null,
+    "pooled": {
+      "n": 10000,
+      "y_obs_level": {
+        "n": 10000,
+        "n_nonfinite": 0,
+        "nonzero_frac": 1.0,
+        "mean": 0.32004370474353344,
+        "var": 0.929633748558283,
+        "abs_max": 10.471041679382324
+      },
+      "y_int_level": {
+        "n": 10000,
+        "n_nonfinite": 0,
+        "nonzero_frac": 1.0,
+        "mean": 0.3898533541345641,
+        "var": 1.2396517726553444,
+        "abs_max": 10.644948959350586
+      },
+      "effect": {
+        "n": 10000,
+        "n_nonfinite": 0,
+        "nonzero_frac": 0.9927,
+        "mean": 0.0698096493910307,
+        "var": 0.6392894515222001,
+        "abs_max": 8.279152542352676
+      },
+      "n_null_effect_exempt": 0,
+      "effect_checked": {
+        "n": 10000,
+        "n_nonfinite": 0,
+        "nonzero_frac": 0.9927,
+        "mean": 0.0698096493910307,
+        "var": 0.6392894515222001,
+        "abs_max": 8.279152542352676
+      },
+      "asserted": true
+    },
+    "groups": {}
+  },
+  "rows": [
+    {
+      "baseline": "Zero",
+      "n_episodes": 10000,
+      "n_queries": 10000,
+      "pooled_rmse": 1.17967689037323,
+      "rmse_ci95": [
+        1.1460556236198411,
+        1.2168594653705427
+      ],
+      "dir_acc": 0.5571860671043396,
+      "dir_n_valid": 8927,
+      "dir_target": "effect"
+    },
+    {
+      "baseline": "Mean",
+      "n_episodes": 10000,
+      "n_queries": 10000,
+      "pooled_rmse": 1.016946792602539,
+      "rmse_ci95": [
+        0.9807463300447513,
+        1.0561024366603609
+      ],
+      "dir_acc": 0.6115156412124634,
+      "dir_n_valid": 8927,
+      "dir_target": "effect"
+    },
+    {
+      "baseline": "AR1",
+      "n_episodes": 10000,
+      "n_queries": 10000,
+      "pooled_rmse": 1.258040189743042,
+      "rmse_ci95": [
+        1.2058899215451886,
+        1.318744081583795
+      ],
+      "dir_acc": 0.5613307952880859,
+      "dir_n_valid": 8927,
+      "dir_target": "effect"
+    },
+    {
+      "baseline": "VAR-OLS",
+      "n_episodes": 10000,
+      "n_queries": 10000,
+      "pooled_rmse": 1.179357886314392,
+      "rmse_ci95": [
+        1.112860691746661,
+        1.257876833155915
+      ],
+      "dir_acc": 0.5822784900665283,
+      "dir_n_valid": 8927,
+      "dir_target": "effect"
+    },
+    {
+      "baseline": "BackDoorOLS",
+      "n_episodes": 10000,
+      "n_queries": 10000,
+      "pooled_rmse": 1.016946792602539,
+      "rmse_ci95": [
+        0.9807463302727163,
+        1.0561024349104273
+      ],
+      "dir_acc": 0.6115156412124634,
+      "dir_n_valid": 8927,
+      "dir_target": "effect"
+    },
+    {
+      "baseline": "NaiveOLS",
+      "n_episodes": 10000,
+      "n_queries": 10000,
+      "pooled_rmse": 1.5639045238494873,
+      "rmse_ci95": [
+        1.422826319634149,
+        1.7267292987693967
+      ],
+      "dir_acc": 0.6236137747764587,
+      "dir_n_valid": 8927,
+      "dir_target": "effect"
+    },
+    {
+      "baseline": "IV2SLS",
+      "n_episodes": 10000,
+      "n_queries": 10000,
+      "pooled_rmse": 1.016946792602539,
+      "rmse_ci95": [
+        0.9807463302727163,
+        1.0561024349104273
+      ],
+      "dir_acc": 0.6115156412124634,
+      "dir_n_valid": 8927,
+      "dir_target": "effect"
+    },
+    {
+      "baseline": "Oracle",
+      "n_episodes": 10000,
+      "n_queries": 10000,
+      "pooled_rmse": 0.0,
+      "rmse_ci95": [
+        0.0,
+        0.0
+      ],
+      "dir_acc": 1.0,
+      "dir_n_valid": 8927,
+      "dir_target": "effect"
+    }
+  ]
+}

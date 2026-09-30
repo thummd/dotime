@@ -1,0 +1,114 @@
+{
+ "suite": "dot-ContinuousIrregular-v1",
+ "version": "1.0.0",
+ "group": "schedule",
+ "protocol": "dotime.evaluation.evaluate(dir_target='effect', impute=True)",
+ "n_episodes": 9999,
+ "groups": {
+  "regular": {
+   "n_episodes": 3333,
+   "baselines": {
+    "Mean": {
+     "rmse": 3.5173773765563965,
+     "dir_acc": 0.6058451533317566,
+     "dir_n_valid": 1266
+    },
+    "AR1": {
+     "rmse": 2.7701985836029053,
+     "dir_acc": 0.5837282538414001,
+     "dir_n_valid": 1266
+    },
+    "VAR-OLS": {
+     "rmse": 2.4828855991363525,
+     "dir_acc": 0.5671405792236328,
+     "dir_n_valid": 1266
+    },
+    "NaiveOLS": {
+     "rmse": 3.5622177124023438,
+     "dir_acc": 0.7330173850059509,
+     "dir_n_valid": 1266
+    },
+    "BackDoorOLS": {
+     "rmse": 3.532482147216797,
+     "dir_acc": 0.6524486541748047,
+     "dir_n_valid": 1266
+    },
+    "IV2SLS": {
+     "rmse": 3.5258657932281494,
+     "dir_acc": 0.6248025298118591,
+     "dir_n_valid": 1266
+    }
+   }
+  },
+  "jittered": {
+   "n_episodes": 3333,
+   "baselines": {
+    "Mean": {
+     "rmse": 0.9499964118003845,
+     "dir_acc": 0.5446516275405884,
+     "dir_n_valid": 1019
+    },
+    "AR1": {
+     "rmse": 1.003787636756897,
+     "dir_acc": 0.5436702370643616,
+     "dir_n_valid": 1019
+    },
+    "VAR-OLS": {
+     "rmse": 0.9639036059379578,
+     "dir_acc": 0.5309126377105713,
+     "dir_n_valid": 1019
+    },
+    "NaiveOLS": {
+     "rmse": 0.9853219985961914,
+     "dir_acc": 0.810598611831665,
+     "dir_n_valid": 1019
+    },
+    "BackDoorOLS": {
+     "rmse": 0.9979984164237976,
+     "dir_acc": 0.6261039972305298,
+     "dir_n_valid": 1019
+    },
+    "IV2SLS": {
+     "rmse": 0.9459667801856995,
+     "dir_acc": 0.5632973313331604,
+     "dir_n_valid": 1019
+    }
+   }
+  },
+  "poisson": {
+   "n_episodes": 3333,
+   "baselines": {
+    "Mean": {
+     "rmse": 1.0022509098052979,
+     "dir_acc": 0.5442359447479248,
+     "dir_n_valid": 1119
+    },
+    "AR1": {
+     "rmse": 1.061526894569397,
+     "dir_acc": 0.5460232496261597,
+     "dir_n_valid": 1119
+    },
+    "VAR-OLS": {
+     "rmse": 1.018256664276123,
+     "dir_acc": 0.561215341091156,
+     "dir_n_valid": 1119
+    },
+    "NaiveOLS": {
+     "rmse": 0.9675355553627014,
+     "dir_acc": 0.8293119072914124,
+     "dir_n_valid": 1119
+    },
+    "BackDoorOLS": {
+     "rmse": 0.9852396249771118,
+     "dir_acc": 0.6336014270782471,
+     "dir_n_valid": 1119
+    },
+    "IV2SLS": {
+     "rmse": 1.0218788385391235,
+     "dir_acc": 0.5665773153305054,
+     "dir_n_valid": 1119
+    }
+   }
+  }
+ }
+}

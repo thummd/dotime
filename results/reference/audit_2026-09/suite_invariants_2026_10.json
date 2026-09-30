@@ -1,0 +1,89 @@
+{
+ "dot-Identifiability-v1-1.2.0": {
+  "n_episodes": 12150,
+  "zeroed_frac": 0.0,
+  "pre_onset_equal_frac": 1.0,
+  "pre_onset_equal_by_structure": {
+   "back_door": 1.0,
+   "bi_variate": 1.0,
+   "bow_graph": 1.0,
+   "confounder_mediator": 1.0,
+   "front_door": 1.0,
+   "instrumental_variable": 1.0,
+   "mediator": 1.0,
+   "observed_confounder": 1.0,
+   "unobserved_confounder": 1.0
+  },
+  "hard_interventions": 12150,
+  "do_value_in_treatment_col_frac_of_hard": 1.0,
+  "episodes_with_effect_field": 12150,
+  "effect_identity_frac_of_those": 1.0
+ },
+ "dot-SeasonalTrend-v1-1.0.0": {
+  "n_episodes": 10000,
+  "zeroed_frac": 0.0,
+  "pre_onset_equal_frac": 1.0,
+  "pre_onset_equal_by_structure": {
+   "back_door": 1.0,
+   "back_door+seasonal_hidden": 1.0,
+   "back_door+seasonal_observed": 1.0,
+   "back_door+trend_hidden": 1.0,
+   "back_door+trend_observed": 1.0,
+   "bi_variate": 1.0,
+   "bi_variate+seasonal_hidden": 1.0,
+   "bi_variate+seasonal_observed": 1.0,
+   "bi_variate+trend_hidden": 1.0,
+   "bi_variate+trend_observed": 1.0
+  },
+  "hard_interventions": 10000,
+  "do_value_in_treatment_col_frac_of_hard": 1.0,
+  "episodes_with_effect_field": 10000,
+  "effect_identity_frac_of_those": 1.0
+ },
+ "dot-Observed-v1-1.0.0": {
+  "n_episodes": 10800,
+  "zeroed_frac": 0.0,
+  "pre_onset_equal_frac": 1.0,
+  "pre_onset_equal_by_structure": {
+   "back_door": 1.0,
+   "bi_variate": 1.0,
+   "bow_graph": 1.0,
+   "confounder_mediator": 1.0,
+   "front_door": 1.0,
+   "instrumental_variable": 1.0,
+   "mediator": 1.0,
+   "observed_confounder": 1.0,
+   "unobserved_confounder": 1.0
+  },
+  "hard_interventions": 10800,
+  "do_value_in_treatment_col_frac_of_hard": 1.0,
+  "episodes_with_effect_field": 10800,
+  "effect_identity_frac_of_those": 1.0
+ },
+ "dot-ContinuousIrregular-v1-1.0.0": {
+  "n_episodes": 9999,
+  "zeroed_frac": 0.0,
+  "pre_onset_equal_frac": 1.0,
+  "pre_onset_equal_by_structure": {
+   "back_door": 1.0,
+   "front_door": 1.0,
+   "instrumental_variable": 1.0
+  },
+  "hard_interventions": 9999,
+  "do_value_in_treatment_col_frac_of_hard": 1.0,
+  "episodes_with_effect_field": 9999,
+  "effect_identity_frac_of_those": 1.0
+ },
+ "dot-Wide-v1-1.0.0": {
+  "n_episodes": 10000,
+  "zeroed_frac": 0.0,
+  "pre_onset_equal_frac": 1.0,
+  "pre_onset_equal_by_structure": {
+   "null": 1.0
+  },
+  "hard_interventions": 5039,
+  "do_value_in_treatment_col_frac_of_hard": 1.0,
+  "episodes_with_effect_field": 0,
+  "effect_identity_frac_of_those": null
+ }
+}

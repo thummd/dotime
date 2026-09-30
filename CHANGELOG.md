@@ -7,6 +7,28 @@ All notable changes to `dotime` are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Frozen fingerprints now cover ten versions: the five released ones plus
+  dot-Identifiability-v1 1.2.0, dot-SeasonalTrend-v1, dot-Wide-v1, dot-Observed-v1
+  and dot-ContinuousIrregular-v1 1.0.0 (`scripts/fingerprint_frozen_suites.py`,
+  `tests/data/frozen_fingerprints.json`). Portable summaries compare floats with
+  a relative tolerance of 1e-4, because the float32 trajectories of time-varying
+  interventions differ between macOS arm64 and x86 Linux by about 1e-5.
+- Reference rows (effect-scored, with NaiveOLS) for Identifiability 1.2.0
+  (`results/reference/v1_2/`) and for the four new suites, with per-cell,
+  per-schedule and per-label splits (`results/reference/{observed,
+  continuous_irregular, seasonal_trend, wide}/`,
+  `results/reference/audit_2026-09/scripts/per_group_baselines.py`), and the
+  detection-power analysis on 1.2.0 (gate 3 passed,
+  `results/reference/detection_power_2026-10/ident_v1_2.*`).
+- Audit scripts for the 2026-10 builds: `identity_checks_2026_10.py` (rows a new
+  version inherits, compared bit for bit with their release) and
+  `suite_invariants_2026_10.py` (pre-onset agreement, do-value placement,
+  effect identity and zeroed arms as pass rates), with their results in
+  `results/reference/audit_2026-09/`.
+- Release tooling: `scripts/release_2026_10.sh` (offline digest check, Hugging
+  Face mirror, Zenodo new version for Identifiability, new Zenodo records for
+  the new suites), `upload_zenodo.py --publish`, and `zenodo_update.py` hanging
+  a LOCAL version off the newest published record.
 - Ground-truth graph metadata, `dotime.graph_meta`. `LaggedGraph` holds an
   episode's lagged causal graph in released column order, with edges
   `(src, dst, lag)` where lag 0 is a same-step edge. It is extracted from a
