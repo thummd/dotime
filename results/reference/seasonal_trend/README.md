@@ -171,3 +171,77 @@ a hidden seasonal driver takes NaiveOLS from 0.819 and 0.769 on the plain struct
 BackDoorOLS, which adjusts for D, scores 0.719 to 0.766 against 0.585 to 0.720 for the
 regression that ignores it. BackDoorOLS declines the plain `bi_variate` and the hidden
 labels and then equals the Mean row.
+
+## TimeOLS: modelling time recovers a hidden driver (October 2026)
+
+A hidden driver is a sinusoid or a straight line in time, so the effect stays
+identifiable by modelling time. `TimeOLS` (`dotime.baselines`) tests that. It is
+NaiveOLS's regression `Y_t ~ 1 + A_t + Y_(t-1)` plus a linear trend and, when the
+Bayesian information criterion prefers it, one seasonal harmonic whose period is
+searched on the pre-onset rows. It predicts at the query's own time and adjusts
+for nothing else. `time_ols.py` rebuilds the full suite from the release config
+and scores it with the packaged protocol, `evaluate(dir_target="effect",
+impute=True)`. Gate: Mean, NaiveOLS and BackDoorOLS reproduce
+`seasonal_trend_per_label.json` exactly on every label, so the local episodes are
+the released ones. The per-arm target statistics are asserted first.
+
+Effect-sign accuracy, with TimeOLS minus NaiveOLS and its paired bootstrap 95%
+interval (2,000 resamples, `default_rng(20261001)` per label):
+
+| Label | Scored | Mean | NaiveOLS | BackDoorOLS | TimeOLS | TimeOLS − NaiveOLS |
+|---|---|---|---|---|---|---|
+| `bi_variate` | 625 | 0.546 | 0.819 | 0.546 | 0.822 | +0.003 [−0.016, +0.022] |
+| `back_door` | 627 | 0.541 | 0.769 | 0.788 | 0.783 | +0.014 [−0.006, +0.035] |
+| `bi_variate+seasonal_observed` | 629 | 0.534 | 0.585 | 0.722 | 0.811 | +0.226 [+0.183, +0.270] |
+| `bi_variate+trend_observed` | 629 | 0.534 | 0.720 | 0.766 | 0.838 | +0.118 [+0.083, +0.153] |
+| `back_door+seasonal_observed` | 577 | 0.513 | 0.614 | 0.719 | 0.787 | +0.173 [+0.132, +0.218] |
+| `back_door+trend_observed` | 595 | 0.523 | 0.714 | 0.751 | 0.795 | +0.081 [+0.045, +0.116] |
+| `bi_variate+seasonal_hidden` | 613 | 0.569 | 0.617 | 0.569 | 0.783 | +0.166 [+0.122, +0.207] |
+| `bi_variate+trend_hidden` | 647 | 0.507 | 0.722 | 0.507 | 0.828 | +0.107 [+0.073, +0.141] |
+| `back_door+seasonal_hidden` | 600 | 0.512 | 0.595 | 0.512 | 0.788 | +0.193 [+0.150, +0.238] |
+| `back_door+trend_hidden` | 597 | 0.519 | 0.683 | 0.519 | 0.794 | +0.111 [+0.075, +0.146] |
+
+The packaged score compares `pred(v) - y_obs` with the true effect, so it rewards
+forecasting the factual level at the query as well as estimating the effect. The
+sign of each estimator's own effect, `pred(do v) - pred(do a_ref)` with `a_ref`
+the factual treatment at the intervened row, isolates the effect estimate (same
+valid episodes; a zero contrast counts as wrong, so the declining BackDoorOLS
+scores 0):
+
+| Label | NaiveOLS | BackDoorOLS | TimeOLS |
+|---|---|---|---|
+| `bi_variate` | 0.922 | 0.000 | 0.918 |
+| `back_door` | 0.896 | 0.914 | 0.898 |
+| `bi_variate+seasonal_observed` | 0.582 | 0.938 | 0.897 |
+| `bi_variate+trend_observed` | 0.808 | 0.925 | 0.928 |
+| `back_door+seasonal_observed` | 0.614 | 0.912 | 0.860 |
+| `back_door+trend_observed` | 0.807 | 0.918 | 0.892 |
+| `bi_variate+seasonal_hidden` | 0.579 | 0.000 | 0.884 |
+| `bi_variate+trend_hidden` | 0.804 | 0.000 | 0.927 |
+| `back_door+seasonal_hidden` | 0.570 | 0.000 | 0.863 |
+| `back_door+trend_hidden` | 0.777 | 0.000 | 0.883 |
+
+Findings:
+
+1. On every hidden-driver label TimeOLS scores 0.78 to 0.83, back at the level of
+   the plain structures (0.82 and 0.78), where NaiveOLS scores 0.60 to 0.72. Its
+   own effect has the right sign in 0.86 to 0.93 of the episodes, against 0.57
+   to 0.80 for NaiveOLS. Modelling time recovers the effect of a hidden driver,
+   as the suite's documentation says it should.
+2. Without a driver TimeOLS costs nothing: +0.003 and +0.014 on the plain
+   structures, both intervals covering zero.
+3. On observed-driver labels TimeOLS has the higher packaged score (0.79 to 0.84
+   against 0.72 to 0.77 for BackDoorOLS), but BackDoorOLS, which adjusts for the
+   released D itself, has the better effect estimate (own-effect sign 0.91 to
+   0.94 against 0.86 to 0.93). TimeOLS's lead there comes from forecasting the
+   driver's level at the query, which BackDoorOLS averages over the pre-onset
+   rows (finding 6 above).
+4. TimeOLS adjusts only for time, so on `back_door` labels the confounder X stays
+   unadjusted. Its own-effect sign there is 0.86 to 0.89, against 0.88 to 0.93 on
+   the `bi_variate` labels with the same driver.
+
+To reproduce (about a minute to build on 16 workers):
+
+```bash
+PYTHONPATH=src python results/reference/seasonal_trend/time_ols.py --workers 16
+```

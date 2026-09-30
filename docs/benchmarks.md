@@ -299,7 +299,12 @@ label (`results/reference/seasonal_trend/`), effect-sign accuracy on the
 seasonal labels is 0.60 to 0.67 without adjusting for an observed D and 0.91
 and 0.97 with it. Estimators that neither see D nor model time score 0.61 and
 0.67 on the hidden seasonal labels, against 0.92 to 0.96 on the plain
-structures.
+structures. `TimeOLS` models time instead: NaiveOLS's regression plus a linear
+trend and one seasonal harmonic whose period it searches on the pre-onset rows.
+On the full suite it takes the packaged effect-sign accuracy of the hidden
+labels from 0.60 to 0.72 (NaiveOLS) to 0.78 to 0.83, the level of the plain
+structures, and costs nothing without a driver
+(`results/reference/seasonal_trend/`, "TimeOLS").
 
 **Stationarity.** Trend episodes are not stationary. They fall outside the
 stationarity-after-burn-in assumption of the paper's convergence result, which

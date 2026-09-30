@@ -1,0 +1,399 @@
+{
+  "suite": "dot-SeasonalTrend-v1",
+  "version": "1.0.0",
+  "suite_seed": 20262001,
+  "scale": 1.0,
+  "n_episodes": 10000,
+  "commit": "f85a0db3f10a009920749ece9a986cf67c050324",
+  "protocol": "dotime.evaluation.evaluate(dir_target='effect', impute=True)",
+  "bootstrap": {
+    "resamples": 2000,
+    "seed": 20261001,
+    "paired": true
+  },
+  "gate": "Mean, NaiveOLS, BackDoorOLS reproduce seasonal_trend_per_label.json exactly on every label",
+  "target_qa_passed": true,
+  "build_seconds": 229.4,
+  "labels": {
+    "bi_variate": {
+      "n_episodes": 1000,
+      "Mean": {
+        "dir_acc": 0.5455999970436096,
+        "dir_acc_se": 0.019916651938300185,
+        "dir_n_valid": 625,
+        "rmse": 0.7575727105140686,
+        "own_effect_sign_acc": 0.0
+      },
+      "NaiveOLS": {
+        "dir_acc": 0.8191999793052673,
+        "dir_acc_se": 0.01539409617802965,
+        "dir_n_valid": 625,
+        "rmse": 0.563707709312439,
+        "own_effect_sign_acc": 0.9216
+      },
+      "BackDoorOLS": {
+        "dir_acc": 0.5455999970436096,
+        "dir_acc_se": 0.019916651938300185,
+        "dir_n_valid": 625,
+        "rmse": 0.7575727105140686,
+        "own_effect_sign_acc": 0.0
+      },
+      "TimeOLS": {
+        "dir_acc": 0.8223999738693237,
+        "dir_acc_se": 0.015287027538357317,
+        "dir_n_valid": 625,
+        "rmse": 0.561795711517334,
+        "own_effect_sign_acc": 0.9184
+      },
+      "TimeOLS_minus_NaiveOLS": {
+        "diff": 0.0031999999999999806,
+        "ci95": [
+          -0.016000000000000014,
+          0.022399999999999975
+        ]
+      }
+    },
+    "back_door": {
+      "n_episodes": 1000,
+      "Mean": {
+        "dir_acc": 0.540669858455658,
+        "dir_acc_se": 0.01990191108345725,
+        "dir_n_valid": 627,
+        "rmse": 0.8131021857261658,
+        "own_effect_sign_acc": 0.0
+      },
+      "NaiveOLS": {
+        "dir_acc": 0.7687400579452515,
+        "dir_acc_se": 0.016838608199179025,
+        "dir_n_valid": 627,
+        "rmse": 0.6575905084609985,
+        "own_effect_sign_acc": 0.8963317384370016
+      },
+      "BackDoorOLS": {
+        "dir_acc": 0.7878788113594055,
+        "dir_acc_se": 0.016326307278821908,
+        "dir_n_valid": 627,
+        "rmse": 0.6429694890975952,
+        "own_effect_sign_acc": 0.9138755980861244
+      },
+      "TimeOLS": {
+        "dir_acc": 0.7830941081047058,
+        "dir_acc_se": 0.01645920605756234,
+        "dir_n_valid": 627,
+        "rmse": 0.6292634010314941,
+        "own_effect_sign_acc": 0.89792663476874
+      },
+      "TimeOLS_minus_NaiveOLS": {
+        "diff": 0.014354066985646008,
+        "ci95": [
+          -0.006379585326953707,
+          0.03508771929824561
+        ]
+      }
+    },
+    "bi_variate+seasonal_observed": {
+      "n_episodes": 1000,
+      "Mean": {
+        "dir_acc": 0.5341812372207642,
+        "dir_acc_se": 0.01988966557128231,
+        "dir_n_valid": 629,
+        "rmse": 1.0432418584823608,
+        "own_effect_sign_acc": 0.0
+      },
+      "NaiveOLS": {
+        "dir_acc": 0.5850556492805481,
+        "dir_acc_se": 0.019645731038910274,
+        "dir_n_valid": 629,
+        "rmse": 1.286266803741455,
+        "own_effect_sign_acc": 0.5818759936406995
+      },
+      "BackDoorOLS": {
+        "dir_acc": 0.7217805981636047,
+        "dir_acc_se": 0.01786779600251775,
+        "dir_n_valid": 629,
+        "rmse": 0.8810738921165466,
+        "own_effect_sign_acc": 0.9379968203497615
+      },
+      "TimeOLS": {
+        "dir_acc": 0.8108108043670654,
+        "dir_acc_se": 0.015616460471594925,
+        "dir_n_valid": 629,
+        "rmse": 0.6345605850219727,
+        "own_effect_sign_acc": 0.8966613672496025
+      },
+      "TimeOLS_minus_NaiveOLS": {
+        "diff": 0.22575516693163755,
+        "ci95": [
+          0.1828298887122417,
+          0.2702702702702703
+        ]
+      }
+    },
+    "bi_variate+trend_observed": {
+      "n_episodes": 1000,
+      "Mean": {
+        "dir_acc": 0.5341812372207642,
+        "dir_acc_se": 0.01988966557128231,
+        "dir_n_valid": 629,
+        "rmse": 0.8996710777282715,
+        "own_effect_sign_acc": 0.0
+      },
+      "NaiveOLS": {
+        "dir_acc": 0.7201907634735107,
+        "dir_acc_se": 0.01789902910037339,
+        "dir_n_valid": 629,
+        "rmse": 0.8400055766105652,
+        "own_effect_sign_acc": 0.8076311605723371
+      },
+      "BackDoorOLS": {
+        "dir_acc": 0.7662957310676575,
+        "dir_acc_se": 0.016873539911638848,
+        "dir_n_valid": 629,
+        "rmse": 0.7436262369155884,
+        "own_effect_sign_acc": 0.9252782193958664
+      },
+      "TimeOLS": {
+        "dir_acc": 0.837837815284729,
+        "dir_acc_se": 0.014697025566914317,
+        "dir_n_valid": 629,
+        "rmse": 0.5628030300140381,
+        "own_effect_sign_acc": 0.9284578696343402
+      },
+      "TimeOLS_minus_NaiveOLS": {
+        "diff": 0.11764705882352944,
+        "ci95": [
+          0.08267090620031803,
+          0.15262321144674085
+        ]
+      }
+    },
+    "back_door+seasonal_observed": {
+      "n_episodes": 1000,
+      "Mean": {
+        "dir_acc": 0.5129982829093933,
+        "dir_acc_se": 0.02080823746369676,
+        "dir_n_valid": 577,
+        "rmse": 0.9936169981956482,
+        "own_effect_sign_acc": 0.0
+      },
+      "NaiveOLS": {
+        "dir_acc": 0.6135181784629822,
+        "dir_acc_se": 0.020271708228975293,
+        "dir_n_valid": 577,
+        "rmse": 1.2296477556228638,
+        "own_effect_sign_acc": 0.6135181975736569
+      },
+      "BackDoorOLS": {
+        "dir_acc": 0.7192374467849731,
+        "dir_acc_se": 0.018707589444397012,
+        "dir_n_valid": 577,
+        "rmse": 0.8702170848846436,
+        "own_effect_sign_acc": 0.9116117850953206
+      },
+      "TimeOLS": {
+        "dir_acc": 0.7868283987045288,
+        "dir_acc_se": 0.01704970151736354,
+        "dir_n_valid": 577,
+        "rmse": 0.6992168426513672,
+        "own_effect_sign_acc": 0.8596187175043327
+      },
+      "TimeOLS_minus_NaiveOLS": {
+        "diff": 0.17331022530329288,
+        "ci95": [
+          0.1317157712305026,
+          0.21837088388214898
+        ]
+      }
+    },
+    "back_door+trend_observed": {
+      "n_episodes": 1000,
+      "Mean": {
+        "dir_acc": 0.5226891040802002,
+        "dir_acc_se": 0.020476886110931604,
+        "dir_n_valid": 595,
+        "rmse": 0.955033004283905,
+        "own_effect_sign_acc": 0.0
+      },
+      "NaiveOLS": {
+        "dir_acc": 0.7142857313156128,
+        "dir_acc_se": 0.018520106056039373,
+        "dir_n_valid": 595,
+        "rmse": 0.8656532764434814,
+        "own_effect_sign_acc": 0.8067226890756303
+      },
+      "BackDoorOLS": {
+        "dir_acc": 0.75126051902771,
+        "dir_acc_se": 0.017721854313221146,
+        "dir_n_valid": 595,
+        "rmse": 0.7528883218765259,
+        "own_effect_sign_acc": 0.9176470588235294
+      },
+      "TimeOLS": {
+        "dir_acc": 0.7949579954147339,
+        "dir_acc_se": 0.016551411168399352,
+        "dir_n_valid": 595,
+        "rmse": 0.6542887687683105,
+        "own_effect_sign_acc": 0.892436974789916
+      },
+      "TimeOLS_minus_NaiveOLS": {
+        "diff": 0.08067226890756296,
+        "ci95": [
+          0.04537815126050415,
+          0.11596638655462177
+        ]
+      }
+    },
+    "bi_variate+seasonal_hidden": {
+      "n_episodes": 1000,
+      "Mean": {
+        "dir_acc": 0.569331169128418,
+        "dir_acc_se": 0.0199997222243062,
+        "dir_n_valid": 613,
+        "rmse": 1.0146902799606323,
+        "own_effect_sign_acc": 0.0
+      },
+      "NaiveOLS": {
+        "dir_acc": 0.6166394948959351,
+        "dir_acc_se": 0.019637631925758875,
+        "dir_n_valid": 613,
+        "rmse": 1.3019111156463623,
+        "own_effect_sign_acc": 0.5791190864600326
+      },
+      "BackDoorOLS": {
+        "dir_acc": 0.569331169128418,
+        "dir_acc_se": 0.0199997222243062,
+        "dir_n_valid": 613,
+        "rmse": 1.0146902799606323,
+        "own_effect_sign_acc": 0.0
+      },
+      "TimeOLS": {
+        "dir_acc": 0.7830342650413513,
+        "dir_acc_se": 0.0166477567728174,
+        "dir_n_valid": 613,
+        "rmse": 0.6442235708236694,
+        "own_effect_sign_acc": 0.8841761827079935
+      },
+      "TimeOLS_minus_NaiveOLS": {
+        "diff": 0.1663947797716151,
+        "ci95": [
+          0.12234910277324629,
+          0.20717781402936375
+        ]
+      }
+    },
+    "bi_variate+trend_hidden": {
+      "n_episodes": 1000,
+      "Mean": {
+        "dir_acc": 0.5069552063941956,
+        "dir_acc_se": 0.019655126443856284,
+        "dir_n_valid": 647,
+        "rmse": 0.9449113607406616,
+        "own_effect_sign_acc": 0.0
+      },
+      "NaiveOLS": {
+        "dir_acc": 0.7217928767204285,
+        "dir_acc_se": 0.017617256532216123,
+        "dir_n_valid": 647,
+        "rmse": 0.8325794339179993,
+        "own_effect_sign_acc": 0.80370942812983
+      },
+      "BackDoorOLS": {
+        "dir_acc": 0.5069552063941956,
+        "dir_acc_se": 0.019655126443856284,
+        "dir_n_valid": 647,
+        "rmse": 0.9449113607406616,
+        "own_effect_sign_acc": 0.0
+      },
+      "TimeOLS": {
+        "dir_acc": 0.828438937664032,
+        "dir_acc_se": 0.01482134015523217,
+        "dir_n_valid": 647,
+        "rmse": 0.5192145705223083,
+        "own_effect_sign_acc": 0.9273570324574961
+      },
+      "TimeOLS_minus_NaiveOLS": {
+        "diff": 0.10664605873261201,
+        "ci95": [
+          0.07264296754250388,
+          0.14068778979907245
+        ]
+      }
+    },
+    "back_door+seasonal_hidden": {
+      "n_episodes": 1000,
+      "Mean": {
+        "dir_acc": 0.5116666555404663,
+        "dir_acc_se": 0.020406857064415876,
+        "dir_n_valid": 600,
+        "rmse": 1.0402919054031372,
+        "own_effect_sign_acc": 0.0
+      },
+      "NaiveOLS": {
+        "dir_acc": 0.5950000286102295,
+        "dir_acc_se": 0.020040583597792073,
+        "dir_n_valid": 600,
+        "rmse": 1.272482991218567,
+        "own_effect_sign_acc": 0.57
+      },
+      "BackDoorOLS": {
+        "dir_acc": 0.5116666555404663,
+        "dir_acc_se": 0.020406857064415876,
+        "dir_n_valid": 600,
+        "rmse": 1.0402920246124268,
+        "own_effect_sign_acc": 0.0
+      },
+      "TimeOLS": {
+        "dir_acc": 0.7883333563804626,
+        "dir_acc_se": 0.016676524198124397,
+        "dir_n_valid": 600,
+        "rmse": 0.7343030571937561,
+        "own_effect_sign_acc": 0.8633333333333333
+      },
+      "TimeOLS_minus_NaiveOLS": {
+        "diff": 0.19333333333333336,
+        "ci95": [
+          0.15000000000000002,
+          0.23833333333333329
+        ]
+      }
+    },
+    "back_door+trend_hidden": {
+      "n_episodes": 1000,
+      "Mean": {
+        "dir_acc": 0.519262969493866,
+        "dir_acc_se": 0.020448445530984308,
+        "dir_n_valid": 597,
+        "rmse": 0.9433886408805847,
+        "own_effect_sign_acc": 0.0
+      },
+      "NaiveOLS": {
+        "dir_acc": 0.6834170818328857,
+        "dir_acc_se": 0.019037042885621507,
+        "dir_n_valid": 597,
+        "rmse": 0.9201229214668274,
+        "own_effect_sign_acc": 0.7772194304857621
+      },
+      "BackDoorOLS": {
+        "dir_acc": 0.519262969493866,
+        "dir_acc_se": 0.020448445530984308,
+        "dir_n_valid": 597,
+        "rmse": 0.9433886408805847,
+        "own_effect_sign_acc": 0.0
+      },
+      "TimeOLS": {
+        "dir_acc": 0.7939698696136475,
+        "dir_acc_se": 0.016553133360560097,
+        "dir_n_valid": 597,
+        "rmse": 0.6432270407676697,
+        "own_effect_sign_acc": 0.8827470686767169
+      },
+      "TimeOLS_minus_NaiveOLS": {
+        "diff": 0.11055276381909551,
+        "ci95": [
+          0.07537688442211055,
+          0.14572864321608037
+        ]
+      }
+    }
+  }
+}

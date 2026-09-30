@@ -7,6 +7,16 @@ All notable changes to `dotime` are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- `TimeOLS` baseline: NaiveOLS's regression `Y_t ~ 1 + A_t + Y_(t-1)` plus a
+  linear trend and, when the Bayesian information criterion prefers it, one
+  seasonal harmonic whose period is searched on the pre-onset rows. It predicts
+  at the query's own time and reads no post-onset data. A seasonal or trend
+  driver lies in the span of its time columns, so it blocks `A <- D -> Y` even
+  when D is hidden, which no packaged estimator did. On the full
+  dot-SeasonalTrend-v1 it scores 0.78 to 0.83 effect-sign accuracy on the hidden
+  labels, against 0.60 to 0.72 for NaiveOLS, and matches NaiveOLS without a
+  driver. `results/reference/seasonal_trend/time_ols.py` reproduces the released
+  rows exactly before scoring it.
 - `dotime-eval-tabpfn` and `dotime-eval-chronos` score direction accuracy on
   the level and on the causal effect for every arm and take `--dir-target
   {level,effect}` to choose which fills `dir_acc` (`dotime.reference._scoring`).
