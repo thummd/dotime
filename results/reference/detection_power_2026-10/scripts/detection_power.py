@@ -563,6 +563,7 @@ def structure_contrasts(
     others: Sequence[str],
     router: str | None,
     router_peers: Sequence[str],
+    association: str | None = None,
 ) -> dict[str, Any]:
     """Paired episode-bootstrap contrasts of effect-sign accuracy on one structure.
 
@@ -580,11 +581,14 @@ def structure_contrasts(
         others: Further estimators to contrast with the best naive one.
         router: The router, if it is scored on this structure.
         router_peers: Valid estimators to contrast the router with.
+        association: The unadjusted estimator, if scored, for the exploratory
+            ``vs_association`` contrasts.
 
     Returns:
         ``separation`` (best identification-aware minus best naive),
-        ``vs_best_naive`` per estimator and ``router_vs_valid`` per peer, each
-        with the point difference and its 95% interval.
+        ``vs_best_naive`` per estimator, ``router_vs_valid`` per peer and
+        ``vs_association`` per estimator, each with the point difference and
+        its 95% interval.
     """
     n = len(next(iter(correct.values())))
     if not naive:
@@ -616,6 +620,16 @@ def structure_contrasts(
             for k in router_peers
         }
         if router is not None
+        else {}
+    )
+    # Exploratory: whether adjustment beats reading the association as causal.
+    out["vs_association"] = (
+        {
+            k: {"diff": point[k] - point[association], "ci95": _ci(boot[k] - boot[association])}
+            for k in others
+            if k != association
+        }
+        if association is not None
         else {}
     )
     return out
@@ -710,7 +724,10 @@ def score(
         router = "GraphRouter" if "GraphRouter" in correct else None
         routed = est.route(s).estimator
         peers = [k for k in VALID.get(s, ()) if k in correct and k != routed]
-        contrasts[s] = structure_contrasts(correct, naive, id_aware, others, router, peers)
+        association = "NaiveOLS" if "NaiveOLS" in correct else None
+        contrasts[s] = structure_contrasts(
+            correct, naive, id_aware, others, router, peers, association
+        )
         contrasts[s]["router_route"] = routed
         if "do-SVAR" in correct:
             contrasts[s]["common_calls_vs_do_svar"] = {
@@ -1484,6 +1501,29 @@ def render_markdown(result: dict[str, Any]) -> str:
         cells = []
         for s in structures:
             d = result["contrasts"].get(s, {}).get("vs_best_naive", {}).get(k)
+            cells.append(
+                "n/a"
+                if d is None
+                else f"{d['diff']:+.3f} [{d['ci95'][0]:+.3f}, {d['ci95'][1]:+.3f}]"
+            )
+        lines.append(f"| {k} | {' | '.join(cells)} |")
+
+    lines += [
+        "",
+        "## Exploratory: every estimator against unadjusted association (NaiveOLS)",
+        "",
+        "Not pre-registered; added after the 1.1.0 results. Effect-sign accuracy minus "
+        "NaiveOLS's, paired bootstrap 95% interval (n/a while NaiveOLS is pending).",
+        "",
+        "| Estimator | " + " | ".join(f"`{s}`" for s in structures) + " |",
+        "|---|" + "---|" * len(structures),
+    ]
+    for k in others:
+        if k == "NaiveOLS":
+            continue
+        cells = []
+        for s in structures:
+            d = result["contrasts"].get(s, {}).get("vs_association", {}).get(k)
             cells.append(
                 "n/a"
                 if d is None
