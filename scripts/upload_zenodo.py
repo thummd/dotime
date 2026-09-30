@@ -5,7 +5,8 @@ Hugging Face is the discovery mirror; Zenodo is the archive of record whose DOI
 goes in the paper and `_SUITE_REGISTRY`. This uploads each suite directory from a
 ``build_release.py`` run as a Zenodo deposition (real author block — the D&B track
 is single-blind) and prints the reserved DOI; review and publish in the Zenodo UI,
-then backfill `zenodo_record_id`/`doi` into `dotime.benchmarks`.
+then backfill `zenodo_record_id`/`doi` into `dotime.benchmarks`. With ``--publish``
+the depositions are published at once (irreversible).
 
 Usage
 -----
@@ -58,7 +59,20 @@ def _metadata(manifest: dict) -> dict:
     }
 
 
-def upload_suite(suite_dir: Path, token: str, base: str) -> tuple[str, str]:
+def upload_suite(suite_dir: Path, token: str, base: str, publish: bool = False) -> dict:
+    """Create a Zenodo deposition for one built suite and optionally publish it.
+
+    Args:
+        suite_dir: A suite directory written by ``build_release.py``.
+        token: Zenodo personal access token.
+        base: API base URL (production or sandbox).
+        publish: Publish the deposition right away. Publishing is irreversible,
+            so the default only reserves the DOI for review in the UI.
+
+    Returns:
+        ``deposition`` and ``doi`` (reserved or final), plus ``record_id``,
+        ``concept_doi`` and ``published`` when the deposition was published.
+    """
     manifest = json.loads((suite_dir / "manifest.json").read_text())
     dep = _req(
         "POST",
@@ -91,11 +105,25 @@ def upload_suite(suite_dir: Path, token: str, base: str) -> tuple[str, str]:
     )
     reserved = _req("GET", f"{base}/deposit/depositions/{dep_id}", token)
     doi = reserved.get("metadata", {}).get("prereserve_doi", {}).get("doi", "(reserve in UI)")
-    print(
-        f"[zenodo] {manifest['name']}: deposition {dep_id}, reserved DOI {doi} "
-        f"(review + publish at {base.replace('/api', '')}/deposit/{dep_id})"
-    )
-    return str(dep_id), doi
+    result = {"deposition": str(dep_id), "doi": doi, "published": False}
+    if publish:
+        pub = _req("POST", f"{base}/deposit/depositions/{dep_id}/actions/publish", token)
+        result.update(
+            doi=pub.get("doi", doi),
+            record_id=str(pub.get("record_id") or pub.get("id") or dep_id),
+            concept_doi=pub.get("conceptdoi", ""),
+            published=True,
+        )
+        print(
+            f"[zenodo] {manifest['name']}: published record {result['record_id']}, "
+            f"DOI {result['doi']}, concept DOI {result['concept_doi']}"
+        )
+    else:
+        print(
+            f"[zenodo] {manifest['name']}: deposition {dep_id}, reserved DOI {doi} "
+            f"(review + publish at {base.replace('/api', '')}/deposit/{dep_id})"
+        )
+    return result
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -105,6 +133,12 @@ def main(argv: list[str] | None = None) -> int:
         "--sandbox", action="store_true", help="Use sandbox.zenodo.org for testing."
     )
     parser.add_argument("--token", default=None, help="Zenodo token (else $ZENODO_TOKEN).")
+    parser.add_argument(
+        "--publish",
+        action="store_true",
+        help="Publish each new deposition immediately (irreversible) instead of "
+        "leaving it for review in the UI.",
+    )
     args = parser.parse_args(argv)
 
     token = args.token or os.environ.get("ZENODO_TOKEN")
@@ -112,15 +146,25 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("set $ZENODO_TOKEN or pass --token")
     base = _base(args.sandbox)
 
+    from dotime.benchmarks import _SUITE_REGISTRY
+
     results = {}
     for suite_dir in sorted(args.run_dir.glob("dot-*")):
-        if (suite_dir / "manifest.json").exists():
-            dep_id, doi = upload_suite(suite_dir, token, base)
-            results[suite_dir.name] = {"deposition": dep_id, "doi": doi}
+        if not (suite_dir / "manifest.json").exists():
+            continue
+        name = json.loads((suite_dir / "manifest.json").read_text())["name"]
+        meta = _SUITE_REGISTRY.get(name)
+        # A suite that already has a Zenodo concept record gets a new *version*
+        # through zenodo_update.py; a second concept record would split its DOI.
+        if meta is not None and (
+            meta.zenodo_record_id not in ("", "TODO", "LOCAL") or meta.prior_versions
+        ):
+            print(f"[zenodo] skip {name}: it has a concept record, use zenodo_update.py")
+            continue
+        results[suite_dir.name] = upload_suite(suite_dir, token, base, publish=args.publish)
     (args.run_dir / "zenodo_depositions.json").write_text(json.dumps(results, indent=2))
-    print(
-        f"[zenodo] wrote {args.run_dir / 'zenodo_depositions.json'}; publish each deposition in the UI."
-    )
+    tail = "" if args.publish else "; publish each deposition in the UI"
+    print(f"[zenodo] wrote {args.run_dir / 'zenodo_depositions.json'}{tail}.")
     return 0
 
 

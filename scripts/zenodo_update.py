@@ -115,11 +115,16 @@ def main(argv: list[str] | None = None) -> int:
             continue
         name = json.loads((suite_dir / "manifest.json").read_text())["name"]
         meta = _SUITE_REGISTRY.get(name)
-        if meta is None or meta.zenodo_record_id in ("", "TODO", "LOCAL"):
+        record_id = "" if meta is None else meta.zenodo_record_id
+        if record_id in ("", "TODO", "LOCAL") and meta is not None and meta.prior_versions:
+            # The registry lists the version being released as LOCAL until it is
+            # minted, so the new version hangs off the newest published record.
+            record_id = meta.prior_versions[0][1]
+        if record_id in ("", "TODO", "LOCAL"):
             print(f"[zenodo] skip {name}: no existing record id in registry", file=sys.stderr)
             continue
         try:
-            out[name] = update_suite(suite_dir, meta.zenodo_record_id, token, not args.no_publish)
+            out[name] = update_suite(suite_dir, record_id, token, not args.no_publish)
         except urllib.error.HTTPError as e:
             print(f"[zenodo] {name}: HTTP {e.code} {e.read()[:200]!r}", file=sys.stderr)
             raise
