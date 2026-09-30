@@ -503,7 +503,11 @@ def _make_configured_generic_episode(spec: dict):
         x_obs, x_int, iv, metadata["latent"] = _drop_latent_columns(
             x_obs, x_int, iv, list(scm._topo)
         )
-    return episode_from_pair(x_obs, x_int, iv, scm_id=spec["idx"], metadata=metadata)
+    ep = episode_from_pair(x_obs, x_int, iv, scm_id=spec["idx"], metadata=metadata)
+    # The graph is read off the full SCM, keyed by the released column names, so
+    # path_lag still counts paths that run through dropped latent nodes.
+    columns = metadata["latent"]["columns"] if "latent" in metadata else None
+    return _with_graph(spec, ep, scm, columns=columns)
 
 
 def _drop_latent_columns(x_obs, x_int, intervention, names: list[str]) -> tuple:
