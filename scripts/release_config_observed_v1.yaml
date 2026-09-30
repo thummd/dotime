@@ -11,7 +11,7 @@
 # first latent_per_structure episodes of each structure are observed.
 #
 # Observation cells: measurement {none, snr10, snr3} x missingness {none,
-# mcar10, block, mnar} = 12 cells x 8 structures x 100 latent episodes = 9,600
+# mcar10, block, mnar} = 12 cells x 9 structures x 100 latent episodes = 10,800
 # rows, cell-major. Row metadata: obs_cell (e.g. "snr3+block"), observation
 # (the cell's model), latent_row (row in the base suite), y_obs_latent,
 # obs_missing_frac. Targets (y_true, x_int from the onset on) stay latent, and
@@ -37,6 +37,7 @@ suites:
     T: 200
     pair_mode: counterfactual
     stability_retries: 3
+    record_graph: true   # ground-truth lagged graph in metadata["graph"] (dotime.graph_meta)
     episodes_per_structure: 1350
     query_offsets:
       mediator: [1, 1]
@@ -49,6 +50,7 @@ suites:
       confounder_mediator:     2
       instrumental_variable:   3
       unobserved_confounder:   3
+      bow_graph:               3
     observation:
       latent_per_structure: 100
       measurement:

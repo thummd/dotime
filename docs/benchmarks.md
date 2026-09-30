@@ -82,13 +82,15 @@ variables.
 
 On the first 200 episodes (`results/reference/wide/`), none diverged, 12 to 40
 variables were simulated and 8 to 40 released, and 14.3% of all variables were
-hidden and dropped. The query sits at the last step, as in `dot-Generic-100k`,
-and the intervention window closes before it in 95.5% of those episodes, a
-median 36 steps earlier. The contractive hardened dynamics let the effect decay
-in that time, so the median |`y_true - y_obs`| at the query is 3.3e-6 and 13.5%
-of the queries have an effect of at least 0.1. Score the level targets, or read
-the effect from `x_int - x_obs` inside the window, where 88.5% of the episodes
-have an effect of at least 0.1 at the window's last step.
+hidden and dropped. The query sits at the intervention window's last step
+(`query_row: window_end`, recorded as `metadata["query_row"]`), not at the last
+step as in `dot-Generic-100k`. The window closes before the last step in 95.5%
+of these episodes, a median 36 steps earlier, and the contractive hardened
+dynamics let the effect decay in that time: queried at the last step, the
+median |`y_true - y_obs`| would be 3.3e-6 and only 13.5% of the queries would
+carry an effect of at least 0.1. At the window's last step the median effect is
+0.48 and 88.5% of the queries carry an effect of at least 0.1, so both the
+level and the effect can be scored.
 
 ## v1.0.0 field semantics and known issues (erratum)
 
@@ -539,7 +541,7 @@ latent value strictly with its threshold.
 episodes of each structure of the `dot-Identifiability-v1` v1.2 protocol (the
 same seeds and shared-noise pairs, with `mediator` queried at offset 1). The
 design crosses measurement {`none`, `snr10`, `snr3`} with missingness {`none`,
-`mcar10`, `block`, `mnar`}, which gives 12 cells × 8 structures × 100 = 9,600
+`mcar10`, `block`, `mnar`}, which gives 12 cells × 9 structures × 100 = 10,800
 rows in cell-major order. The `none+none` cell reproduces the latent episodes
 exactly, and `latent_row` points each row at its latent episode. Built from
 this config, the suite has 9.9% (`mcar10`), 6.5% (`block`) and 12.7% (`mnar`)

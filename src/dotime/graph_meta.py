@@ -351,23 +351,39 @@ class LaggedGraph:
         Every mechanism of a named structure holds a weight for every node, so
         all edges are effective.
 
+        A driven label ``"<base>+<kind>_<visibility>"`` (see :mod:`dotime.drivers`)
+        adds the root node ``D`` with instantaneous edges to ``A`` and ``Y``. It is
+        released at column ``N - 2``, where ``TSCMPrior`` places it, and joins
+        ``hidden`` when the label says ``hidden``.
+
         Args:
             name: A :class:`~dotime.tscm_sampler.TSCMStructure` value such as
                 ``"back_door"`` (the legacy label ``"rct_no_confounding"`` is
-                accepted).
+                accepted), or a driven label such as ``"back_door+trend_hidden"``.
 
         Returns:
             The graph with ``time == "discrete"``.
 
         Raises:
-            ValueError: If ``name`` is not a structure.
+            ValueError: If ``name`` is neither a structure nor a driven label.
         """
+        from dotime.drivers import DRIVER_NODE, driven_dag, parse_structure_label
         from dotime.tscm_sampler import TSCMSampler, TSCMStructure
 
-        sampler = TSCMSampler(TSCMStructure(name), max_lag=1)
+        base, driver = parse_structure_label(name)
+        sampler = TSCMSampler(TSCMStructure(base), max_lag=1)
         dag = sampler._build_dag()
+        hidden = list(sampler.get_hidden_vars())
+        driver_topo = None
+        if driver is not None:
+            dag = driven_dag(dag)
+            # D is prepended, so every base topological index moves by one.
+            hidden = [h + 1 for h in hidden]
+            driver_topo = dag.topo_order.index(DRIVER_NODE)
+            if not driver.observed:
+                hidden.append(driver_topo)
         topo = list(dag.topo_order)
-        col = _canonical_columns(topo, topo.index("A"), topo.index("Y"))
+        col = _canonical_columns(topo, topo.index("A"), topo.index("Y"), driver_topo)
         edges = [(col[u], col[v], 0) for u, v in dag.G_0.edges()]
         for k, g_k in enumerate(dag.G_lags):
             edges += [
@@ -376,7 +392,7 @@ class LaggedGraph:
                 for i in range(len(topo))
                 if g_k[j, i] > 0
             ]
-        return cls._from_canonical(col, edges, dag.K, sampler.get_hidden_vars(), topo, "discrete")
+        return cls._from_canonical(col, edges, dag.K, hidden, topo, "discrete")
 
     @classmethod
     def from_continuous_structure(cls, name: str) -> LaggedGraph:
@@ -448,24 +464,30 @@ class LaggedGraph:
         )
 
 
-def _canonical_columns(topo: list[str], a_topo: int, y_topo: int) -> dict[str, int]:
+def _canonical_columns(
+    topo: list[str], a_topo: int, y_topo: int, driver_topo: int | None = None
+) -> dict[str, int]:
     """Released column of each node of a named structure.
 
     Mirrors ``TSCMPrior.canonical_perm`` and the continuous prior's
     ``canonical_perm``: treatment first, outcome last, the rest in topological
-    order. Recomputed here rather than read from a prior because building a
-    prior seeds a generator, and graph extraction must touch no RNG.
+    order, with a driver node just before the outcome. Recomputed here rather
+    than read from a prior because building a prior seeds a generator, and graph
+    extraction must touch no RNG.
 
     Args:
         topo: Node names in topological order.
         a_topo: Topological index of the treatment.
         y_topo: Topological index of the outcome.
+        driver_topo: Topological index of the driver ``D``, or ``None``.
 
     Returns:
         Map from node name to released column index.
     """
-    middle = [i for i in range(len(topo)) if i not in (a_topo, y_topo)]
-    return {topo[t]: c for c, t in enumerate([a_topo, *middle, y_topo])}
+    skip = {a_topo, y_topo, driver_topo}
+    middle = [i for i in range(len(topo)) if i not in skip]
+    tail = [] if driver_topo is None else [driver_topo]
+    return {topo[t]: c for c, t in enumerate([a_topo, *middle, *tail, y_topo])}
 
 
 def _system_edges(

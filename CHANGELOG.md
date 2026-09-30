@@ -90,7 +90,7 @@ All notable changes to `dotime` are documented here. The format follows
   `scripts/release_config_observed_v1.yaml` prepares `dot-Observed-v1` 1.0.0
   (not built): measurement {none, snr10, snr3} × missingness {none, mcar10,
   block, mnar} on 100 latent episodes of each `dot-Identifiability-v1` v1.2
-  structure, 9,600 rows.
+  structure, 10,800 rows.
 - `per_variable_normalize(..., obs_mask=...)` computes the statistics over
   observed cells only and zeroes missing ones, the hook for mask-aware models.
   The default `None` returns the same output as before.
@@ -162,11 +162,16 @@ All notable changes to `dotime` are documented here. The format follows
   - A suite may set its own `seed`, and `build_manifest.json` records each
     suite's seed.
 
-  On the first 200 episodes none diverged and 14.3% of the variables were
-  hidden and dropped. The query sits at the last step, after the intervention
-  window in 95.5% of them, so the median counterfactual effect at the query is
-  3.3e-6 (see `results/reference/wide/`). A full build projects to about 0.7 h on
-  15 workers.
+  - **`query_row: window_end`** queries the intervention window's last step
+    instead of the last step of the trajectory (`episode_from_pair(query_row=)`,
+    recorded as `metadata["query_row"]`). In these hardened graphs the window
+    closes a median 36 steps before the end and the effect decays, so at the
+    last step only 13.5% of the queries carry an effect of at least 0.1.
+
+  On the first 200 episodes none diverged, 14.3% of the variables were hidden
+  and dropped, and the median counterfactual effect at the query is 0.48, with
+  88.5% of the queries at or above 0.1 (see `results/reference/wide/`). A full
+  build projects to about 0.4 h on 15 workers.
 - `dot-Identifiability-v1` 1.1.0: regenerated with shared-noise counterfactual
   pairing, aligned `x_obs`, hidden variables zeroed, correct `y_causal_effect`,
   resampled divergences (0 zeroed episodes) and a `diverged` flag. Same base seeds,

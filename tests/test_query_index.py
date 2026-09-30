@@ -114,6 +114,10 @@ def test_registry_declares_every_suites_encoding():
         "dot-RegimeSwitch-v1": "step",
         "dot-Continuous-v1": "index/(T-1)",
         "dot-Generic-100k": "step",
+        "dot-SeasonalTrend-v1": "index/T",
+        "dot-Wide-v1": "step",
+        "dot-Observed-v1": "index/T",
+        "dot-ContinuousIrregular-v1": "time/span",
     }
     # Pinning an earlier release keeps the declaration.
     pinned = _SUITE_REGISTRY["dot-Identifiability-v1"].for_version("1.0.0")

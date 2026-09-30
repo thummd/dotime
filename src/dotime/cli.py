@@ -26,6 +26,10 @@ _AVAILABLE_SUITES = (
     "dot-RegimeSwitch-v1",
     "dot-Continuous-v1",
     "dot-Generic-100k",
+    "dot-SeasonalTrend-v1",
+    "dot-Wide-v1",
+    "dot-Observed-v1",
+    "dot-ContinuousIrregular-v1",
 )
 
 

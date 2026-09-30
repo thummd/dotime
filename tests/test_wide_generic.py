@@ -412,3 +412,35 @@ def test_build_release_honours_explicit_and_positional_suite_seeds(tmp_path):
     for key in ("prior_config", "chain_prob", "regime_switching_prob", "latent", "tier_n_edges"):
         assert manifest[key] == _SMALL_CONFIGURED[key]
     assert manifest["pair_mode"] == "counterfactual"
+
+
+def test_query_row_window_end_queries_the_windows_last_step():
+    """``query_row: window_end`` queries the intervention window's last step."""
+    from dotime._build import episode_specs, make_episode
+
+    cfg = yaml.safe_load(_WIDE_CONFIG.read_text())["suites"]["dot-Wide-v1"]
+    assert cfg["query_row"] == "window_end"
+    small = {**cfg, "T": 60, "n_episodes": 3}
+    for spec in episode_specs(small, 20262002, 1.0):
+        assert spec["query_row"] == "window_end"
+        ep = make_episode(spec)
+        end = max(ep.intervention.times)
+        assert ep.metadata["query_time_idx"] == [end]
+        assert float(ep.query_time[0]) == float(end)
+        assert ep.metadata["query_row"] == "window_end"
+        q = int(ep.query_target[0])
+        assert q not in ep.intervention.targets
+        assert torch.equal(ep.y_true, ep.x_int[end, q].reshape(1))
+        # Without the key the query returns to the last step.
+        plain = make_episode({k: v for k, v in spec.items() if k != "query_row"})
+        assert plain.metadata["query_time_idx"] == [small["T"] - 1]
+        assert "query_row" not in plain.metadata
+
+
+def test_query_row_rejects_unknown_rules():
+    """Only the window_end rule exists."""
+    from dotime._build import episode_specs
+
+    cfg = yaml.safe_load(_WIDE_CONFIG.read_text())["suites"]["dot-Wide-v1"]
+    with pytest.raises(ValueError, match="query_row"):
+        episode_specs({**cfg, "T": 40, "n_episodes": 1, "query_row": "last"}, 1, 1.0)

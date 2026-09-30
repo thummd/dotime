@@ -191,6 +191,9 @@ class SuiteMetadata:
     # ((version, zenodo_record_id), ...). The HF mirror serves them from the
     # matching ``v<version>`` tag; Zenodo needs the per-version record id.
     prior_versions: tuple[tuple[str, str], ...] = ()
+    # Episode counts of earlier versions that differ from the registered one:
+    # ((version, n_episodes), ...). A version absent here has ``n_episodes``.
+    prior_n_episodes: tuple[tuple[str, int], ...] = ()
     # How ``Episode.query_time`` maps to a row in this suite's frozen files (one
     # of QUERY_TIME_ENCODINGS). The generators disagree, and a fraction does not
     # say which one wrote it, so the loader resolves the row from this
@@ -210,7 +213,8 @@ class SuiteMetadata:
         -------
         SuiteMetadata
             ``self`` for the registered version, otherwise a copy whose
-            ``version`` and ``zenodo_record_id`` point at the pinned release.
+            ``version``, ``zenodo_record_id`` and, when it differs,
+            ``n_episodes`` describe the pinned release.
 
         Raises
         ------
@@ -219,9 +223,15 @@ class SuiteMetadata:
         """
         if version in ("latest", self.version):
             return self
+        counts = dict(self.prior_n_episodes)
         for prior, record_id in self.prior_versions:
             if prior == version:
-                return replace(self, version=prior, zenodo_record_id=record_id)
+                return replace(
+                    self,
+                    version=prior,
+                    zenodo_record_id=record_id,
+                    n_episodes=counts.get(prior, self.n_episodes),
+                )
         known = [self.version, *[v for v, _ in self.prior_versions]]
         raise ValueError(f"suite {self.name!r} has versions {known}, requested {version!r}")
 
@@ -235,19 +245,22 @@ class SuiteMetadata:
 _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
     "dot-Identifiability-v1": SuiteMetadata(
         name="dot-Identifiability-v1",
-        version="1.1.0",
-        hf_repo_id="thummd/dot-Identifiability-v1",
-        zenodo_record_id="22673322",  # 1.1.0 version record (concept DOI below is stable)
+        version="1.2.0",
+        hf_repo_id="",  # set with the 1.2.0 record id when the version is minted
+        zenodo_record_id="LOCAL",  # 1.2.0 is built locally until it is minted
         doi="10.5281/zenodo.20846063",  # concept DOI (resolves to latest version)
         description=(
             "Named identification structures with exact shared-noise counterfactual "
-            "targets (1.1.0). Version 1.0.0 paired independent noise draws."
+            "targets. 1.2.0 adds the non-identified bow_graph and queries the "
+            "lagged mediator one step after onset. Version 1.0.0 paired "
+            "independent noise draws."
         ),
-        n_episodes=10_800,
-        # 1.0.0 stays loadable via load_benchmark(..., version="1.0.0") so the
-        # published numbers remain reproducible from the frozen artifact.
-        prior_versions=(("1.0.0", "20919553"),),
-        query_time_encoding="index/T",  # both versions: ExtendedDoTime stores index / T
+        n_episodes=12_150,
+        # Earlier versions stay loadable via load_benchmark(..., version=...) so
+        # the published numbers remain reproducible from the frozen artifacts.
+        prior_versions=(("1.1.0", "22673322"), ("1.0.0", "20919553")),
+        prior_n_episodes=(("1.1.0", 10_800), ("1.0.0", 10_800)),
+        query_time_encoding="index/T",  # all versions: ExtendedDoTime stores index / T
         structures=(
             "back_door",
             "observed_confounder",
@@ -257,6 +270,7 @@ _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
             "instrumental_variable",
             "bi_variate",
             "unobserved_confounder",
+            "bow_graph",
         ),
     ),
     "dot-RegimeSwitch-v1": SuiteMetadata(
@@ -291,6 +305,82 @@ _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
         description="100k trajectories from the full diverse prior (training scale).",
         n_episodes=100_000,
         query_time_encoding="step",
+    ),
+    # The four suites below are built from scripts/release_config_*.yaml and
+    # read from the local cache until they are minted, when their record ids
+    # and Hugging Face repos replace the LOCAL sentinel.
+    "dot-SeasonalTrend-v1": SuiteMetadata(
+        name="dot-SeasonalTrend-v1",
+        version="1.0.0",
+        zenodo_record_id="LOCAL",
+        doi="",
+        description=(
+            "Named structures under observed or hidden seasonal and trend drivers "
+            "that confound treatment and outcome, with plain controls."
+        ),
+        n_episodes=10_000,
+        query_time_encoding="index/T",
+        structures=(
+            "bi_variate",
+            "back_door",
+            "bi_variate+seasonal_observed",
+            "bi_variate+trend_observed",
+            "back_door+seasonal_observed",
+            "back_door+trend_observed",
+            "bi_variate+seasonal_hidden",
+            "bi_variate+trend_hidden",
+            "back_door+seasonal_hidden",
+            "back_door+trend_hidden",
+        ),
+    ),
+    "dot-Wide-v1": SuiteMetadata(
+        name="dot-Wide-v1",
+        version="1.0.0",
+        zenodo_record_id="LOCAL",
+        doi="",
+        description=(
+            "Wide generic graphs: 12 to 40 variables, up to 8 lags, hardened dynamics, "
+            "shared-noise counterfactual arms, latent variables removed, queried at the "
+            "intervention window's last step."
+        ),
+        n_episodes=10_000,
+        query_time_encoding="step",
+    ),
+    "dot-Observed-v1": SuiteMetadata(
+        name="dot-Observed-v1",
+        version="1.0.0",
+        zenodo_record_id="LOCAL",
+        doi="",
+        description=(
+            "The dot-Identifiability-v1 1.2.0 episodes seen through measurement noise "
+            "and missingness cells; targets stay latent."
+        ),
+        n_episodes=10_800,
+        query_time_encoding="index/T",
+        structures=(
+            "bi_variate",
+            "back_door",
+            "observed_confounder",
+            "mediator",
+            "front_door",
+            "confounder_mediator",
+            "instrumental_variable",
+            "unobserved_confounder",
+            "bow_graph",
+        ),
+    ),
+    "dot-ContinuousIrregular-v1": SuiteMetadata(
+        name="dot-ContinuousIrregular-v1",
+        version="1.0.0",
+        zenodo_record_id="LOCAL",
+        doi="",
+        description=(
+            "Continuous-time intervention windows on regular, jittered and Poisson "
+            "observation grids; the regular third equals dot-Continuous-v1 1.0.0."
+        ),
+        n_episodes=9_999,
+        query_time_encoding="time/span",
+        structures=("back_door", "front_door", "instrumental_variable"),
     ),
 }
 
@@ -762,17 +852,39 @@ def episode_from_pair(
     structure: str | None = None,
     scm_id: int | None = None,
     metadata: dict | None = None,
+    query_row: int | None = None,
 ) -> Episode:
     """Build an :class:`Episode` from a paired (obs, int) trajectory.
 
-    The query targets the last step of the most intervention-affected variable
-    that is not itself a treatment target — its interventional value is the exact
-    counterfactual ground truth (also stored as ``y_oracle`` for the Oracle
-    baseline). ``query_time`` is that step, also recorded as
+    The query targets the most intervention-affected variable that is not itself
+    a treatment target, at the last step by default — its interventional value
+    is the exact counterfactual ground truth (also stored as ``y_oracle`` for the
+    Oracle baseline). ``query_time`` is that step, also recorded as
     ``metadata["query_time_idx"]``. Shared by the local fallback suite and
     ``dotime-generate``.
+
+    Args:
+        x_obs: Observational arm, shape ``(T, N)``.
+        x_int: Interventional arm, shape ``(T, N)``.
+        intervention: The intervention applied to ``x_int``.
+        structure: Identification structure label, if any.
+        scm_id: Stable id of the episode within its suite.
+        metadata: Extra metadata, merged under the recorded keys.
+        query_row: Row to query instead of the last one. A suite whose
+            intervention window closes long before the last step queries the
+            window's last step, where the effect has not yet decayed.
+
+    Returns:
+        The episode.
+
+    Raises:
+        ValueError: If ``query_row`` is outside ``[0, T)``.
     """
-    t_query = x_int.shape[0] - 1
+    t_query = x_int.shape[0] - 1 if query_row is None else int(query_row)
+    if not 0 <= t_query < x_int.shape[0]:
+        raise ValueError(
+            f"query_row {query_row!r} is outside the trajectory of {x_int.shape[0]} steps"
+        )
     effect = (x_int[t_query] - x_obs[t_query]).abs().clone()
     for tgt in intervention.targets:
         if 0 <= tgt < effect.numel():

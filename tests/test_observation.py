@@ -696,7 +696,9 @@ def test_frozen_configs_keep_their_specs(config, scale):
     for offset, cfg in enumerate(rc["suites"].values()):
         seed = int(rc["seed"]) + 1000 * (offset + 1)
         specs = episode_specs(cfg, seed, scale)
-        assert _forward_opt_in(cfg, specs) is specs
+        # `pair_mode` is an opt-in key that the identifiability specs already carry,
+        # so forwarding it yields equal copies rather than the same list object.
+        assert _forward_opt_in(cfg, specs) == specs
         assert _expand_observation_cells(cfg, specs) is specs
         assert not any(key in spec for spec in specs for key in _ADDED_KEYS)
         assert [s["idx"] for s in specs] == list(range(len(specs)))
@@ -724,10 +726,9 @@ def test_observed_suite_specs_keep_the_base_seeds():
     assert list(rc["suites"]) == ["dot-Observed-v1"]
     assert cfg["observation"] == {"latent_per_structure": 100, **_DESIGN}
     assert cfg["seed"] == int(rc["seed"]) + 1000 == 20261719
-    v11 = yaml.safe_load((_SCRIPTS / "release_config_v1_1.yaml").read_text())
     v12 = yaml.safe_load((_SCRIPTS / "release_config_v1_2.yaml").read_text())
     assert list(cfg["structures"].items()) == list(
-        v11["suites"]["dot-Identifiability-v1"]["structures"].items()
+        v12["suites"]["dot-Identifiability-v1"]["structures"].items()
     )
     base = {k: v for k, v in cfg.items() if k not in ("version", "seed", "observation")}
     assert base == {
@@ -736,13 +737,13 @@ def test_observed_suite_specs_keep_the_base_seeds():
 
     specs = episode_specs(cfg, cfg["seed"], 1.0)
     base_specs = episode_specs(base, cfg["seed"], 1.0)
-    assert len(specs) == 9_600
-    assert [s["idx"] for s in specs] == list(range(9_600))
+    assert len(specs) == 10_800
+    assert [s["idx"] for s in specs] == list(range(10_800))
     cells = [c.name for c in cells_from_config(cfg["observation"])]
-    assert [specs[800 * i]["obs_cell"] for i in range(12)] == cells
-    latent_rows = [b * 1350 + k for b in range(8) for k in range(100)]
+    assert [specs[900 * i]["obs_cell"] for i in range(12)] == cells
+    latent_rows = [b * 1350 + k for b in range(9) for k in range(100)]
     for i, name in enumerate(cells):
-        block = specs[800 * i : 800 * (i + 1)]
+        block = specs[900 * i : 900 * (i + 1)]
         assert {s["obs_cell"] for s in block} == {name}
         assert [s["latent_row"] for s in block] == latent_rows
         assert all(s["observation"]["name"] == name for s in block)
@@ -761,8 +762,8 @@ def test_none_cell_equals_the_base_suite_rows_and_other_cells_observe_them():
     base = {k: v for k, v in cfg.items() if k != "observation"}
     specs = episode_specs(cfg, cfg["seed"], 1.0)
     base_specs = episode_specs(base, cfg["seed"], 1.0)
-    assert len(specs) == 12 * 8
-    for spec in specs[:8]:
+    assert len(specs) == 12 * 9
+    for spec in specs[:9]:
         assert spec["obs_cell"] == "none+none"
         observed, latent = make_episode(spec), make_episode(base_specs[spec["latent_row"]])
         assert _same_episode(observed, latent, ignore=_ADDED_KEYS)

@@ -33,6 +33,7 @@ suites:
     T: 200
     pair_mode: counterfactual
     stability_retries: 3
+    record_graph: true   # ground-truth lagged graph in metadata["graph"] (dotime.graph_meta)
     episodes_per_structure: 1350
     query_offsets:
       mediator: [1, 1]

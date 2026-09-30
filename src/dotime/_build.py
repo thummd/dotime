@@ -26,6 +26,7 @@ _OPT_IN_SPEC_KEYS = (
     "pair_mode",
     "latent",
     "tier_n_edges",
+    "query_row",
     "schedules",
     "record_obs_times",
 )
@@ -498,7 +499,11 @@ _GENERIC_PRIOR_KEYS = (
     "pair_mode",
     "latent",
     "tier_n_edges",
+    "query_row",
 )
+# Query-row rules of a configured generic suite. The default queries the last
+# step, as the released suites do.
+_QUERY_ROWS = ("window_end",)
 # Options DoTime reads from its config on top of the DEFAULT_CONFIG keys.
 _EXTRA_PRIOR_CONFIG_KEYS = ("N_min", "hardening", "regime_canonical_weights")
 
@@ -522,8 +527,9 @@ def _generic_spec_kind(cfg: dict) -> str:
             does not read, if ``chain_prob`` or ``regime_switching_prob`` is not
             a probability, if ``pair_mode`` or ``latent`` has an unknown value,
             if ``pair_mode`` is ``"counterfactual"`` without
-            ``regime_switching_prob: 0``, or if ``tier_n_edges`` is not a
-            strictly ascending list of ints.
+            ``regime_switching_prob: 0``, if ``tier_n_edges`` is not a
+            strictly ascending list of ints, or if ``query_row`` is not
+            ``"window_end"``.
     """
     from itertools import pairwise
 
@@ -554,6 +560,8 @@ def _generic_spec_kind(cfg: dict) -> str:
         raise ValueError("pair_mode: counterfactual needs regime_switching_prob: 0")
     if cfg.get("latent", "drop") != "drop":
         raise ValueError(f"latent must be 'drop', got {cfg['latent']!r}")
+    if cfg.get("query_row", "window_end") not in _QUERY_ROWS:
+        raise ValueError(f"query_row must be one of {_QUERY_ROWS}, got {cfg['query_row']!r}")
     edges = cfg.get("tier_n_edges", [])
     if (
         not isinstance(edges, (list, tuple))
@@ -619,7 +627,16 @@ def _make_configured_generic_episode(spec: dict):
         x_obs, x_int, iv, metadata["latent"] = _drop_latent_columns(
             x_obs, x_int, iv, list(scm._topo)
         )
-    ep = episode_from_pair(x_obs, x_int, iv, scm_id=spec["idx"], metadata=metadata)
+    query_row = None
+    if spec.get("query_row") == "window_end":
+        # The intervention window closes before the last step in most generic
+        # episodes, and the hardened dynamics let the effect decay by then, so
+        # the query moves to the window's last step, where the effect is live.
+        query_row = max(int(t) for t in iv.times)
+        metadata["query_row"] = "window_end"
+    ep = episode_from_pair(
+        x_obs, x_int, iv, scm_id=spec["idx"], metadata=metadata, query_row=query_row
+    )
     # The graph is read off the full SCM, keyed by the released column names, so
     # path_lag still counts paths that run through dropped latent nodes.
     columns = metadata["latent"]["columns"] if "latent" in metadata else None

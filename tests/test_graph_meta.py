@@ -542,3 +542,45 @@ def test_published_sidecar_matches_a_fresh_regeneration(suite):
             min(ep.intervention.times),
             max(ep.intervention.times),
         )
+
+
+@pytest.mark.parametrize(
+    "label",
+    [
+        "bi_variate+seasonal_observed",
+        "bi_variate+trend_hidden",
+        "back_door+seasonal_observed",
+        "back_door+trend_hidden",
+    ],
+)
+def test_from_structure_handles_driven_labels(label):
+    """A driven label adds the root ``D`` at column ``N - 2`` and matches the built episode."""
+    base = LaggedGraph.from_structure(label.split("+")[0])
+    graph = LaggedGraph.from_structure(label)
+    assert graph.n == base.n + 1
+    d = graph.columns.index("D")
+    assert d == graph.n - 2
+    assert graph.columns[0] == "A" and graph.columns[-1] == "Y"
+    assert (d, 0, 0) in graph.edges and (d, graph.n - 1, 0) in graph.edges
+    assert all(lag == 0 for src, dst, lag in graph.edges if d in (src, dst))
+    assert (d in graph.hidden) == label.endswith("_hidden")
+    # The base edges survive with their columns shifted around the inserted D.
+    assert len(graph.edges) == len(base.edges) + 2
+    spec = {
+        "generator": "identifiability",
+        "kind": "identifiability",
+        "structure": label,
+        "T": 60,
+        "seed": 3,
+        "idx": 0,
+        "tier": 2,
+        "pair_mode": "counterfactual",
+        "record_graph": True,
+    }
+    ep = make_episode(spec)
+    recorded = LaggedGraph.from_dict(ep.metadata["graph"])
+    assert recorded.columns == graph.columns
+    assert recorded.hidden == graph.hidden
+    assert ep.metadata["driver"]["column"] == d
+    assert ep.x_obs.shape[1] == graph.n
+

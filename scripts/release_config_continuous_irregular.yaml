@@ -35,6 +35,7 @@ suites:
     structures: [back_door, front_door, instrumental_variable]
     n_episodes: 10000
     record_obs_times: true
+    record_graph: true   # ground-truth lagged graph in metadata["graph"] (dotime.graph_meta)
     schedules:
       - {name: regular, kind: regular}
       - {name: jittered, kind: jittered, dt: 1.0, jitter: 0.5, num_substeps: 2}

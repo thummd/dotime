@@ -20,6 +20,12 @@
 #                                 and the latents are truly unobserved
 #   tier_n_edges: [20, 30]     -> tier 1 for 12-20 variables, 2 for 21-30 and 3
 #                                 for 31-40, counted before latents are dropped
+#   query_row: window_end      -> the query sits at the intervention window's
+#                                 last step, not at T-1. The hardened dynamics
+#                                 are contractive and the window closes a median
+#                                 36 steps before T-1, so at T-1 only 13.5% of
+#                                 the counterfactual effects reach 0.1 in size,
+#                                 against 88.5% at the window's end
 #
 # The suite sets its own seed (top-level seed + 1000), so it keeps that seed
 # whether it is built alone or next to other suites.
@@ -48,3 +54,5 @@ suites:
         bounded_square: true
     latent: drop
     tier_n_edges: [20, 30]
+    query_row: window_end
+    record_graph: true   # ground-truth lagged graph in metadata["graph"] (dotime.graph_meta)

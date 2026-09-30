@@ -58,6 +58,10 @@ from dotime.utils import DEFAULT_CONFIG
 #   baselines      -> classical & Bayesian baselines(needs: baselines extra)
 #   evaluation     -> metrics + evaluation harness
 #   visualization  -> plotting helpers              (needs: matplotlib, in core)
+#   qa             -> per-arm target statistics (build, evaluation and loader checks)
+#   graph_meta     -> ground-truth lagged graphs of generated episodes
+#   observation    -> measurement error and missingness after simulation
+#   drivers        -> seasonal and trend confounding drivers for named structures
 # --------------------------------------------------------------------------- #
 
 _LAZY_SUBMODULES = frozenset(
@@ -70,6 +74,10 @@ _LAZY_SUBMODULES = frozenset(
         "baselines",
         "evaluation",
         "visualization",
+        "qa",
+        "graph_meta",
+        "observation",
+        "drivers",
     }
 )
 
@@ -95,9 +103,13 @@ if TYPE_CHECKING:
         benchmarks,
         continuous,
         data,
+        drivers,
         evaluation,
         extended,
+        graph_meta,
         models,
+        observation,
+        qa,
         visualization,
     )
 
@@ -126,4 +138,8 @@ __all__ = [
     "baselines",
     "evaluation",
     "visualization",
+    "qa",
+    "graph_meta",
+    "observation",
+    "drivers",
 ]

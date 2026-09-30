@@ -86,6 +86,10 @@ def _assert_same_spec_but_mediator_offset(old: dict, new: dict) -> None:
     if old["structure"] == "mediator":
         assert (old["query_offset_range"], new["query_offset_range"]) == ((0, 0), (1, 1))
         old, new = {**old, "query_offset_range": None}, {**new, "query_offset_range": None}
+    # 1.2.0 records the ground-truth graph in the metadata. The flag touches no
+    # tensor or random stream (tests/test_graph_meta.py pins that), so it is
+    # the one extra key a 1.2.0 spec may carry.
+    assert new.pop("record_graph", None) is True
     assert old == new
 
 
