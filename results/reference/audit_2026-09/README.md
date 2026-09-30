@@ -23,6 +23,8 @@ that re-score released data first reproduce the published numbers, as noted per 
 | `half_diverged_summary.json` | Digest of the `half_diverged_*` files above | |
 | `frozen_regeneration.json` | Every row of `dot-Continuous-v1` 1.0.0 (9,999) and `dot-Identifiability-v1` 1.1.0 (10,800) regenerated with the current package and compared column by column with the md5-verified release files. All 11 data columns match on every row. `metadata_json` differs on every row because the releases predate keys such as `query_time_idx`, and every released key is present with an equal value | repository `scripts/fingerprint_frozen_suites.py --full` |
 | `frozen_target_qa.json` | `dotime.qa.target_qa` with the default thresholds and `dir_target="effect"` on all five cached frozen suite versions, pooled and per structure (regime density for RegimeSwitch). Identifiability 1.0.0 reads its observational level from the realignment sidecar after checking every row against its episode. All five pass. The tightest effect cells are Identifiability 1.1.0 `confounder_mediator` and `front_door` (0.66 and 0.67 nonzero, saturating mechanisms) and Continuous `back_door` and `instrumental_variable` (0.51, queries of variables A does not reach). The script writes nothing if a version fails | `scripts/frozen_target_qa.py` |
+| `graph_sidecar_verification.json` | Regeneration of every `dot-Generic-100k` (100,000) and `dot-RegimeSwitch-v1` (9,999) 1.0.0 episode with `record_graph`, compared bit for bit with the md5-verified release on `x_obs`, `x_int`, `y_true`, `query_target`, `query_time`, `intervention_json` and `n_vars`. Records the code commit, per-shard timings and md5s, and counts by SCM family (mechanisms that read no parent, reachable queries, min lag, sampled and effective K). It verifies the graph sidecars `../dot-Generic-100k-v1.0.0_graph.jsonl.gz` and `../dot-RegimeSwitch-v1.0.0_graph.jsonl.gz`, one JSON line per episode, read with `dotime.graph_meta.load_graph_sidecar` | `scripts/graph_sidecar.py` |
+| `generic_lag_breakdown.json` | Published `dot-Generic-100k` CPU rows split by SCM family, sampled K, min lag from treatment to query (0, 1, 2, 3, >=4, unreachable), family by min lag, and steps from the end of the intervention window to the query. Over all episodes and without either-arm-zeroed ones: pooled RMSE, and direction accuracy scored on the level and on the effect, each with n_valid and a binomial SE. Gate: the unfiltered rows reproduce `../generic.json` exactly, and the per-arm target statistics pass the `target_qa` checks | `scripts/lag_breakdown.py` |
 
 To reproduce, run from the repository root with the dev environment. The scripts read
 the cached v1.0.0 suites (`~/.cache/dotime/`) and, for 1.1.0, a local build in
@@ -35,6 +37,8 @@ python results/reference/audit_2026-09/scripts/scaling_lag.py --n 1000 --workers
 python results/reference/audit_2026-09/scripts/transfer_analysis.py --extra-dir <training-runs>/results/phase14c_multiseed
 python scripts/fingerprint_frozen_suites.py --full
 python results/reference/audit_2026-09/scripts/frozen_target_qa.py
+python results/reference/audit_2026-09/scripts/graph_sidecar.py --workers 4 --work-dir <scratch>/graph_work
+python results/reference/audit_2026-09/scripts/lag_breakdown.py --workers 4
 ```
 
 ## Findings fixed since
