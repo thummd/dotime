@@ -97,6 +97,24 @@ All notable changes to `dotime` are documented here. The format follows
   Generic-100k and 4.6% of Identifiability, either arm in 30.1% and 4.7%).
 - Datasheet erratum section in `docs/benchmarks.md` documenting v1.0.0 field
   semantics, column alignment, and the realignment sidecar.
+- Frozen-suite fingerprint test. `tests/test_frozen_fingerprints.py` regenerates
+  131 stratified rows of the five released suite versions (`dot-Identifiability-v1`
+  1.0.0 and 1.1.0, `dot-RegimeSwitch-v1`, `dot-Continuous-v1` and
+  `dot-Generic-100k` 1.0.0) pinned in `tests/data/frozen_fingerprints.json`. They
+  cover every structure, regime density, SCM class and intervention kind, the
+  zeroed rows of the audit scan and retried 1.1.0 seeds. The test checks that the
+  specs rebuilt from the release configs equal the pinned ones and that rows keep
+  the 12 v1 columns. A portable summary of each row (shapes, intervention, query,
+  RNG-only metadata) must match on every platform. SHA-256 hashes of all 12
+  columns must match in the recorded environment, and `DOTIME_FINGERPRINT_EXACT=1`
+  or `0` overrides that. `scripts/fingerprint_frozen_suites.py` records them from
+  the md5-verified release files (`dotime._fingerprint`) and stops on any
+  difference from a release that is not documented: the 1.0.0 `x_obs` erratum
+  (verified by realignment), the old `rct_no_confounding` label and metadata keys
+  added since the releases. Its `--full` mode regenerated all 9,999
+  `dot-Continuous-v1` 1.0.0 rows and all 10,800 `dot-Identifiability-v1` 1.1.0
+  rows. Every data column matches the release bit for bit
+  (`results/reference/audit_2026-09/frozen_regeneration.json`).
 
 ### Changed
 - Documented that 34.0% of `dot-Continuous-v1` queries are self-queries (query on

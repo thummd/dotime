@@ -21,6 +21,7 @@ that re-score released data first reproduce the published numbers, as noted per 
 | `half_diverged_generic_metric_impact.json` | Published `dot-Generic-100k` CPU rows re-scored without zeroed episodes. Gate: the unfiltered rows reproduce `../generic.json` | `scripts/generic_metric_impact.py` |
 | `half_diverged_generic_target_qa.json` | Per-arm target statistics of `dot-Generic-100k` by zeroed-arm category | `scripts/target_qa.py` |
 | `half_diverged_summary.json` | Digest of the `half_diverged_*` files above | |
+| `frozen_regeneration.json` | Every row of `dot-Continuous-v1` 1.0.0 (9,999) and `dot-Identifiability-v1` 1.1.0 (10,800) regenerated with the current package and compared column by column with the md5-verified release files. All 11 data columns match on every row. `metadata_json` differs on every row because the releases predate keys such as `query_time_idx`, and every released key is present with an equal value | repository `scripts/fingerprint_frozen_suites.py --full` |
 
 To reproduce, run from the repository root with the dev environment. The scripts read
 the cached v1.0.0 suites (`~/.cache/dotime/`) and, for 1.1.0, a local build in
@@ -31,6 +32,7 @@ python results/reference/audit_2026-09/scripts/ident_analysis.py
 python results/reference/audit_2026-09/scripts/continuous_validity.py
 python results/reference/audit_2026-09/scripts/scaling_lag.py --n 1000 --workers 12
 python results/reference/audit_2026-09/scripts/transfer_analysis.py --extra-dir <training-runs>/results/phase14c_multiseed
+python scripts/fingerprint_frozen_suites.py --full
 ```
 
 ## Findings fixed since

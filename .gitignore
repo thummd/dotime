@@ -25,6 +25,8 @@ docs/_build/
 
 # Generated / heavy artifacts (shipped via Zenodo, not git)
 data/
+# Small committed test fixtures (frozen-suite fingerprints) are not heavy data.
+!tests/data/
 output/
 *.pt
 *.parquet
