@@ -483,13 +483,26 @@ def cell_metrics(
         Effect-sign accuracy with ``n_valid`` and binomial SE, level RMSE,
         level-sign accuracy, the rate of predicted effects of at least the
         threshold (the false-effect rate on null structures), and the fraction
-        of episodes whose prediction ignores the do-value.
+        of episodes whose prediction ignores the do-value. The exploratory
+        ``contrast_*`` keys score the sign of the estimator's own effect,
+        ``pred - pred_ref``, on the same valid episodes: over all of them (an
+        abstention, a zero contrast, counts as wrong) and over its calls.
     """
     eff = direction_accuracy(torch.from_numpy(pred - y_obs), torch.from_numpy(y_true - y_obs))
     lvl = direction_accuracy(torch.from_numpy(pred), torch.from_numpy(y_true))
     calls = np.abs(pred - pred_ref) >= FALSE_EFFECT_THRESHOLD
     e_acc, l_acc = _finite(eff["accuracy"]), _finite(lvl["accuracy"])
     call_rate = float(np.mean(calls))
+    # The official score charges the level forecast too: an estimator that
+    # knows the effect still misses when |mean(Y_pre) - y_obs| exceeds it. The
+    # contrast drops that level term and keeps only the effect direction.
+    contrast = pred - pred_ref
+    con = direction_accuracy(torch.from_numpy(contrast), torch.from_numpy(y_true - y_obs))
+    made = contrast != 0.0
+    con_calls = direction_accuracy(
+        torch.from_numpy(contrast[made]), torch.from_numpy((y_true - y_obs)[made])
+    )
+    c_acc, cc_acc = _finite(con["accuracy"]), _finite(con_calls["accuracy"])
     return {
         "n_episodes": int(pred.size),
         "effect_sign_acc": e_acc,
@@ -501,6 +514,11 @@ def cell_metrics(
         "effect_call_rate": call_rate,
         "effect_call_se": _binomial_se(call_rate, int(pred.size)),
         "v_invariant_frac": float(np.mean(pred == pred_ref)),
+        "contrast_sign_acc": c_acc,
+        "contrast_sign_se": _binomial_se(c_acc, int(con["n_valid"])),
+        "contrast_n_calls": int(con_calls["n_valid"]),
+        "contrast_sign_acc_calls": cc_acc,
+        "contrast_sign_se_calls": _binomial_se(cc_acc, int(con_calls["n_valid"])),
     }
 
 
@@ -1466,6 +1484,34 @@ def render_markdown(result: dict[str, Any]) -> str:
         ]
         for k, d in rows.items():
             lines.append(f"| {k} | {d['diff']:+.3f} | [{d['ci95'][0]:+.3f}, {d['ci95'][1]:+.3f}] |")
+
+    lines += [
+        "",
+        "## Exploratory: sign of the estimator's own effect",
+        "",
+        "Not pre-registered; added after the 1.1.0 results. Sign of `pred(do v) - pred(do a_ref)` "
+        "against the true effect on the same valid episodes, which drops the level-forecast "
+        "term of the official score. First over all valid episodes (a zero contrast, an "
+        "abstention, counts as wrong), then over the episodes where the estimator calls a "
+        "direction, with that count in brackets.",
+        "",
+        "| Estimator | " + " | ".join(f"`{s}`" for s in structures) + " |",
+        "|---|" + "---|" * len(structures),
+    ]
+    for name, row in ests.items():
+        cells = []
+        for s in structures:
+            cell = row["per_structure"].get(s)
+            if cell is None or cell.get("status") == "pending":
+                cells.append("pending")
+            elif cell["contrast_sign_acc"] is None:
+                cells.append("n/a")
+            else:
+                calls = cell["contrast_sign_acc_calls"]
+                cells.append(
+                    f"{cell['contrast_sign_acc']:.3f}; {_fmt(calls)} [{cell['contrast_n_calls']}]"
+                )
+        lines.append(f"| {name} | {' | '.join(cells)} |")
 
     for title, key, digits in (
         ("Level RMSE", "level_rmse", 3),
