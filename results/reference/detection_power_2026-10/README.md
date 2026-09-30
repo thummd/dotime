@@ -275,22 +275,19 @@ Effect-sign accuracy with binomial SE:
   `instrumental_variable` it scores 0.798, above IV2SLS's 0.613. It also has the lowest
   pooled level RMSE (0.508, against 0.575 for BackDoorOLS and 0.599 for Mean).
 
-### Preview of 1.2.0: not yet outputs of this folder
+### 1.2.0: the outputs in this folder
 
-These numbers come from a scratch run. Its 1.1.0 half is reproduced above, cell for
-cell. The integrator's run on the built 1.2.0 suite regenerates the rest into
-`ident_v1_2.*`, and that run must reproduce these numbers exactly. The
-scratch tree was main at "Models: load checkpoints with readout, token-lag and horizon
-options" plus session A's commit "Identifiability 1.2.0: NaiveOLS baseline and bow_graph
-in the config", which registers NaiveOLS, plus these scripts. The 1.2.0 suite was built with `scripts/build_release.py`
-and session A's `release_config_v1_2.yaml` (suite seed 20261719, 12,150 episodes). Its
-seven unchanged structures match the released 1.1.0 bit for bit (`x_obs`, `x_int`,
-`y_true` and query rows of 9,450 episodes). `mediator` differs only in its query, at
-offset 1, and `bow_graph` fills episodes 10800 to 12149 with none diverged. In that
-tree, all 78 non-NaiveOLS cells of 1.1.0 equal this folder's, and gate 3 passes on 77
-cells with no mismatch.
+`ident_v1_2.md` holds every table for dot-Identifiability-v1 1.2.0, built with
+`scripts/build_release.py` from `release_config_v1_2.yaml` (suite seed 20261719, 12,150
+episodes, `record_graph: true`) at commit 996a210. Its seven unchanged structures match
+the released 1.1.0 bit for bit (`x_obs`, `x_int`, `y_true`, query rows and interventions
+of 9,450 episodes; `results/reference/audit_2026-09/identity_2026_10.json`). `mediator`
+keeps its trajectories and moves its query to offset 1, and `bow_graph` fills episodes
+10800 to 12149 with none diverged. Gate 3 passed: the 77 cells of the unchanged
+structures equal the 1.1.0 table and the oracle scores 1 (`ident_v1_2_gate.json`). The
+numbers equal the preview that was written down before this run.
 
-Graded outcomes on the 1.2.0 preview:
+Graded outcomes on 1.2.0:
 
 - Confirmed: P1, P2, P4, P5, E1, E2, S1 and O1.
 - **P3 is not confirmed.** It fails only on `mediator`, the anticipated exception E1.

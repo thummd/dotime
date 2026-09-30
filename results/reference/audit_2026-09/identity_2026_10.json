@@ -1,0 +1,44 @@
+{
+ "identifiability_1_2_0_vs_1_1_0": {
+  "n_v11": 10800,
+  "n_v12": 12150,
+  "mismatch": [],
+  "mediator_moved": 1350,
+  "mediator_same_x": 1350,
+  "bow_graph_rows": 1350,
+  "diverged": 0,
+  "n_mismatch": 0
+ },
+ "observed_none_none_vs_1_2_0": {
+  "n_observed": 10800,
+  "cells": {
+   "none+none": 900,
+   "none+mcar10": 900,
+   "none+block": 900,
+   "none+mnar": 900,
+   "snr10+none": 900,
+   "snr10+mcar10": 900,
+   "snr10+block": 900,
+   "snr10+mnar": 900,
+   "snr3+none": 900,
+   "snr3+mcar10": 900,
+   "snr3+block": 900,
+   "snr3+mnar": 900
+  },
+  "n_none_none": 900,
+  "mismatch": [],
+  "n_mismatch": 0
+ },
+ "irregular_regular_vs_continuous_1_0_0": {
+  "n_continuous": 9999,
+  "n_irregular": 9999,
+  "schedules": {
+   "regular": 3333,
+   "jittered": 3333,
+   "poisson": 3333
+  },
+  "mismatch": [],
+  "n_regular_checked": 3333,
+  "n_mismatch": 0
+ }
+}
