@@ -1,4 +1,4 @@
-"""The observation layer (measurement error and missingness) and its evaluation wiring.
+"""The observation layer (measurement error and missingness) and its build and evaluation wiring.
 
 An observed episode must keep its latent targets, keep counterfactual arms in
 agreement before the onset (missing cells included), never hide a query cell,
@@ -10,13 +10,22 @@ from __future__ import annotations
 
 import json
 import warnings
+from pathlib import Path
 
 import numpy as np
 import pytest
 import torch
+import yaml
 
 from dotime import baselines, evaluation
-from dotime._build import episode_seed, make_episode
+from dotime._build import (
+    _expand_observation_cells,
+    _forward_opt_in,
+    _simulate_episode,
+    episode_seed,
+    episode_specs,
+    make_episode,
+)
 from dotime.benchmarks import BenchmarkSuite, Episode, SuiteMetadata
 from dotime.interventions import InterventionSpec, InterventionType
 from dotime.normalization import per_variable_normalize
@@ -652,3 +661,170 @@ def test_normalization_obs_mask_hook():
     assert bool((x_norm[~observed] == 0).all())
     history = observed[0, :30, 0]
     torch.testing.assert_close(means[0, 0], x[0, :30, 0][history].mean())
+
+
+# --------------------------------------------------------------------------- #
+# Build wiring
+# --------------------------------------------------------------------------- #
+
+_SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
+
+
+def _observed_config(**overrides) -> dict:
+    """The dot-Observed-v1 suite config, with overrides.
+
+    Args:
+        **overrides: Config keys to replace.
+
+    Returns:
+        The suite config.
+    """
+    rc = yaml.safe_load((_SCRIPTS / "release_config_observed_v1.yaml").read_text())
+    return {**rc["suites"]["dot-Observed-v1"], **overrides}
+
+
+@pytest.mark.parametrize(
+    ("config", "scale"),
+    [
+        ("release_config.yaml", 0.0005),
+        ("release_config_v1_1.yaml", 0.002),
+        ("release_config_v1_2.yaml", 0.002),
+    ],
+)
+def test_frozen_configs_keep_their_specs(config, scale):
+    rc = yaml.safe_load((_SCRIPTS / config).read_text())
+    for offset, cfg in enumerate(rc["suites"].values()):
+        seed = int(rc["seed"]) + 1000 * (offset + 1)
+        specs = episode_specs(cfg, seed, scale)
+        assert _forward_opt_in(cfg, specs) is specs
+        assert _expand_observation_cells(cfg, specs) is specs
+        assert not any(key in spec for spec in specs for key in _ADDED_KEYS)
+        assert [s["idx"] for s in specs] == list(range(len(specs)))
+        assert [s["seed"] for s in specs] == [episode_seed(seed, i) for i in range(len(specs))]
+
+
+@pytest.mark.parametrize(
+    "spec",
+    [
+        {"kind": "generic", "idx": 3, "seed": episode_seed(11, 3), "T": 40},
+        {"kind": "regime", "idx": 0, "seed": 5, "T": 40, "num_regimes": 2, "tier": 1},
+        _identifiability_spec("mediator", 4050, t_len=40),
+        {"kind": "continuous", "idx": 1, "seed": 9, "T": 40, "structure": "back_door"},
+    ],
+)
+def test_make_episode_without_observation_is_the_simulation(spec):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        assert _same_episode(make_episode(spec), _simulate_episode(spec))
+
+
+def test_observed_suite_specs_keep_the_base_seeds():
+    cfg = _observed_config()
+    rc = yaml.safe_load((_SCRIPTS / "release_config_observed_v1.yaml").read_text())
+    assert list(rc["suites"]) == ["dot-Observed-v1"]
+    assert cfg["observation"] == {"latent_per_structure": 100, **_DESIGN}
+    assert cfg["seed"] == int(rc["seed"]) + 1000 == 20261719
+    v11 = yaml.safe_load((_SCRIPTS / "release_config_v1_1.yaml").read_text())
+    v12 = yaml.safe_load((_SCRIPTS / "release_config_v1_2.yaml").read_text())
+    assert list(cfg["structures"].items()) == list(
+        v11["suites"]["dot-Identifiability-v1"]["structures"].items()
+    )
+    base = {k: v for k, v in cfg.items() if k not in ("version", "seed", "observation")}
+    assert base == {
+        k: v for k, v in v12["suites"]["dot-Identifiability-v1"].items() if k != "version"
+    }
+
+    specs = episode_specs(cfg, cfg["seed"], 1.0)
+    base_specs = episode_specs(base, cfg["seed"], 1.0)
+    assert len(specs) == 9_600
+    assert [s["idx"] for s in specs] == list(range(9_600))
+    cells = [c.name for c in cells_from_config(cfg["observation"])]
+    assert [specs[800 * i]["obs_cell"] for i in range(12)] == cells
+    latent_rows = [b * 1350 + k for b in range(8) for k in range(100)]
+    for i, name in enumerate(cells):
+        block = specs[800 * i : 800 * (i + 1)]
+        assert {s["obs_cell"] for s in block} == {name}
+        assert [s["latent_row"] for s in block] == latent_rows
+        assert all(s["observation"]["name"] == name for s in block)
+    for spec in specs[::97]:
+        latent = base_specs[spec["latent_row"]]
+        assert spec["seed"] == latent["seed"] == episode_seed(cfg["seed"], spec["latent_row"])
+        assert {k: v for k, v in spec.items() if k not in _ADDED_KEYS | {"idx"}} == {
+            k: v for k, v in latent.items() if k != "idx"
+        }
+    assert {s["query_offset_range"] for s in specs if s["structure"] == "mediator"} == {(1, 1)}
+
+
+def test_none_cell_equals_the_base_suite_rows_and_other_cells_observe_them():
+    cfg = _observed_config(T=60, episodes_per_structure=3)
+    cfg["observation"] = {**cfg["observation"], "latent_per_structure": 1}
+    base = {k: v for k, v in cfg.items() if k != "observation"}
+    specs = episode_specs(cfg, cfg["seed"], 1.0)
+    base_specs = episode_specs(base, cfg["seed"], 1.0)
+    assert len(specs) == 12 * 8
+    for spec in specs[:8]:
+        assert spec["obs_cell"] == "none+none"
+        observed, latent = make_episode(spec), make_episode(base_specs[spec["latent_row"]])
+        assert _same_episode(observed, latent, ignore=_ADDED_KEYS)
+        assert observed.scm_id == spec["idx"]
+        assert latent.scm_id == spec["latent_row"]
+        assert observed.metadata["latent_row"] == spec["latent_row"]
+        assert observed.metadata["obs_cell"] == "none+none"
+    spec = specs[-1]
+    observed, latent = make_episode(spec), make_episode(base_specs[spec["latent_row"]])
+    assert observed.metadata["obs_cell"] == "snr3+mnar"
+    assert torch.equal(observed.y_true, latent.y_true)
+    assert torch.equal(observed.metadata["y_obs_latent"], evaluation.query_obs_levels(latent))
+    assert not torch.equal(observed.x_obs.nan_to_num(0.0), latent.x_obs)
+
+
+def test_latent_per_structure_must_be_a_positive_integer():
+    cfg = _observed_config(T=40, episodes_per_structure=2)
+    for bad in (0, 1.5, "10"):
+        cfg["observation"] = {**cfg["observation"], "latent_per_structure": bad}
+        with pytest.raises(ValueError, match="latent_per_structure"):
+            episode_specs(cfg, 1, 1.0)
+
+
+@pytest.mark.slow
+def test_micro_build_round_trips_missing_cells(tmp_path):
+    """A small dot-Observed-v1 build writes NaN cells and reads them back exactly."""
+    pytest.importorskip("pyarrow")
+    import importlib.util
+    import json
+
+    from dotime import _release_io
+
+    spec = importlib.util.spec_from_file_location("build_release", _SCRIPTS / "build_release.py")
+    build_release = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(build_release)
+    config = _SCRIPTS / "release_config_observed_v1.yaml"
+    args = ["--config", str(config), "--scale", "0.0015", "--workers", "2"]
+    assert build_release.main([*args, "--output-dir", str(tmp_path), "--timestamp", "T"]) == 0
+    suite_dir = tmp_path / "T" / "dot-Observed-v1-1.0.0"
+    manifest = json.loads((suite_dir / "manifest.json").read_text())
+    assert manifest["n_episodes"] == 12 * 8 * 2
+    meta = SuiteMetadata(
+        name="dot-Observed-v1",
+        version="1.0.0",
+        zenodo_record_id="LOCAL",
+        doi="",
+        description="",
+        n_episodes=manifest["n_episodes"],
+        query_time_encoding="index/T",
+    )
+    suite = _release_io.read_suite(meta, suite_dir)
+    cfg = _observed_config()
+    specs = episode_specs(cfg, cfg["seed"], 0.0015)
+    for spec in specs[::41]:
+        built = make_episode(spec)
+        loaded = suite[spec["idx"]]
+        assert _nan_equal(loaded.x_obs, built.x_obs)
+        assert _nan_equal(loaded.x_int, built.x_int)
+        assert loaded.metadata["obs_cell"] == spec["obs_cell"]
+        assert loaded.metadata["latent_row"] == spec["latent_row"]
+    assert any(bool(torch.isnan(ep.x_obs).any()) for ep in suite)
+    oracle = evaluation.evaluate(baselines.get("Oracle"), suite, dir_target="effect")
+    assert oracle.pooled["rmse"] == pytest.approx(0.0, abs=1e-6)
+    mean = evaluation.evaluate(baselines.get("Mean"), suite, dir_target="effect")
+    assert np.isfinite(mean.pooled["rmse"])

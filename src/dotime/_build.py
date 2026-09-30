@@ -133,7 +133,45 @@ def _with_graph(spec: dict, ep, source, columns=None):
 
 
 def make_episode(spec: dict):
-    """Build a single Episode from a spec dict (picklable; runs in a worker)."""
+    """Build a single Episode from a spec dict (picklable; runs in a worker).
+
+    Simulates the latent episode with :func:`_simulate_episode`. A spec from an
+    ``observation:`` config (see :func:`_expand_observation_cells`) also
+    carries an ``observation`` model, which
+    :func:`dotime.observation.apply_observation` then applies, seeded with the
+    episode seed so that all cells of one latent episode share their draws.
+    Without it the latent episode is returned unchanged, which keeps every
+    frozen suite bit-identical.
+
+    Args:
+        spec: One entry of :func:`episode_specs`.
+
+    Returns:
+        The episode. An observed one records the spec's ``latent_row`` in its
+        metadata.
+
+    Raises:
+        ValueError: If the spec's kind is unknown or its observation model is
+            invalid.
+    """
+    episode = _simulate_episode(spec)
+    if "observation" not in spec:
+        return episode
+    import dataclasses
+
+    from dotime.observation import ObservationModel, apply_observation
+
+    model = ObservationModel.from_dict(spec["observation"])
+    episode = apply_observation(episode, model, spec["seed"])
+    if "latent_row" in spec:
+        episode = dataclasses.replace(
+            episode, metadata={**episode.metadata, "latent_row": int(spec["latent_row"])}
+        )
+    return episode
+
+
+def _simulate_episode(spec: dict):
+    """Simulate the latent Episode of a spec dict (the generator step of :func:`make_episode`)."""
     import warnings as _w
 
     import torch as _torch
@@ -310,6 +348,57 @@ def _forward_opt_in(cfg: dict, specs: list[dict]) -> list[dict]:
     return [{**s, **extra} for s in specs]
 
 
+def _expand_observation_cells(cfg: dict, specs: list[dict]) -> list[dict]:
+    """Expand a suite's specs into the cells of its ``observation:`` design.
+
+    Every cell (see :func:`dotime.observation.cells_from_config`) observes the
+    same latent episodes: the first ``latent_per_structure`` specs of each
+    structure (or regime density) block, all of them when the key is absent.
+    They keep their seed, structure, tier and query settings, so each latent
+    episode equals its row of the base suite. The rows are cell-major and
+    re-indexed: ``idx`` is the row of the observed suite and ``latent_row``
+    the row of the base suite.
+
+    Args:
+        cfg: The suite config.
+        specs: The base suite's specs in row order.
+
+    Returns:
+        ``specs`` itself when ``cfg`` has no ``observation``, otherwise one spec
+        per (cell, latent episode) pair that also carries ``observation`` (the
+        cell's model dict), ``obs_cell`` and ``latent_row``.
+
+    Raises:
+        ValueError: If the observation config is invalid.
+    """
+    design = cfg.get("observation")
+    if not design:
+        return specs
+    from dotime.observation import cells_from_config
+
+    cells = cells_from_config(design)
+    per = design.get("latent_per_structure")
+    if per is not None and (int(per) != per or per < 1):
+        raise ValueError(f"latent_per_structure must be a positive integer, got {per!r}")
+    kept: dict[tuple, int] = {}
+    latent = []
+    for spec in specs:
+        block = (spec.get("structure"), spec.get("num_regimes"))
+        if per is None or kept.get(block, 0) < int(per):
+            kept[block] = kept.get(block, 0) + 1
+            latent.append(spec)
+    return [
+        {
+            **spec,
+            "idx": row,
+            "latent_row": spec["idx"],
+            "obs_cell": cell.name,
+            "observation": cell.to_dict(),
+        }
+        for row, (cell, spec) in enumerate((c, s) for c in cells for s in latent)
+    ]
+
+
 def episode_specs(cfg: dict, suite_seed: int, scale: float) -> list[dict]:
     """Build the per-episode spec list (deterministic seeds) for a suite config."""
     gen, t_len = cfg["generator"], cfg.get("T", 200)
@@ -381,7 +470,7 @@ def episode_specs(cfg: dict, suite_seed: int, scale: float) -> list[dict]:
                 )
     else:
         raise ValueError(f"unknown generator {gen!r}")
-    return _forward_opt_in(cfg, specs)
+    return _expand_observation_cells(cfg, _forward_opt_in(cfg, specs))
 
 
 def build_suite(cfg: dict, seed: int, scale: float, workers: int) -> list:

@@ -1,0 +1,62 @@
+# dot-Observed-v1 version 1.0.0 (PREPARED, NOT BUILT/MINTED): the latent
+# dot-Identifiability-v1 episodes seen through an observation layer, a
+# factorial of measurement noise x missingness (dotime.observation).
+#
+# Latent episodes: the identifiability generator with the settings of
+# release_config_v1_2.yaml (shared-noise counterfactual pairs, stability
+# retries, the v1.2 query protocol with mediator queried at offset 1) and the
+# same suite seed. episodes_per_structure stays 1350 so every latent episode
+# keeps its base seed and equals its row of that (1.2.0) suite, which for every
+# structure but mediator is also its row of the released 1.1.0 files. Only the
+# first latent_per_structure episodes of each structure are observed.
+#
+# Observation cells: measurement {none, snr10, snr3} x missingness {none,
+# mcar10, block, mnar} = 12 cells x 8 structures x 100 latent episodes = 9,600
+# rows, cell-major. Row metadata: obs_cell (e.g. "snr3+block"), observation
+# (the cell's model), latent_row (row in the base suite), y_obs_latent,
+# obs_missing_frac. Targets (y_true, x_int from the onset on) stay latent, and
+# the none+none cell reproduces the latent episodes exactly.
+#   snr10 / snr3: Gaussian noise at signal-to-noise ratio 10 / 3, relative to
+#                 each column's latent pre-onset variance
+#   mcar10:       each cell missing with probability 0.10
+#   block:        each column has one gap of 10-40 rows with probability 0.5
+#   mnar:         cells above the column's pre-onset 0.85 quantile are missing
+#                 with probability 0.8
+# Query cells, hidden (all-zero) columns and one pre-onset cell per column are
+# never missing. All cells of one latent episode share their random draws.
+seed: 20260719
+T: 200
+
+suites:
+
+  dot-Observed-v1:
+    version: "1.0.0"
+    # Explicit: the top-level seed + 1000, the suite seed of dot-Identifiability-v1.
+    seed: 20261719
+    generator: identifiability
+    T: 200
+    pair_mode: counterfactual
+    stability_retries: 3
+    episodes_per_structure: 1350
+    query_offsets:
+      mediator: [1, 1]
+    structures:
+      bi_variate:              1
+      back_door:               1
+      observed_confounder:     1
+      mediator:                2
+      front_door:              2
+      confounder_mediator:     2
+      instrumental_variable:   3
+      unobserved_confounder:   3
+    observation:
+      latent_per_structure: 100
+      measurement:
+        none: {}
+        snr10: {snr: 10}
+        snr3: {snr: 3}
+      missingness:
+        none: {kind: none}
+        mcar10: {kind: mcar, rate: 0.10}
+        block: {kind: block, rate: 0.5, block_len: [10, 40]}
+        mnar: {kind: mnar, rate: 0.8, mnar_quantile: 0.85}
