@@ -78,3 +78,33 @@ def direction_scores(
         if name == dir_target:
             out.update(dir_acc=acc, dir_n_valid=n_valid, dir_acc_se=se)
     return out
+
+
+def check_predictions(tag: str, preds: np.ndarray) -> int:
+    """Count non-finite predictions of one arm and refuse an arm that has none finite.
+
+    A broken optional dependency can return NaN for every episode without
+    raising (a transformers release outside ``chronos-forecasting``'s pin
+    re-initialises the weights at random on load), and the result JSON would
+    then carry NaN errors as if they were measurements.
+
+    Args:
+        tag: Arm name, for the message.
+        preds: Predicted levels of the arm.
+
+    Returns:
+        The number of non-finite predictions.
+
+    Raises:
+        SystemExit: If no prediction is finite.
+    """
+    n_bad = int((~np.isfinite(preds)).sum())
+    if n_bad == len(preds):
+        raise SystemExit(
+            f"{tag}: every prediction is non-finite. Check the optional dependencies "
+            "(chronos-forecasting pins transformers<5 and huggingface_hub<1.0; TabPFN "
+            "needs its weights) before trusting any number from this run."
+        )
+    if n_bad:
+        print(f"  {tag}: {n_bad} of {len(preds)} predictions are non-finite", flush=True)
+    return n_bad

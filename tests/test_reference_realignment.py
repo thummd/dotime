@@ -440,6 +440,16 @@ def test_chronos_forecasts_from_the_columns_it_is_given(
     _assert_provenance(tmp_path, "1.0.0", realign)
 
 
+def test_check_predictions_counts_and_refuses_all_nonfinite() -> None:
+    """An arm with some NaN predictions is counted; one with none finite stops the run."""
+    from dotime.reference._scoring import check_predictions
+
+    assert check_predictions("arm", np.array([0.5, float("nan"), 1.0])) == 1
+    assert check_predictions("arm", np.array([0.5, 1.0])) == 0
+    with pytest.raises(SystemExit, match="every prediction is non-finite"):
+        check_predictions("arm", np.array([float("nan"), float("inf")]))
+
+
 @pytest.mark.parametrize("evaluator", [tabpfn, chronos], ids=["tabpfn", "chronos"])
 @pytest.mark.parametrize("dir_target", ["level", "effect"])
 def test_dir_target_selects_the_headline_and_both_scores_are_written(

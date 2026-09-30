@@ -47,7 +47,12 @@ from dotime.reference._realignment import (
     realign_episodes,
     sidecar_obs_levels,
 )
-from dotime.reference._scoring import DIR_TARGETS, direction_scores, observational_levels
+from dotime.reference._scoring import (
+    DIR_TARGETS,
+    check_predictions,
+    direction_scores,
+    observational_levels,
+)
 
 
 def _regressor():
@@ -341,7 +346,8 @@ def main(argv: list[str] | None = None) -> None:
                 print(f"  {tag} {i + 1}/{len(samp)}  ({time.time() - t0:.0f}s)")
         preds = np.array(pred_list)
         tgts = np.array(tgt_list)
-        rmse = float(np.sqrt(np.mean((preds - tgts) ** 2)))
+        n_nonfinite = check_predictions(tag, preds)
+        rmse = float(np.sqrt(np.nanmean((preds - tgts) ** 2)))
         rng = np.random.default_rng(0)
         se = (preds - tgts) ** 2
         boot = np.array(
@@ -349,7 +355,7 @@ def main(argv: list[str] | None = None) -> None:
         )
         ci = [float(np.quantile(boot, 0.025)), float(np.quantile(boot, 0.975))]
         scores = direction_scores(preds, tgts, y_obs, args.dir_target)
-        out[tag] = {"pooled_rmse": rmse, "rmse_ci95": ci, **scores}
+        out[tag] = {"pooled_rmse": rmse, "rmse_ci95": ci, "n_nonfinite": n_nonfinite, **scores}
         print(
             f"{tag}  RMSE={rmse:.3f} CI[{ci[0]:.3f},{ci[1]:.3f}] dir_acc={scores['dir_acc']:.3f} ({args.dir_target})  "
             f"({time.time() - t0:.0f}s total)"
