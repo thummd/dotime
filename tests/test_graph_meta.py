@@ -585,4 +585,3 @@ def test_from_structure_handles_driven_labels(label):
     assert recorded.hidden == graph.hidden
     assert ep.metadata["driver"]["column"] == d
     assert ep.x_obs.shape[1] == graph.n
-
