@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import gzip
 import json
+from pathlib import Path
 
 import networkx as nx
 import numpy as np
@@ -36,6 +37,12 @@ from dotime.tscm_sampler import TSCMSampler, TSCMStructure
 # a regime-switching SCM for these seeds (the class is asserted, so a change to
 # the prior fails loudly instead of silently testing another family).
 _FAMILY_SEEDS = {"diverse": 0, "chain": 3, "regime": 16}
+
+_REPO = Path(__file__).resolve().parents[1]
+_SIDECARS = {
+    "dot-Generic-100k": "dot-Generic-100k-v1.0.0_graph.jsonl.gz",
+    "dot-RegimeSwitch-v1": "dot-RegimeSwitch-v1.0.0_graph.jsonl.gz",
+}
 
 
 def _prior_scm(family: str, **config):
@@ -496,3 +503,42 @@ def test_load_graph_sidecar(tmp_path, compress):
     path.write_text(text + text)
     with pytest.raises(ValueError, match="twice"):
         load_graph_sidecar(path)
+
+
+@pytest.mark.parametrize("suite", list(_SIDECARS))
+def test_published_sidecar_matches_a_fresh_regeneration(suite):
+    """The first record of each SCM family must equal a regenerated one.
+
+    Ties the published sidecars to the code: a change to the edge convention
+    or to the path summary shows up here, not in a reviewer's analysis.
+    """
+    yaml = pytest.importorskip("yaml")
+    path = _REPO / "results" / "reference" / _SIDECARS[suite]
+    if not path.exists():
+        pytest.skip(f"{path.name} is not in this checkout")
+    config = yaml.safe_load((_REPO / "scripts" / "release_config.yaml").read_text())
+    position = list(config["suites"]).index(suite)
+    seed = int(config["seed"]) + 1000 * (position + 1)  # build_release.py's suite seed
+    specs = episode_specs(config["suites"][suite], seed, 1.0)
+    first: dict[str, dict] = {}
+    with gzip.open(path, "rt", encoding="utf-8") as fh:
+        for line in fh:
+            record = json.loads(line)
+            first.setdefault(record["family"], record)
+            if len(first) == (1 if suite == "dot-RegimeSwitch-v1" else 3):
+                break
+    for record in first.values():
+        assert record["verified"]
+        ep = make_episode({**specs[record["idx"]], "record_graph": True})
+        stored = dict(ep.metadata["graph"])
+        (entry,) = stored.pop("path")
+        assert stored == record["graph"]
+        assert entry == {
+            "target": record["query"],
+            **{k: record[k] for k in ("reachable", "min_lag", "min_hops", "direct_lags")},
+        }
+        assert record["treatment"] == ep.intervention.targets
+        assert (record["onset"], record["window_end"]) == (
+            min(ep.intervention.times),
+            max(ep.intervention.times),
+        )

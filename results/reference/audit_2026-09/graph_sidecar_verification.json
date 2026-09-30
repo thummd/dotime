@@ -1,0 +1,402 @@
+{
+ "script": "results/reference/audit_2026-09/scripts/graph_sidecar.py",
+ "code": {
+  "commit": "c83f30a38efb47ee2081fc5154a663002e227878",
+  "src_dirty": false,
+  "dotime_file": "/home/dennis/repos/dotime/.claude/worktrees/intelligent-poincare-05521d/src/dotime/__init__.py",
+  "graph_meta_sha256": "bedd8266c217c22e5cc03c5e8ea209955b6d262d8319c68d8c037b1f62cdf81a",
+  "build_sha256": "3656d333ae79ad251e2af0e1be207c037639e9d7cbe6231db8e9147567684f73"
+ },
+ "suites": {
+  "dot-Generic-100k": {
+   "suite": "dot-Generic-100k",
+   "version": "1.0.0",
+   "seed": 20264719,
+   "config": {
+    "version": "1.0.0",
+    "generator": "generic",
+    "T": 200,
+    "n_episodes": 100000
+   },
+   "n_episodes_manifest": 100000,
+   "n_rows_checked": 100000,
+   "limit": null,
+   "fields_compared": [
+    "x_obs",
+    "x_int",
+    "y_true",
+    "query_target",
+    "query_time",
+    "intervention_json",
+    "n_vars"
+   ],
+   "n_verified": 100000,
+   "n_mismatched": 0,
+   "mismatch_field_counts": {},
+   "mismatches": [],
+   "family_graph_inconsistent": [],
+   "regenerated_metadata_keys_not_in_file": {
+    "[\"diverged\", \"query_time_idx\"]": 100000
+   },
+   "zeroed_arms": {
+    "both": 28734,
+    "int_only": 695,
+    "neither": 69889,
+    "obs_only": 682
+   },
+   "by_family": {
+    "chain": {
+     "n": 14986,
+     "reads_parents_false": 0,
+     "empty_effective_graph": 0,
+     "reachable": 8096,
+     "min_lag": {
+      "0": 8096,
+      "None": 6890
+     },
+     "k_sampled": {
+      "2": 14986
+     },
+     "k_eff": {
+      "0": 1387,
+      "1": 2731,
+      "2": 10868
+     }
+    },
+    "diverse": {
+     "n": 69973,
+     "reads_parents_false": 0,
+     "empty_effective_graph": 0,
+     "reachable": 53866,
+     "min_lag": {
+      "0": 16836,
+      "1": 24064,
+      "12": 1,
+      "2": 9014,
+      "3": 2707,
+      "4": 809,
+      "5": 283,
+      "6": 101,
+      "7": 30,
+      "8": 14,
+      "9": 7,
+      "None": 16107
+     },
+     "k_sampled": {
+      "1": 23275,
+      "2": 23242,
+      "3": 23456
+     },
+     "k_eff": {
+      "0": 2498,
+      "1": 24114,
+      "2": 23207,
+      "3": 20154
+     }
+    },
+    "regime": {
+     "n": 15041,
+     "reads_parents_false": 15041,
+     "empty_effective_graph": 15041,
+     "reachable": 0,
+     "min_lag": {
+      "None": 15041
+     },
+     "k_sampled": {
+      "1": 5136,
+      "2": 5015,
+      "3": 4890
+     },
+     "k_eff": {
+      "0": 15041
+     }
+    }
+   },
+   "reachable": 61962,
+   "min_lag": {
+    "0": 24932,
+    "1": 24064,
+    "12": 1,
+    "2": 9014,
+    "3": 2707,
+    "4": 809,
+    "5": 283,
+    "6": 101,
+    "7": 30,
+    "8": 14,
+    "9": 7,
+    "None": 38038
+   },
+   "steps_after_window": {
+    "min": 0,
+    "median": 34.0,
+    "max": 180,
+    "zero": 3085
+   },
+   "workers": 4,
+   "wall_seconds": 3298.2927725315094,
+   "shards": [
+    {
+     "file": "shard-0000.parquet",
+     "md5": "21c1f35520d830ca1336dc61ea77b8e9",
+     "rows": 5000,
+     "verified": 5000,
+     "gen_seconds_mean": 0.1758643467095987,
+     "wall_seconds": 221.60594153404236
+    },
+    {
+     "file": "shard-0001.parquet",
+     "md5": "b80fd2a8c56406b249bbf63a3153ed5a",
+     "rows": 5000,
+     "verified": 5000,
+     "gen_seconds_mean": 0.20471088457099576,
+     "wall_seconds": 257.62045788764954
+    },
+    {
+     "file": "shard-0002.parquet",
+     "md5": "8592bcbb42a33edb725adb34b44bd6f5",
+     "rows": 5000,
+     "verified": 5000,
+     "gen_seconds_mean": 0.22380345456820006,
+     "wall_seconds": 282.65102314949036
+    },
+    {
+     "file": "shard-0003.parquet",
+     "md5": "89592151f5751d7771a818b69cc6d9bd",
+     "rows": 5000,
+     "verified": 5000,
+     "gen_seconds_mean": 0.2184876242340003,
+     "wall_seconds": 275.5155334472656
+    },
+    {
+     "file": "shard-0004.parquet",
+     "md5": "ac1503b9ff4ffe2e38b4afa18713ae91",
+     "rows": 5000,
+     "verified": 5000,
+     "gen_seconds_mean": 0.21692055178640265,
+     "wall_seconds": 273.49167346954346
+    },
+    {
+     "file": "shard-0005.parquet",
+     "md5": "9cdc4b54009c0f8f91cb49cdf7d48fba",
+     "rows": 5000,
+     "verified": 5000,
+     "gen_seconds_mean": 0.1547588342624007,
+     "wall_seconds": 195.04340291023254
+    },
+    {
+     "file": "shard-0006.parquet",
+     "md5": "8ada7f38abb6b6f1483d348bd0740161",
+     "rows": 5000,
+     "verified": 5000,
+     "gen_seconds_mean": 0.14895879259459952,
+     "wall_seconds": 187.95645141601562
+    },
+    {
+     "file": "shard-0007.parquet",
+     "md5": "9bdd41a564133771333b2cb2767849ee",
+     "rows": 5000,
+     "verified": 5000,
+     "gen_seconds_mean": 0.14449275010738402,
+     "wall_seconds": 181.9698884487152
+    },
+    {
+     "file": "shard-0008.parquet",
+     "md5": "ad6bc3af584d22c6a2ca3c046fb76066",
+     "rows": 5000,
+     "verified": 5000,
+     "gen_seconds_mean": 0.1014356535570052,
+     "wall_seconds": 127.93165755271912
+    },
+    {
+     "file": "shard-0009.parquet",
+     "md5": "53a594fd75acd98dc5578a2f5ddc9eb8",
+     "rows": 5000,
+     "verified": 5000,
+     "gen_seconds_mean": 0.1198553852839901,
+     "wall_seconds": 150.70584964752197
+    },
+    {
+     "file": "shard-0010.parquet",
+     "md5": "a1e2cda8514b7cac98122abf8f6f9834",
+     "rows": 5000,
+     "verified": 5000,
+     "gen_seconds_mean": 0.09747452159079785,
+     "wall_seconds": 122.52315974235535
+    },
+    {
+     "file": "shard-0011.parquet",
+     "md5": "5a03e84ffa79a6833fb32efeb7206c88",
+     "rows": 5000,
+     "verified": 5000,
+     "gen_seconds_mean": 0.0874137470502039,
+     "wall_seconds": 109.96235513687134
+    },
+    {
+     "file": "shard-0012.parquet",
+     "md5": "3d0d83a0f49a082205b96be0f089bb1f",
+     "rows": 5000,
+     "verified": 5000,
+     "gen_seconds_mean": 0.09699499798540037,
+     "wall_seconds": 121.95568561553955
+    },
+    {
+     "file": "shard-0013.parquet",
+     "md5": "1757a43ff209a5f8f7a3116b1ad7618b",
+     "rows": 5000,
+     "verified": 5000,
+     "gen_seconds_mean": 0.08771382257859896,
+     "wall_seconds": 110.26769852638245
+    },
+    {
+     "file": "shard-0014.parquet",
+     "md5": "793459dbd432f9bd19fe57d5e16b1c95",
+     "rows": 5000,
+     "verified": 5000,
+     "gen_seconds_mean": 0.08828560558380413,
+     "wall_seconds": 111.21801328659058
+    },
+    {
+     "file": "shard-0015.parquet",
+     "md5": "5d6fe57e00483773b1ab79cb0d28d628",
+     "rows": 5000,
+     "verified": 5000,
+     "gen_seconds_mean": 0.08881281284360666,
+     "wall_seconds": 111.84867000579834
+    },
+    {
+     "file": "shard-0016.parquet",
+     "md5": "c92bd370d3e1a29fff129fad31623aac",
+     "rows": 5000,
+     "verified": 5000,
+     "gen_seconds_mean": 0.09093037828519845,
+     "wall_seconds": 114.59673810005188
+    },
+    {
+     "file": "shard-0017.parquet",
+     "md5": "36de9279c516c740d895006f0ca91f10",
+     "rows": 5000,
+     "verified": 5000,
+     "gen_seconds_mean": 0.09034224163741601,
+     "wall_seconds": 113.73761534690857
+    },
+    {
+     "file": "shard-0018.parquet",
+     "md5": "f4413b6d9e8a30d9d99e4e6cb6b7772d",
+     "rows": 5000,
+     "verified": 5000,
+     "gen_seconds_mean": 0.0850441573831964,
+     "wall_seconds": 107.23850965499878
+    },
+    {
+     "file": "shard-0019.parquet",
+     "md5": "91bb7a66c160aa78615a42e24763a9e6",
+     "rows": 5000,
+     "verified": 5000,
+     "gen_seconds_mean": 0.08564924052999486,
+     "wall_seconds": 107.93071103096008
+    }
+   ],
+   "sidecar": {
+    "path": "results/reference/dot-Generic-100k-v1.0.0_graph.jsonl.gz",
+    "bytes": 6113618,
+    "sha256": "472c6c9c042aa08bd0d2a3ec3557767eeaeeb64345f54e28d38bb8c1d9ebe3a3",
+    "lines": 100000
+   }
+  },
+  "dot-RegimeSwitch-v1": {
+   "suite": "dot-RegimeSwitch-v1",
+   "version": "1.0.0",
+   "seed": 20262719,
+   "config": {
+    "version": "1.0.0",
+    "generator": "regime",
+    "T": 200,
+    "densities": {
+     "2": 1,
+     "3": 2,
+     "5": 3
+    },
+    "n_episodes": 10000
+   },
+   "n_episodes_manifest": 9999,
+   "n_rows_checked": 9999,
+   "limit": null,
+   "fields_compared": [
+    "x_obs",
+    "x_int",
+    "y_true",
+    "query_target",
+    "query_time",
+    "intervention_json",
+    "n_vars"
+   ],
+   "n_verified": 9999,
+   "n_mismatched": 0,
+   "mismatch_field_counts": {},
+   "mismatches": [],
+   "family_graph_inconsistent": [],
+   "regenerated_metadata_keys_not_in_file": {
+    "[\"diverged\", \"query_time_idx\"]": 9999
+   },
+   "zeroed_arms": {
+    "neither": 9999
+   },
+   "by_family": {
+    "regime": {
+     "n": 9999,
+     "reads_parents_false": 9999,
+     "empty_effective_graph": 9999,
+     "reachable": 0,
+     "min_lag": {
+      "None": 9999
+     },
+     "k_sampled": {
+      "1": 3409,
+      "2": 3277,
+      "3": 3313
+     },
+     "k_eff": {
+      "0": 9999
+     }
+    }
+   },
+   "reachable": 0,
+   "min_lag": {
+    "None": 9999
+   },
+   "steps_after_window": {
+    "min": 0,
+    "median": 33.0,
+    "max": 178,
+    "zero": 310
+   },
+   "workers": 4,
+   "wall_seconds": 460.0045552253723,
+   "shards": [
+    {
+     "file": "shard-0000.parquet",
+     "md5": "6a1e6e97f0a4051d227b4d258ce3a59d",
+     "rows": 5000,
+     "verified": 5000,
+     "gen_seconds_mean": 0.17979009444360364,
+     "wall_seconds": 225.92350268363953
+    },
+    {
+     "file": "shard-0001.parquet",
+     "md5": "d361bbf78792e8305e120f08d09b526e",
+     "rows": 4999,
+     "verified": 4999,
+     "gen_seconds_mean": 0.1859393132754618,
+     "wall_seconds": 233.3738820552826
+    }
+   ],
+   "sidecar": {
+    "path": "results/reference/dot-RegimeSwitch-v1.0.0_graph.jsonl.gz",
+    "bytes": 1130807,
+    "sha256": "4f5e5ffd775dd8eb95745c6d4c3733cd5f5dd9b29c2861d89533fdd0c12bbf16",
+    "lines": 9999
+   }
+  }
+ }
+}
