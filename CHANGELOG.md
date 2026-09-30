@@ -65,6 +65,35 @@ All notable changes to `dotime` are documented here. The format follows
   against 3.7% of the regular third. The regular third keeps the single Euler
   step of `dot-Continuous-v1`, so its amplitudes and effects differ from the
   sub-stepped thirds (`results/reference/continuous_irregular/`).
+- `dotime.observation`, an observation layer applied after simulation.
+  `ObservationModel` pairs a measurement model with a missingness model. The
+  measurement adds Gaussian noise at a signal-to-noise ratio relative to each
+  column's latent pre-onset variance, censors at pre-onset quantiles and
+  quantizes in units of that standard deviation. Missingness is `none`, `mcar`,
+  `block` (one contiguous gap per column) or `mnar` (high values only).
+  `apply_observation(episode, model, seed)` reads every `x_obs` row and the
+  `x_int` rows before the onset with the same draws and mask, so shared-noise
+  arms still agree before the onset, while `y_true` and `x_int` from the onset
+  on stay latent. Query cells, all-zero (hidden or diverged) columns and one
+  pre-onset cell per column are never missing. The draws come from
+  `SeedSequence([salt, episode_seed])` and touch no global RNG, so all cells of
+  one latent episode share them. Episodes gain `observation`, `obs_cell`,
+  `y_obs_latent` and `obs_missing_frac` metadata. `impute_history` and
+  `impute_episode` forward-fill missing cells without reading the future.
+- Build configs accept an `observation:` section (`latent_per_structure` and
+  named `measurement` and `missingness` levels). It expands a suite into the
+  cells of the factorial design, cell-major, each observing the same latent
+  episodes of the base suite with their base seeds, and adds `obs_cell` and
+  `latent_row`. `dotime._build.make_episode` simulates and then observes when a
+  spec carries an observation model. Without one it returns the simulation
+  unchanged, so the frozen suites regenerate bit-identically.
+  `scripts/release_config_observed_v1.yaml` prepares `dot-Observed-v1` 1.0.0
+  (not built): measurement {none, snr10, snr3} × missingness {none, mcar10,
+  block, mnar} on 100 latent episodes of each `dot-Identifiability-v1` v1.2
+  structure, 9,600 rows.
+- `per_variable_normalize(..., obs_mask=...)` computes the statistics over
+  observed cells only and zeroes missing ones, the hook for mask-aware models.
+  The default `None` returns the same output as before.
 - `TSCMStructure.BOW_GRAPH` (`"bow_graph"`), a structure whose effect is not
   identifiable: hidden U -> A, U -> Y and a causal edge A -> Y. It is
   `unobserved_confounder` plus A -> Y, so it takes over the role the paper gave
@@ -247,6 +276,21 @@ All notable changes to `dotime` are documented here. The format follows
   with the sidecar's observational level).
 
 ### Changed
+- `evaluate(..., impute=True, nonfinite="raise")` imputes episodes with missing
+  cells through `impute_episode` unless the model sets `mask_aware = True`. A
+  finite episode passes through unchanged, so every latent suite scores exactly
+  as before. A non-finite prediction now raises an error that names the
+  baseline and the episode, where it used to turn every pooled metric into NaN
+  silently. `nonfinite="exclude"` leaves such predictions out of the level
+  metrics, scores them as wrong directions and reports `n_nonfinite`.
+  `dotime-eval-reference` imputes the same way, and the PFN, TabPFN and Chronos
+  evaluators refuse episodes with missing cells.
+- `query_obs_levels` returns `metadata["y_obs_latent"]` when an episode records
+  it, so effect-scored direction accuracy on an observed suite subtracts the
+  latent observational level, not a noisy measurement. The
+  `direction_accuracy` docstring states its tie rules: a prediction with sign 0,
+  or a non-finite one, counts as wrong, and targets with `|target| < eps` are
+  excluded.
 - Documented that 34.0% of `dot-Continuous-v1` queries are self-queries (query on
   the intervened variable; 33.7% of in-window queries), that the published
   Continuous rows include them, and that in-window ones equal the do-value.

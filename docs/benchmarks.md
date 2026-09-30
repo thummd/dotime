@@ -455,3 +455,93 @@ VAR-OLS, BackDoorOLS and Chronos read the rows of `x_obs` as equally spaced
 steps and ignore `obs_times`. On the irregular thirds their scores therefore
 include the cost of a grid they cannot see. Report scores per schedule
 (`metadata["schedule"]`).
+## Observation layer
+
+Real sensor logs are noisy, quantized, censored at the edges of a sensor's
+range and full of gaps. `dotime.observation` applies a measurement model and a
+missingness model to a simulated episode after the simulation. The targets stay
+the latent true values: `y_true`, `x_int` from the intervention onset on, and
+the `y_oracle` and `y_causal_effect` metadata are untouched. An observed episode
+therefore asks the same causal question of worse data.
+
+```python
+from dotime.observation import ObservationModel, apply_observation
+
+model = ObservationModel.from_dict(
+    {"measurement": {"snr": 3}, "missingness": {"kind": "mcar", "rate": 0.1}}
+)
+observed = apply_observation(episode, model, seed=episode_seed)
+```
+
+**Measurement.** Every scale is per column and relative to `sd`, the latent
+standard deviation of the column before the onset. The steps run in this order.
+
+- `snr` adds Gaussian noise with standard deviation `sd / sqrt(snr)`, so `snr` is
+  the signal power over the noise power.
+- `censor_quantiles: [lo, hi]` clips values to these quantiles of the latent
+  pre-onset values, as a saturating sensor does. Either side may be `null`.
+- `quantize_step` rounds values to multiples of `quantize_step * sd`.
+
+**Missingness.** A missing cell is `NaN`.
+
+- `mcar` drops each cell with probability `rate`.
+- `block` gives each column one contiguous gap with probability `rate`. Its
+  length is uniform on `block_len` rows and its start uniform over the rows
+  where it fits.
+- `mnar` drops, with probability `rate`, each cell whose latent value exceeds
+  the column's `mnar_quantile` quantile of latent pre-onset values.
+
+**What is observed.** Every row of `x_obs` is observed, and so are the rows of
+`x_int` before the onset, with the same draws and the same mask. The arms of a
+shared-noise (counterfactual) pair therefore still agree before the onset,
+gaps included. A query cell of `x_obs` is never missing. A column that is all
+zero, which is a hidden variable or a diverged arm, is neither noised nor
+masked. When the mask covers a column's whole history, one pre-onset cell,
+drawn at random, stays observed. Each observed episode records `obs_cell`, the
+`observation` model, `y_obs_latent` (the latent `x_obs` value at each query) and
+`obs_missing_frac` in its metadata.
+
+**Randomness.** The draws come from
+`np.random.SeedSequence([salt, episode_seed])`, spawned into one stream per
+component: the noise, the cell uniforms shared by MCAR and MNAR, the blocks and
+the kept cell. The simulation's torch and numpy streams are never read or
+advanced. All cells of a design that observe one latent episode share their
+draws. `snr3` noise is `snr10` noise scaled by `sqrt(10/3)`, and MCAR and MNAR
+read the same uniform per cell, so at equal rates an MNAR gap is an MCAR gap
+at a high value. Comparisons between cells are therefore paired.
+
+**Imputation.** `evaluate(model, suite)` passes each episode through
+`impute_episode` unless `model.mask_aware` is true. A missing cell takes the
+last observed value of its column, then the column's observed pre-onset mean,
+then 0. The history before the onset is imputed from the history alone, and a
+later row only from rows up to it. A finite episode passes through unchanged,
+so the latent suites score exactly as before. `evaluate(..., impute=False)`
+hands the `NaN` cells to the model. A non-finite prediction raises an error
+that names the baseline and the episode. With `nonfinite="exclude"` it is left
+out of the level metrics, scored as a wrong direction and counted in
+`n_nonfinite`. `dotime-eval-reference` imputes the same way, while the PFN,
+TabPFN and Chronos evaluators refuse an episode with missing cells and ask for
+imputation first.
+
+**Effect scoring and ties.** For an observed episode `query_obs_levels`
+returns `y_obs_latent`, so `dir_target="effect"` scores the latent effect
+`y_true - y_obs` rather than a difference with a noisy measurement. Direction
+accuracy excludes targets with `|target| < 0.1` and counts a prediction with
+sign 0 (exactly zero) or a non-finite prediction as wrong. Quantization makes
+exact zeros common, since every value within half a step of zero reads as 0,
+so a level-scored model that repeats a quantized history value is scored wrong
+more often. Censoring piles values up at the two bounds, and quantization
+rounds a value halfway between two steps to the even one. MNAR compares the
+latent value strictly with its threshold.
+
+**`dot-Observed-v1` (prepared, not built).**
+`scripts/release_config_observed_v1.yaml` observes the first 100 latent
+episodes of each structure of the `dot-Identifiability-v1` v1.2 protocol (the
+same seeds and shared-noise pairs, with `mediator` queried at offset 1). The
+design crosses measurement {`none`, `snr10`, `snr3`} with missingness {`none`,
+`mcar10`, `block`, `mnar`}, which gives 12 cells × 8 structures × 100 = 9,600
+rows in cell-major order. The `none+none` cell reproduces the latent episodes
+exactly, and `latent_row` points each row at its latent episode. Built from
+this config, the suite has 9.9% (`mcar10`), 6.5% (`block`) and 12.7% (`mnar`)
+of the cells of its observed columns missing, and realized signal-to-noise
+ratios of 10.0 (`snr10`) and 3.0 (`snr3`).
