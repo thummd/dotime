@@ -307,9 +307,10 @@ class LaggedGraph:
             raise TypeError(f"cannot extract a graph from {type(scm).__name__}")
 
         released = tuple(names) if columns is None else tuple(columns)
-        if not set(released) <= set(names) or len(set(released)) != len(released):
+        released_set = set(released)
+        if not released_set <= set(names) or len(released_set) != len(released):
             raise ValueError(f"columns {released} must be distinct nodes of the SCM {names}")
-        latent = tuple(v for v in names if v not in set(released))
+        latent = tuple(v for v in names if v not in released_set)
         index = {v: i for i, v in enumerate(released + latent)}
 
         per_system = [
