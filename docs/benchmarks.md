@@ -96,6 +96,106 @@ current prior are unstable. At the default prior 64.5% of RegimeSwitch episodes 
 62.7% of the Generic regime share diverge, and at `N_max=60, K_max=8` 94% and 97%
 do (`results/reference/regime_weights/`). No suite has been rebuilt with the flag.
 
+## Ground-truth graphs
+
+The frozen v1 files store trajectories, the intervention and the query, but not
+the graph that generated them. `dotime.graph_meta` records that graph in the
+episode's own column order, so that results can be split by lag.
+
+**Lag convention.** An edge `[src, dst, lag]` means that column `src` at step
+`t - lag` enters the mechanism of column `dst` at step `t`. Lag 0 is a same-step
+edge, and `[i, i, lag]` is an autoregressive term. An edge counts only when the
+child's mechanism reads the parent, that is, holds a weight under the parent's
+name. `tests/test_graph_meta.py` checks the convention by simulation: a parent
+perturbed at step `t` moves its lag-2 child at `t + 2` and not before.
+
+**New builds.** Set `record_graph: true` on a suite of a build config, for
+example a copy of `scripts/release_config.yaml`, and every episode gains
+`metadata["graph"]`:
+
+| Key | Meaning |
+|---|---|
+| `n`, `columns` | Number of released columns and the SCM node name of each |
+| `latent` | SCM nodes a build does not release. They are graph nodes `n`, `n + 1`, and so on, so paths through them still count |
+| `edges` | Effective edges `[src, dst, lag]`, sorted. For a regime-switching SCM, the union over regimes |
+| `hidden` | Released columns that hold no data, such as the zeroed confounder `U` |
+| `k_sampled` | The maximum lag `K` that the prior drew |
+| `k_eff` | The largest lag in `edges`, self-edges included, or 0 |
+| `reads_parents` | Whether every sampled parent is read by its child's mechanism |
+| `regime_edges` | Regime-switching SCMs only: the edges each regime sampled, read or not. Otherwise `null` |
+| `time` | `"discrete"`, or `"continuous"` for the continuous prior, whose edges all have lag 1 in observation steps |
+| `path` | One entry per query, from the intervention targets to the query column: `target`, `reachable`, `min_lag` (smallest summed lag), `min_hops` (fewest edges) and `direct_lags` |
+
+Recording draws no random numbers, so tensors, targets and all other metadata
+are bit-identical with and without the flag. No frozen config sets it.
+
+```python
+from dotime.graph_meta import LaggedGraph, path_lag
+
+graph = LaggedGraph.from_dict(episode.metadata["graph"])
+path = path_lag(graph, episode.intervention.targets, int(episode.query_target[0]))
+print(graph.k_sampled, path.min_lag)
+```
+
+**Frozen v1.0.0 suites.** `results/reference/dot-Generic-100k-v1.0.0_graph.jsonl.gz`
+and `results/reference/dot-RegimeSwitch-v1.0.0_graph.jsonl.gz` hold one JSON line
+per released episode, keyed by `idx`, the episode's `scm_id`. They were made by
+regenerating every episode from the release seeds with `record_graph` and
+comparing `x_obs`, `x_int`, `y_true`, `query_target`, `query_time`, the
+intervention and `n_vars` bit for bit with the released files. All 100,000 and
+9,999 episodes matched
+(`results/reference/audit_2026-09/graph_sidecar_verification.json`). Besides
+`graph` and the path fields, each line records the SCM `family` (`diverse`,
+`chain` or `regime`), `treatment`, `query`, the intervention `onset` and
+`window_end`, the `steps_after_window` until the query, the `intervention_type`,
+which arms are zeroed, and `verified`.
+
+```python
+from dotime.graph_meta import load_graph_sidecar
+
+sidecar = load_graph_sidecar("results/reference/dot-Generic-100k-v1.0.0_graph.jsonl.gz")
+record = sidecar[episode.scm_id]
+print(record["family"], record["graph"].k_sampled, record["min_lag"])
+```
+
+The named-structure suites need no sidecar, because the structure fixes the
+graph. `LaggedGraph.from_structure(episode.structure)` for
+`dot-Identifiability-v1` and `LaggedGraph.from_continuous_structure(episode.structure)`
+for `dot-Continuous-v1` give it in the released column order, with the
+treatment first and the outcome last. The archived Identifiability 1.0.0 `x_obs`
+is in topological order, so realign it first (see the erratum above).
+
+**Regime caveat.** No regime-switching SCM of the v1.0.0 suites reads its
+parents (see the erratum above). Their graphs therefore have `reads_parents`
+false and no `edges`, and every query is unreachable. This covers all 9,999
+RegimeSwitch episodes and the 15,041 regime-family episodes of
+Generic-100k. `regime_edges` still lists the graphs the regimes sampled. A build
+with `regime_canonical_weights` draws the same graphs and makes them effective.
+
+**Unreachable queries.** A Generic-100k or RegimeSwitch query is the variable
+whose two arms differ most at the last step, among those not intervened on. The
+arms of the 1.0.0 files are independent noise draws, so that variable need not
+be a descendant of the treatment. In Generic-100k 38,038 of the 100,000 queries
+(38.0%) have no path from any intervened column: all 15,041 regime-family
+episodes, 6,890 of the 14,986 chains (46.0%) and 16,107 of the 69,973 diverse
+SCMs (23.0%). For them the true effect at the query is zero and the difference
+between the arms is noise. The sidecars flag them with `reachable` false.
+
+**Per-lag scores.** `results/reference/audit_2026-09/generic_lag_breakdown.json`
+splits the published Generic-100k CPU baseline rows by SCM family, sampled `K`,
+min lag and steps from the end of the intervention window to the query, with
+and without episodes whose arms are zeroed. Without zeroed arms, the Mean
+baseline's level-scored direction accuracy falls with the min lag: 0.806 at lag
+0, 0.699 at lag 1, 0.638 at lag 4 or more and 0.558 on unreachable queries.
+Effect-scored accuracy does not fall. It stays between 0.83 and 0.85 in every min-lag bin, and a
+constant prediction of 0 scores 0.810 on the unreachable queries and 0.828 on
+the regime-family episodes, where no effect exists. The arms are independent
+draws, so the sign of `y - y_obs` tends to oppose the deviation of `y_obs` from
+its mean. For two independent zero-mean symmetric draws it does so with
+probability 3/4, and choosing the query where the arms differ most raises this
+further. On these files the effect-scored sign test therefore rewards
+regression to the mean, not knowledge of the causal path.
+
 ## Evaluation protocol
 
 The default evaluation reports RMSE, NMSE, MAE, direction accuracy, lift-over-naive, and effect-error correlation, computed per-structure and pooled.

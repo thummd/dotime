@@ -7,6 +7,28 @@ All notable changes to `dotime` are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Ground-truth graph metadata, `dotime.graph_meta`. `LaggedGraph` holds an
+  episode's lagged causal graph in released column order, with edges
+  `(src, dst, lag)` where lag 0 is a same-step edge. It is extracted from a
+  sampled `TemporalSCM` or `RegimeSwitchingTemporalSCM` (`from_scm`), from a
+  named identifiability structure (`from_structure`) or from its continuous-time
+  version (`from_continuous_structure`). An edge counts when the child's
+  mechanism reads the parent, so the regime-switching SCMs of the v1.0.0 suites
+  get an empty graph with `reads_parents=False`, and their sampled per-regime
+  graphs are kept in `regime_edges`. `path_lag` reports whether the intervened
+  columns reach a queried column, the smallest summed lag, the fewest hops and
+  the direct lags. `load_graph_sidecar` reads the sidecars below.
+- `record_graph: true` in a build config adds `metadata["graph"]` (the graph plus
+  one `path` entry per query) to every episode that `dotime._build` generates.
+  Extraction draws no random numbers, so tensors and all other fields are
+  bit-identical with and without it. No frozen config sets it.
+- Graph sidecars for the frozen `dot-Generic-100k` and `dot-RegimeSwitch-v1`
+  1.0.0: `results/reference/dot-Generic-100k-v1.0.0_graph.jsonl.gz` and
+  `results/reference/dot-RegimeSwitch-v1.0.0_graph.jsonl.gz`, one line per
+  episode, made by regenerating every episode with `record_graph` and verified
+  bit for bit against the released files. A per-lag breakdown of the CPU
+  baselines on Generic-100k is in
+  `results/reference/audit_2026-09/generic_lag_breakdown.json`.
 - `TSCMStructure.BOW_GRAPH` (`"bow_graph"`), a structure whose effect is not
   identifiable: hidden U -> A, U -> Y and a causal edge A -> Y. It is
   `unobserved_confounder` plus A -> Y, so it takes over the role the paper gave
