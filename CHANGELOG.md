@@ -127,6 +127,19 @@ All notable changes to `dotime` are documented here. The format follows
   `dot-Continuous-v1` 1.0.0 rows and all 10,800 `dot-Identifiability-v1` 1.1.0
   rows. Every data column matches the release bit for bit
   (`results/reference/audit_2026-09/frozen_regeneration.json`).
+- `dotime.qa`, per-arm target QA. `target_qa(episodes, ...)` and
+  `batch_target_qa(batches, ...)` log and assert the nonzero fraction, mean,
+  variance, non-finite count and largest magnitude of the observational level, the
+  interventional level and the effect at each query, pooled and per structure, and
+  return a JSON-able `QAReport`. A failure raises `TargetQAError`, a
+  `RuntimeError`. Level arms must be finite, varied and at least 50% nonzero. An
+  effect that is scored or trained on must be at least 5% nonzero on the queries
+  that can carry one. `is_null_effect` reads the shortest A -> Y lag off each named
+  structure's temporal DAG, so `observed_confounder` and `unobserved_confounder` are
+  always exempt and `mediator` is exempt at offset 0. Groups under 10 queries are
+  reported but not asserted. All five released suite versions pass the defaults
+  (`results/reference/audit_2026-09/frozen_target_qa.json`, Identifiability 1.0.0
+  with the sidecar's observational level).
 
 ### Changed
 - Documented that 34.0% of `dot-Continuous-v1` queries are self-queries (query on
@@ -170,6 +183,21 @@ All notable changes to `dotime` are documented here. The format follows
 - `dot-Continuous-v1` registry description states the actual query protocol
   (uniform over [onset, T-1]); the dead `query_offsets` key was removed from
   `release_config.yaml`.
+- Target QA now runs before anything is written, scored or trained, with an
+  opt-out. `scripts/build_release.py` checks every arm of each suite, per structure
+  and with the effect, after generation and records the report in `manifest.json`
+  and `build_manifest.json`. With `--target-qa enforce` (the default) a failing
+  suite is not written and the build exits with status 1, `warn` writes it anyway
+  and `off` skips the check. `dotime-benchmark`, `dotime-eval-submission`,
+  `dotime-eval-pfn`, `dotime-eval-tabpfn` and `dotime-eval-chronos` check the
+  evaluated episodes and store `target_qa` in their output JSON
+  (`--target-qa {enforce,warn}`). The `target_qa` of `dotime-eval-reference` is now
+  a wrapper over `dotime.qa` with the same signature, keys and `RuntimeError`, and
+  it also asserts each structure. `TemporalInterventionDataLoader(target_qa=True)`
+  checks the raw targets of the first 64 queries of each structure, the effect too
+  when `target_key="Y_causal_effect"`, logs through `logging` and raises in the
+  consumer, also with prefetch. The checks draw no random numbers, so shards,
+  batches and random streams are unchanged.
 
 ### Fixed
 - `dotime-eval-reference` and `dotime-eval-pfn` always loaded the registry's

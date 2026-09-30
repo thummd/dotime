@@ -7,4 +7,5 @@ api/prior
 api/benchmarks
 api/baselines
 api/evaluation
+api/qa
 ```

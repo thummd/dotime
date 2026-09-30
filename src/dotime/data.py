@@ -6,6 +6,7 @@ following the pattern of Do-PFN's ObservationalDataLoader.
 Supports background prefetching to overlap data generation with GPU compute.
 """
 
+import logging
 import random
 import sys
 from collections.abc import Iterator
@@ -17,6 +18,9 @@ import torch
 
 from dotime.extended import ExtendedDoTime, check_batched_intervention_source
 from dotime.normalization import normalize_batch
+from dotime.qa import batch_target_qa
+
+_LOG = logging.getLogger(__name__)
 
 # Per-TSCM-structure canonical query offset range. Matches the protocol behind
 # the paper's structure-matched gap tables (results/reference/structure_matched/;
@@ -26,6 +30,14 @@ PER_STRUCT_OFFSET_RANGE: dict[str, tuple[int, int]] = {
     "front_door": (1, 5),
     "instrumental_variable": (0, 5),
 }
+
+# Target QA checks the first queries of each structure once at least this many
+# have been generated: one batch at common batch sizes, i.e. step zero, and
+# enough queries for the nonzero fractions to mean something.
+_QA_MIN_QUERIES = 64
+# Query-level batch fields that target QA reads. They are copied, because the
+# training loop owns the batch once it is yielded.
+_QA_KEYS = ("Y_true", "Y_obs", "Y_causal_effect", "query_time", "int_onset_idx", "_traj_idx")
 
 # How often a producer parked on a full queue re-checks whether the consumer has
 # gone. Far below the 5 s join in _iter_prefetch, so an abandoned producer exits
@@ -52,12 +64,22 @@ class _PrefetchError:
 class TemporalInterventionDataLoader:
     """Infinite dataloader that generates temporal intervention batches on-the-fly.
 
+    With ``target_qa=True`` (the default) the raw targets of the first 64
+    queries of every structure are checked by
+    :func:`dotime.qa.batch_target_qa`: both level arms must be finite, varied and
+    mostly nonzero, and with ``target_key="Y_causal_effect"`` the effect must be
+    nonzero on queries that can carry one. The statistics are logged through
+    ``logging`` at warning level, so they show without any logging setup. The
+    check reads tensors only, so batches are bit-identical with it on or off.
+
     Raises:
         ValueError: At construction, if both ``tscm_structure`` and
             ``tscm_structures`` are given.
         NotImplementedError: At construction, if a named structure is combined with
             an ``intervention_source`` that ``ExtendedDoTime.generate_batch`` cannot
             apply (see :func:`dotime.extended.check_batched_intervention_source`).
+        dotime.qa.TargetQAError: While iterating, when a structure's first
+            targets fail target QA (also through the prefetch thread).
     """
 
     def __init__(
@@ -89,6 +111,7 @@ class TemporalInterventionDataLoader:
         hardening: dict | None = None,
         pair_mode: str = "interventional",
         divergence_fallback: str | None = None,
+        target_qa: bool = True,
     ):
         # pair_mode and divergence_fallback go to every ExtendedDoTime unchanged. With a
         # named structure, divergence_fallback="batched" redraws diverged samples with
@@ -104,6 +127,12 @@ class TemporalInterventionDataLoader:
         self.target_key = target_key
         self.n_queries = n_queries
         self.query_mode = query_mode
+        # Step-zero target QA state: raw-target snapshots per structure until
+        # the structure is checked, then only its name in _qa_done.
+        self.target_qa = target_qa
+        self._qa_pending: dict[str | None, list[dict[str, torch.Tensor]]] = {}
+        self._qa_counts: dict[str | None, int] = {}
+        self._qa_done: set[str | None] = set()
 
         # Default sim_device to CPU. The BatchedTSCMSimulator's sequential T-loop
         # has too much kernel-launch overhead on GPU for typical batch sizes;
@@ -277,8 +306,43 @@ class TemporalInterventionDataLoader:
             if not sys.is_finalizing():
                 thread.join(timeout=5)
 
+    def _check_targets(self, structure: str | None, batch: dict[str, torch.Tensor]) -> None:
+        """Collect a batch's raw targets and check a structure once it has enough.
+
+        Args:
+            structure: The ``tscm_structure`` of the prior that generated the
+                batch, ``None`` for the generic prior.
+            batch: The batch, before normalization or a device move.
+
+        Raises:
+            dotime.qa.TargetQAError: If the structure's first targets fail.
+        """
+        if structure in self._qa_done:
+            return
+        snap = {k: batch[k].detach().cpu().clone() for k in _QA_KEYS if k in batch}
+        # Read for its length only, so a reference is enough.
+        snap["X_obs"] = batch["X_obs"]
+        self._qa_pending.setdefault(structure, []).append(snap)
+        self._qa_counts[structure] = self._qa_counts.get(structure, 0) + batch["Y_true"].numel()
+        if self._qa_counts[structure] >= _QA_MIN_QUERIES:
+            self._qa_done.add(structure)
+            batch_target_qa(
+                self._qa_pending.pop(structure),
+                structure=structure,
+                target_key=self.target_key,
+                log=_LOG.warning,
+            )
+
     def _generate_batch(self) -> dict[str, torch.Tensor]:
-        """Generate a single batch."""
+        """Generate a single batch.
+
+        Returns:
+            The batch, normalized when ``normalize`` is set and moved to ``device``.
+
+        Raises:
+            dotime.qa.TargetQAError: If target QA is on and the first targets of
+                this batch's structure fail it.
+        """
         prior = self._rng.choice(self.priors) if self.priors is not None else self.prior
         batch = prior.generate_batch(
             self.batch_size,
@@ -286,6 +350,8 @@ class TemporalInterventionDataLoader:
             n_queries=self.n_queries,
             query_mode=self.query_mode,
         )
+        if self.target_qa:
+            self._check_targets(prior.tscm_structure, batch)
 
         if self.normalize:
             batch = normalize_batch(batch, target_key=self.target_key)

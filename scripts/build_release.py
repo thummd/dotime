@@ -18,6 +18,10 @@ parquet shards + ``manifest.json`` (the canonical schema from
 ``dotime._release_io``), plus a per-suite Croissant ``croissant.json``
 and a top-level ``build_manifest.json`` recording the config hash, seed, package
 version, and hardware.
+
+Before a suite is written, its per-arm target statistics (observational level,
+interventional level and effect at each query) are logged and asserted, pooled
+and per structure, and recorded in both manifests (``--target-qa``).
 """
 
 from __future__ import annotations
@@ -38,6 +42,7 @@ import yaml
 from dotime import __version__, _release_io
 from dotime._build import build_suite
 from dotime.benchmarks import SuiteMetadata
+from dotime.qa import target_qa
 
 _CONFIG_PATH = Path(__file__).with_name("release_config.yaml")
 
@@ -124,6 +129,33 @@ def _suite_metadata(name: str, cfg: dict, n_episodes: int) -> SuiteMetadata:
     )
 
 
+def suite_target_qa(name: str, episodes: list, mode: str) -> dict:
+    """Log and assert the per-arm target statistics of one built suite.
+
+    Every arm is asserted, the effect included, because a released suite is
+    scored on both the interventional level and the effect. Groups are the
+    suite's structures (identifiability, continuous) or regime densities.
+
+    Args:
+        name: Suite name, used to prefix the log lines.
+        episodes: The generated episodes, before they are written.
+        mode: ``"enforce"``, ``"warn"`` or ``"off"``.
+
+    Returns:
+        ``{"mode": mode}`` for ``"off"``, otherwise the mode plus
+        :meth:`dotime.qa.QAReport.to_dict`, which is what the manifests record.
+    """
+    if mode == "off":
+        return {"mode": mode}
+    report = target_qa(
+        episodes,
+        dir_target="effect",
+        raise_on_failure=False,
+        log=lambda line: print(f"[build_release] {name} {line}", flush=True),
+    )
+    return {"mode": mode, **report.to_dict()}
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=_CONFIG_PATH)
@@ -151,6 +183,16 @@ def main(argv: list[str] | None = None) -> int:
         "value (release_config_v1_1.yaml uses 3). ~20 drives the divergence rate "
         "to zero.",
     )
+    parser.add_argument(
+        "--target-qa",
+        choices=["enforce", "warn", "off"],
+        default="enforce",
+        help="Per-arm target QA of each suite, pooled and per structure, after "
+        "generation and before writing (dotime.qa.target_qa). 'enforce' (default) "
+        "stops before writing a failing suite and exits with status 1, 'warn' records "
+        "the failure and writes the suite anyway, 'off' skips the check. The report "
+        "goes into each manifest.json and build_manifest.json, never the shards.",
+    )
     args = parser.parse_args(argv)
     workers = args.workers if args.workers > 0 else max(1, (os.cpu_count() or 2) - 1)
 
@@ -171,6 +213,7 @@ def main(argv: list[str] | None = None) -> int:
     suites = config["suites"]
     names = [args.suite] if args.suite else list(suites)
     built = []
+    failed = None
     for offset, name in enumerate(names):
         if name not in suites:
             raise SystemExit(f"unknown suite {name!r}; available: {list(suites)}")
@@ -186,6 +229,17 @@ def main(argv: list[str] | None = None) -> int:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)  # handled SCM divergence
             episodes = build_suite(cfg, seed, args.scale, workers)
+        # Checked in memory before anything is written: seeds guard against
+        # variance, not against a systematically corrupted target.
+        qa = suite_target_qa(name, episodes, args.target_qa)
+        if qa.get("passed") is False and args.target_qa == "enforce":
+            print(
+                f"[build_release] {name}: target QA failed, not writing it "
+                "(--target-qa warn writes it anyway)",
+                flush=True,
+            )
+            failed = {"name": name, "target_qa": qa}
+            break
 
         meta = _suite_metadata(name, cfg, len(episodes))
         suite_dir = run_dir / f"{name}-{meta.version}"
@@ -202,6 +256,7 @@ def main(argv: list[str] | None = None) -> int:
                 "config_hash": config_hash,
                 "scale": args.scale,
                 "scheme": "perepisode",
+                "target_qa": qa,
             },
         )
         manifest = json.loads((suite_dir / "manifest.json").read_text())
@@ -209,7 +264,14 @@ def main(argv: list[str] | None = None) -> int:
             json.dumps(croissant_metadata(meta, manifest), indent=2)
         )
         print(f"[build_release]   wrote {len(episodes)} episodes -> {suite_dir}", flush=True)
-        built.append({"name": name, "n_episodes": len(episodes), "dir": suite_dir.name})
+        built.append(
+            {
+                "name": name,
+                "n_episodes": len(episodes),
+                "dir": suite_dir.name,
+                "target_qa": {k: qa[k] for k in ("mode", "passed", "problems") if k in qa},
+            }
+        )
 
     build_manifest = {
         "created_utc": stamp,
@@ -222,9 +284,15 @@ def main(argv: list[str] | None = None) -> int:
         "python": sys.version.split()[0],
         "torch": torch.__version__,
         "platform": platform.platform(),
+        "target_qa": args.target_qa,
         "suites": built,
     }
+    if failed is not None:
+        build_manifest["target_qa_failed"] = failed
     (run_dir / "build_manifest.json").write_text(json.dumps(build_manifest, indent=2))
+    if failed is not None:
+        print(f"[build_release] stopped: target QA failed for {failed['name']} -> {run_dir}")
+        return 1
     print(f"[build_release] done -> {run_dir}")
     return 0
 

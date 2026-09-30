@@ -25,7 +25,7 @@ from typing import Any
 from dotime.benchmarks import Episode
 from dotime.evaluation import realign_episode
 
-__all__ = ["load_realignment", "realign_episodes"]
+__all__ = ["load_realignment", "realign_episodes", "sidecar_obs_levels"]
 
 # The sidecar stores y_true as the float64 image of the released float32
 # value, so a matching episode agrees exactly (verified on all 10,800 1.0.0
@@ -156,3 +156,34 @@ def realign_episodes(
         _check_row(ep, row)
         out.append(realign_episode(ep, row["canonical_perm"], row["hidden_canonical"]))
     return out
+
+
+def sidecar_obs_levels(
+    episodes: Iterable[Episode], realignment: dict[int, dict[str, Any]] | None
+) -> list[list[float]] | None:
+    """Observational level of each episode's query, as the sidecar regenerated it.
+
+    Target QA reads ``y_obs`` from here on realigned 1.0.0 runs, exactly as
+    their scoring does, rather than from the archived ``x_obs``.
+
+    Args:
+        episodes: Episodes that :func:`realign_episodes` accepted.
+        realignment: Rows from :func:`load_realignment`, or ``None``.
+
+    Returns:
+        One single-query list per episode with the row's ``y_obs_corrected``,
+        or ``None`` without a sidecar, which selects the default
+        :func:`dotime.evaluation.query_obs_levels`.
+
+    Raises:
+        KeyError: If an episode has no id or no row. :func:`realign_episodes`
+            refuses such an episode first, with a clearer message.
+    """
+    if realignment is None:
+        return None
+    levels = []
+    for ep in episodes:
+        if ep.scm_id is None:
+            raise KeyError("an episode without an id has no realignment row")
+        levels.append([float(realignment[ep.scm_id]["y_obs_corrected"])])
+    return levels

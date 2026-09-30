@@ -40,7 +40,12 @@ import torch
 from dotime.baselines import _INT_TYPE_CODE  # protocol base
 from dotime.benchmarks import load_benchmark
 from dotime.evaluation import direction_accuracy, query_obs_levels
-from dotime.reference._realignment import load_realignment, realign_episodes
+from dotime.qa import target_qa
+from dotime.reference._realignment import (
+    load_realignment,
+    realign_episodes,
+    sidecar_obs_levels,
+)
 
 
 def episode_to_batch_interp(episode, n_max, device, observational=False):
@@ -253,6 +258,8 @@ def main(argv: list[str] | None = None) -> None:
         OSError: If the ``--realignment`` sidecar cannot be read.
         ValueError: If the sidecar is malformed or does not describe the
             evaluated episodes, e.g. a 1.0.0 sidecar against suite 1.1.0.
+        dotime.qa.TargetQAError: If the evaluated targets fail target QA and
+            ``--target-qa`` is ``enforce``.
     """
     ap = argparse.ArgumentParser()
     ap.add_argument("--suite", required=True)
@@ -288,6 +295,13 @@ def main(argv: list[str] | None = None) -> None:
         "corrected y_obs for dir_acc_effect. Every evaluated episode must match "
         "its row, so pair it with --version 1.0.0.",
     )
+    ap.add_argument(
+        "--target-qa",
+        choices=["enforce", "warn"],
+        default="enforce",
+        help="Log and assert per-arm target statistics of the evaluated episodes "
+        "before any model runs (dotime.qa). 'warn' reports a failure and scores anyway.",
+    )
     args = ap.parse_args(argv)
     # Read the sidecar first: a bad path should fail before a suite download.
     realignment = load_realignment(args.realignment) if args.realignment is not None else None
@@ -314,6 +328,13 @@ def main(argv: list[str] | None = None) -> None:
             byst[ep.structure].append(ep)
         episodes = [e for eps in byst.values() for e in eps[: args.per_structure]]
     print(f"[{args.suite} v{suite.meta.version}] evaluating {len(episodes)} episodes")
+    # On exactly the episodes scored below, and before a checkpoint is loaded.
+    qa_report = target_qa(
+        episodes,
+        obs_levels=sidecar_obs_levels(episodes, realignment),
+        dir_target=args.dir_target,
+        raise_on_failure=args.target_qa == "enforce",
+    )
 
     out = {
         "suite": args.suite,
@@ -323,6 +344,7 @@ def main(argv: list[str] | None = None) -> None:
         # into a released result JSON.
         "realignment_sidecar": args.realignment.name if realignment is not None else None,
         "exclude_self_queries": args.exclude_self_queries,
+        "target_qa": qa_report.to_dict(),
     }
     for tag, ck, obs in [("PFN_int", args.ckpt_int, False), ("PFN_obs", args.ckpt_obs, True)]:
         t0 = time.time()

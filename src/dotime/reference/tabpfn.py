@@ -40,7 +40,12 @@ import torch
 from dotime.baselines import _back_door_columns, _front_door_columns
 from dotime.benchmarks import load_benchmark
 from dotime.evaluation import direction_accuracy
-from dotime.reference._realignment import load_realignment, realign_episodes
+from dotime.qa import target_qa
+from dotime.reference._realignment import (
+    load_realignment,
+    realign_episodes,
+    sidecar_obs_levels,
+)
 
 
 def _regressor():
@@ -238,6 +243,8 @@ def main(argv: list[str] | None = None) -> None:
         OSError: If the ``--realignment`` sidecar cannot be read.
         ValueError: If the sidecar is malformed or does not describe the
             evaluated episodes, e.g. a 1.0.0 sidecar against suite 1.1.0.
+        dotime.qa.TargetQAError: If the evaluated targets fail target QA and
+            ``--target-qa`` is ``enforce``.
     """
     ap = argparse.ArgumentParser()
     ap.add_argument("--suite", required=True)
@@ -257,6 +264,13 @@ def main(argv: list[str] | None = None) -> None:
         help="JSONL realignment sidecar for dot-Identifiability-v1 1.0.0: permutes "
         "x_obs to canonical order and zeroes hidden variables. Every evaluated "
         "episode must match its row, so pair it with --version 1.0.0.",
+    )
+    ap.add_argument(
+        "--target-qa",
+        choices=["enforce", "warn"],
+        default="enforce",
+        help="Log and assert per-arm target statistics of the evaluated episodes "
+        "before any model runs (dotime.qa). 'warn' reports a failure and scores anyway.",
     )
     args = ap.parse_args(argv)
     # Read the sidecar first: a bad path should fail before a suite download.
@@ -282,6 +296,12 @@ def main(argv: list[str] | None = None) -> None:
         # realigning after it scores the same episodes and checks only those.
         samp = realign_episodes(samp, realignment)
         print(f"  realigned x_obs of {len(samp)} episodes with {args.realignment.name}")
+    # The subsample is what gets scored, so it is what gets checked.
+    qa_report = target_qa(
+        samp,
+        obs_levels=sidecar_obs_levels(samp, realignment),
+        raise_on_failure=args.target_qa == "enforce",
+    )
 
     out = {
         "suite": args.suite,
@@ -291,6 +311,7 @@ def main(argv: list[str] | None = None) -> None:
         # into a released result JSON.
         "realignment_sidecar": args.realignment.name if realignment is not None else None,
         "n": len(samp),
+        "target_qa": qa_report.to_dict(),
     }
     for tag, obs in [("TabPFN_int", False), ("TabPFN_obs", True)]:
         t0 = time.time()

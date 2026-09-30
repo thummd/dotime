@@ -28,6 +28,7 @@ from pathlib import Path
 
 from dotime import __version__, baselines, evaluation
 from dotime.benchmarks import load_benchmark
+from dotime.qa import target_qa
 
 
 def _load_model(model_path: str | None, baseline: str | None, name: str | None):
@@ -57,16 +58,29 @@ def main(argv: list[str] | None = None) -> int:
         help="What direction accuracy scores: the sign of the interventional level "
         "(v1 protocol, default) or of the causal effect y - y_obs.",
     )
+    parser.add_argument(
+        "--target-qa",
+        choices=["enforce", "warn"],
+        default="enforce",
+        help="Log and assert per-arm target statistics before scoring (dotime.qa). "
+        "'enforce' (default) stops on a degenerate target arm, 'warn' reports it and "
+        "scores anyway. The report is stored in the submission under 'target_qa'.",
+    )
     args = parser.parse_args(argv)
 
     model, name = _load_model(args.model, args.baseline, args.name)
     suite = load_benchmark(args.suite)
+    # Before the model runs, so a corrupted target never reaches a leaderboard row.
+    qa_report = target_qa(
+        list(suite), dir_target=args.dir_target, raise_on_failure=args.target_qa == "enforce"
+    )
     results = evaluation.evaluate(model, suite, dir_target=args.dir_target)
 
     payload = results.to_dict()
     payload["model"] = name
     payload["package_version"] = __version__
     payload["schema"] = "ctp-submission/1"
+    payload["target_qa"] = qa_report.to_dict()
     args.out.write_text(json.dumps(payload, indent=2))
     print(results.summary())
     print(f"\n[eval_submission] wrote {args.out}")

@@ -122,3 +122,50 @@ with `dotime-eval-reference --dir-target effect --realignment <sidecar>`.
 
 See the {doc}`api` reference for the full `benchmarks`, `baselines`, and
 `evaluation` module documentation.
+
+## Target QA
+
+Seed protocols guard against variance. They do not guard against a systematically
+corrupted target: the v1 observational training arm was all zeros and passed every
+seed check. Every suite build, benchmark run and training loader therefore logs and
+asserts per-arm target statistics with `dotime.qa` before its numbers are trusted.
+The arms of a query are
+
+- `y_obs_level`, the observational level of the queried variable at the query row,
+- `y_int_level`, the interventional or counterfactual level `y_true`,
+- `effect`, their difference `y_int_level - y_obs_level`.
+
+For each arm the report records the query count, the non-finite count, the nonzero
+fraction, the mean, the variance and the largest magnitude, pooled and per structure
+(per regime density for `dot-RegimeSwitch-v1`). Both level arms must be finite, have
+a positive variance and be nonzero on at least half of the queries. When a run
+scores or trains on the effect, the effect must be nonzero on at least 5% of the
+queries that can carry one. A query cannot carry an effect when its structure's DAG
+has no directed path from `A` to `Y` (`observed_confounder`, `unobserved_confounder`),
+or when it comes fewer steps after the onset than the shortest such path (`mediator`
+queried at the onset). `dotime.qa.is_null_effect` reads this off the structure's
+temporal DAG, and structures it does not know are never exempt. Groups with fewer
+than 10 queries are reported but not asserted.
+
+```python
+from dotime.benchmarks import load_benchmark
+from dotime.qa import target_qa
+
+suite = load_benchmark("dot-Identifiability-v1")
+report = target_qa(list(suite), dir_target="effect")  # raises TargetQAError on failure
+report.to_dict()  # the JSON stored as "target_qa" in every output
+```
+
+| Entry point | What it checks | Opt-out |
+|---|---|---|
+| `scripts/build_release.py` | Every arm of each suite before it is written. The report goes into `manifest.json` and `build_manifest.json` | `--target-qa warn` or `off` |
+| `dotime-benchmark`, `dotime-eval-submission`, `dotime-eval-pfn` | The evaluated episodes, with the run's `--dir-target` | `--target-qa warn` |
+| `dotime-eval-tabpfn`, `dotime-eval-chronos` | The evaluated subsample, level arms | `--target-qa warn` |
+| `dotime-eval-reference` | The evaluated episodes, pooled and per structure | None |
+| `TemporalInterventionDataLoader` | The raw targets of the first 64 queries of each structure, and the effect when `target_key="Y_causal_effect"` | `target_qa=False` |
+
+The loader reports through `logging` at warning level, so the statistics appear in a
+training log without any logging setup, and it draws no random numbers, so its
+batches are bit-identical with the check on or off. All five released suite versions
+pass the defaults, with the observational level of `dot-Identifiability-v1` 1.0.0 read
+from the realignment sidecar (`results/reference/audit_2026-09/frozen_target_qa.json`).

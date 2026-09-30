@@ -22,6 +22,7 @@ that re-score released data first reproduce the published numbers, as noted per 
 | `half_diverged_generic_target_qa.json` | Per-arm target statistics of `dot-Generic-100k` by zeroed-arm category | `scripts/target_qa.py` |
 | `half_diverged_summary.json` | Digest of the `half_diverged_*` files above | |
 | `frozen_regeneration.json` | Every row of `dot-Continuous-v1` 1.0.0 (9,999) and `dot-Identifiability-v1` 1.1.0 (10,800) regenerated with the current package and compared column by column with the md5-verified release files. All 11 data columns match on every row. `metadata_json` differs on every row because the releases predate keys such as `query_time_idx`, and every released key is present with an equal value | repository `scripts/fingerprint_frozen_suites.py --full` |
+| `frozen_target_qa.json` | `dotime.qa.target_qa` with the default thresholds and `dir_target="effect"` on all five cached frozen suite versions, pooled and per structure (regime density for RegimeSwitch). Identifiability 1.0.0 reads its observational level from the realignment sidecar after checking every row against its episode. All five pass. The tightest effect cells are Identifiability 1.1.0 `confounder_mediator` and `front_door` (0.66 and 0.67 nonzero, saturating mechanisms) and Continuous `back_door` and `instrumental_variable` (0.51, queries of variables A does not reach). The script writes nothing if a version fails | `scripts/frozen_target_qa.py` |
 
 To reproduce, run from the repository root with the dev environment. The scripts read
 the cached v1.0.0 suites (`~/.cache/dotime/`) and, for 1.1.0, a local build in
@@ -33,6 +34,7 @@ python results/reference/audit_2026-09/scripts/continuous_validity.py
 python results/reference/audit_2026-09/scripts/scaling_lag.py --n 1000 --workers 12
 python results/reference/audit_2026-09/scripts/transfer_analysis.py --extra-dir <training-runs>/results/phase14c_multiseed
 python scripts/fingerprint_frozen_suites.py --full
+python results/reference/audit_2026-09/scripts/frozen_target_qa.py
 ```
 
 ## Findings fixed since

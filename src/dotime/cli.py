@@ -208,6 +208,14 @@ def _build_benchmark_parser() -> argparse.ArgumentParser:
         "(v1 protocol, default) or of the causal effect y - y_obs.",
     )
     p.add_argument(
+        "--target-qa",
+        choices=["enforce", "warn"],
+        default="enforce",
+        help="Log and assert per-arm target statistics before scoring (dotime.qa). "
+        "'enforce' (default) stops on a degenerate target arm, 'warn' reports it and "
+        "scores anyway. The report is stored in --json-out under 'target_qa'.",
+    )
+    p.add_argument(
         "--json-out", type=Path, default=None, help="Write the full results dict to this JSON path."
     )
     _add_common(p)
@@ -243,11 +251,17 @@ def benchmark_main(argv: list[str] | None = None) -> int:
 
     from dotime.benchmarks import load_benchmark
     from dotime.evaluation import evaluate
+    from dotime.qa import target_qa
 
     if args.verbose:
         print(f"[dotime-benchmark] loading suite {args.suite}", file=sys.stderr)
 
     suite = load_benchmark(args.suite)
+    # Before any model runs: seeds guard against variance, not against a
+    # corrupted target, and every score below is only as good as the targets.
+    qa_report = target_qa(
+        list(suite), dir_target=args.dir_target, raise_on_failure=args.target_qa == "enforce"
+    )
 
     # TODO(api): expose `baselines.get(name)` returning an instantiated baseline.
     model = _baselines.get(args.baseline)
@@ -261,7 +275,7 @@ def benchmark_main(argv: list[str] | None = None) -> int:
         import json
 
         args.json_out.parent.mkdir(parents=True, exist_ok=True)
-        payload = results.to_dict() if hasattr(results, "to_dict") else results
+        payload = {**results.to_dict(), "target_qa": qa_report.to_dict()}
         args.json_out.write_text(json.dumps(payload, indent=2))
         print(f"[dotime-benchmark] wrote results to {args.json_out}")
 

@@ -70,9 +70,14 @@ dotime-eval-submission --suite dot-Identifiability-v1 \
   "n_queries": 10800,
   "pooled":        {"rmse": 0.0, "mae": 0.0, "nmse": 0.0, "r2": 0.0,
                     "dir_acc": 0.0, "dir_n_valid": 8641, "dir_acc_se": 0.0},
-  "per_structure": {"back_door": {"rmse": 0.0, "...": 0.0}, "...": {}}
+  "per_structure": {"back_door": {"rmse": 0.0, "...": 0.0}, "...": {}},
+  "target_qa":     {"passed": true, "pooled": {"y_obs_level": {}, "...": {}}, "...": {}}
 }
 ```
+
+`target_qa` is the per-arm target report that the evaluator checked before
+scoring (see "Target QA" in {doc}`benchmarks`). A submission whose report did not
+pass was produced with `--target-qa warn` and is not comparable.
 
 `dir_n_valid` counts the queries with a scoreable sign (near-zero targets,
 `|y| < 0.1`, are excluded), and `dir_acc_se` is the binomial standard error

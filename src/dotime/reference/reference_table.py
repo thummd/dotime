@@ -26,7 +26,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from dotime import baselines
+from dotime import baselines, qa
 from dotime.benchmarks import load_benchmark
 from dotime.evaluation import direction_accuracy, query_obs_levels
 from dotime.reference._realignment import load_realignment, realign_episodes
@@ -34,7 +34,7 @@ from dotime.reference._realignment import load_realignment, realign_episodes
 CPU_BASELINES = ["Zero", "Mean", "AR1", "VAR-OLS", "BackDoorOLS", "NaiveOLS", "IV2SLS", "Oracle"]
 # Same floor as the training-side step-zero check: a level arm that is mostly
 # zero means a masked or diverged target, not data.
-TARGET_QA_MIN_NONZERO = 0.5
+TARGET_QA_MIN_NONZERO = qa.QAThresholds().min_level_nonzero_frac
 
 
 def _pooled_rmse(pred: np.ndarray, tgt: np.ndarray) -> float:
@@ -82,69 +82,38 @@ def _episode_obs_levels(ep, realignment):
     return query_obs_levels(ep).cpu().numpy()
 
 
-def _arm_stats(values: np.ndarray) -> dict[str, float | int]:
-    """Summarise one target arm.
-
-    Args:
-        values: 1-D array with one target value per query.
-
-    Returns:
-        Dict with the query count ``n``, ``nonzero_frac``, ``mean`` and ``var``.
-    """
-    return {
-        "n": int(values.size),
-        "nonzero_frac": float(np.mean(values != 0.0)),
-        "mean": float(np.mean(values)),
-        "var": float(np.var(values)),
-    }
-
-
 def target_qa(episodes, realignment=None, dir_target="level"):
     """Log and assert per-arm target statistics before any baseline is scored.
 
-    Seeds guard against variance, not against a systematically corrupted target:
-    the v1 observational training arm was all zeros and passed every seed check.
-    So every run first records what it is scored against. The observational arm
-    is the factual level at each query, the interventional arm is ``y_true``,
-    and the effect is their difference.
+    A thin wrapper over :func:`dotime.qa.target_qa`, which asserts the arms
+    pooled and per structure. The observational arm is read exactly as in
+    scoring, from the realignment sidecar when one is given.
 
     Args:
         episodes: The episodes that will be scored.
         realignment: Optional ``{scm_id: row}`` realignment sidecar map, used for
             the observational level exactly as in scoring.
         dir_target: ``"level"`` or ``"effect"``. An effect-scored run also
-            requires the effect arm to be nonzero somewhere.
+            asserts the effect arm on the queries that can carry an effect.
 
     Returns:
-        Dict mapping ``y_obs_level``, ``y_int_level`` and ``effect`` to the
-        output of :func:`_arm_stats`, plus the ``min_nonzero_frac`` floor.
+        Dict with the pooled ``y_obs_level``, ``y_int_level`` and ``effect``
+        statistics (:func:`dotime.qa.arm_stats`), the ``min_nonzero_frac``
+        floor, and every key of :meth:`dotime.qa.QAReport.to_dict`.
 
     Raises:
-        RuntimeError: If an arm is non-finite, a level arm has zero variance or
-            a nonzero fraction below ``TARGET_QA_MIN_NONZERO``, or an
-            effect-scored run has an all-zero effect.
+        RuntimeError: A :class:`dotime.qa.TargetQAError` if an arm is
+            non-finite, a level arm has zero variance or a nonzero fraction
+            below ``TARGET_QA_MIN_NONZERO``, or an effect-scored run has too
+            few nonzero effects, pooled or in a structure.
     """
-    y_obs = np.concatenate([_episode_obs_levels(ep, realignment) for ep in episodes])
-    y_int = np.concatenate(
-        [torch.as_tensor(ep.y_true, dtype=torch.float32).reshape(-1).numpy() for ep in episodes]
-    )
-    arms = {"y_obs_level": y_obs, "y_int_level": y_int, "effect": y_int - y_obs}
-    stats = {name: _arm_stats(values) for name, values in arms.items()}
-    for name, st in stats.items():
-        print(
-            f"[target QA] {name:11s} n={st['n']} nonzero_frac={st['nonzero_frac']:.4f} "
-            f"mean={st['mean']:.4f} var={st['var']:.4f}"
-        )
-    problems = [name for name, values in arms.items() if not np.isfinite(values).all()]
-    for name in ("y_obs_level", "y_int_level"):
-        st = stats[name]
-        if st["var"] <= 0.0 or st["nonzero_frac"] < TARGET_QA_MIN_NONZERO:
-            problems.append(f"{name} (nonzero_frac={st['nonzero_frac']:.4f}, var={st['var']:.4g})")
-    if dir_target == "effect" and stats["effect"]["nonzero_frac"] == 0.0:
-        problems.append("effect is zero on every query")
-    if problems:
-        raise RuntimeError(f"target QA failed: {'; '.join(problems)}")
-    return {**stats, "min_nonzero_frac": TARGET_QA_MIN_NONZERO}
+    episodes = list(episodes)
+    obs = None
+    if realignment is not None:
+        obs = [_episode_obs_levels(ep, realignment) for ep in episodes]
+    report = qa.target_qa(episodes, obs_levels=obs, dir_target=dir_target)
+    pooled = {arm: report.pooled[arm] for arm in qa.ARMS}
+    return {**pooled, "min_nonzero_frac": TARGET_QA_MIN_NONZERO, **report.to_dict()}
 
 
 def run_baseline(
