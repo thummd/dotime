@@ -112,9 +112,6 @@ class DriverSpec:
 
         Returns:
             For example ``"seasonal_hidden"``.
-
-        Raises:
-            Nothing. The fields were validated at construction.
         """
         return f"{self.kind}_{'observed' if self.observed else 'hidden'}"
 
@@ -239,8 +236,8 @@ class DriverDraw:
             ``spec.strength`` is ``0``.
 
     Raises:
-        Nothing. The fields are not validated, :func:`draw_driver` builds
-        consistent draws.
+        TypeError: If a field is missing. The values are not validated, since
+            ``draw_driver`` builds consistent draws.
     """
 
     spec: DriverSpec
@@ -278,7 +275,8 @@ class DriverDraw:
             ``generation_seed``.
 
         Raises:
-            Nothing. Every value is converted to a plain Python type.
+            TypeError: If ``column``, ``burn_in`` or ``generation_seed`` cannot
+                be converted to ``int``.
         """
         return {
             "kind": self.spec.kind,

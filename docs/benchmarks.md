@@ -239,6 +239,71 @@ its mean. For two independent zero-mean symmetric draws it does so with
 probability 3/4, and choosing the query where the arms differ most raises this
 further. On these files the effect-scored sign test therefore rewards
 regression to the mean, not knowledge of the causal path.
+## Seasonal and trend confounders (dot-SeasonalTrend-v1)
+
+A driven structure label `"<base>+<kind>_<visibility>"` adds one exogenous
+driver D to a named structure (`dotime.drivers`):
+
+```python
+ExtendedDoTime(tscm_structure="back_door+seasonal_hidden", pair_mode="counterfactual")
+```
+
+- `kind` is `seasonal`, `sin(2πt/P + φ)` with period `P ~ U[12, 48)` and phase
+  `φ ~ U[0, 2π)`, or `trend`, a ramp from -1 to 1 or from 1 to -1 over the
+  burn-in and the `T` released steps.
+- D is a root of the DAG with instantaneous edges D→A and D→Y. It enters both
+  structural equations additively after the activation, with loadings
+  `±U[0.5, 1)`, so D confounds A and Y. The sign of the product of the two
+  loadings is the episode's confounding sign.
+- D is drawn once per episode and shared by both arms, and `do(A)` cannot move
+  it. Drivers therefore need `pair_mode="counterfactual"`, and `generate_batch`
+  refuses them. Driver draws come from their own seed stream, so every
+  simulation draws the base structure's mechanisms, noise and intervention
+  exactly as it would without the driver. Plain labels are unchanged, and the
+  released suites still regenerate bit for bit.
+- The columns are A, the base structure's middle columns, D at `N-2` and Y at
+  `N-1`.
+
+`scripts/release_config_seasonal_trend.yaml` defines `dot-SeasonalTrend-v1`
+1.0.0, 10,000 counterfactual episodes with `T = 200`, 1,000 per label. The
+labels are the plain `bi_variate` and `back_door` structures (tier 1) and each
+of them with an observed (tier 2) or hidden (tier 3) seasonal or trend driver.
+The label is the episode's `structure`, so per-structure evaluation reports
+every stratum separately.
+
+**Observed or hidden.** An observed D is a released column whose metadata sets
+`known_future: true`. D is exogenous and a deterministic function of time, like
+a calendar feature, so an evaluator may leave it unmasked after the onset and a
+model may read its future values. A hidden D is zeroed in both released arms
+and in the variable mask, exactly like the hidden confounder U. A hidden driver
+confounds A and Y through time. Because D is a deterministic function of time,
+the effect stays identifiable in principle by modelling time, for example with
+trend or seasonal terms as in an interrupted time series. What a hidden driver
+defeats are estimators that neither adjust for D nor model time, and estimators
+that assume a stationary series. The structure whose effect is not identifiable
+is `bow_graph`.
+
+**Metadata.** Every driven episode records `metadata["driver"]` with `kind`,
+`observed`, `column`, `strength`, `params` (`period` and `phase`, or
+`direction`), `loadings` (`A` and `Y`), `confounding_sign`, `known_future`,
+`burn_in` and `generation_seed`. Calling
+`dotime.drivers.released_driver_series(metadata["driver"], T)` rebuilds D on the
+released rows bit for bit, a hidden D included.
+
+**Baselines.** `BackDoorOLS` adjusts for `{X, D}` or `{D}` on observed-driver
+labels whose base is in the back-door family or is `bi_variate`, and predicts
+the pre-onset mean on hidden-driver labels. On the first 100 episodes of each
+label (`results/reference/seasonal_trend/`), effect-sign accuracy on the
+seasonal labels is 0.60 to 0.67 without adjusting for an observed D and 0.91
+and 0.97 with it. Estimators that neither see D nor model time score 0.61 and
+0.67 on the hidden seasonal labels, against 0.92 to 0.96 on the plain
+structures.
+
+**Stationarity.** Trend episodes are not stationary. They fall outside the
+stationarity-after-burn-in assumption of the paper's convergence result, which
+therefore does not cover them. A seasonal driver has a uniformly random phase,
+so over episodes it is a stationary process, although within one episode D is
+periodic.
 
 ## Evaluation protocol
 

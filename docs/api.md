@@ -4,6 +4,7 @@
 :maxdepth: 1
 
 api/prior
+api/drivers
 api/benchmarks
 api/baselines
 api/evaluation

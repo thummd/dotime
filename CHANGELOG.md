@@ -108,6 +108,27 @@ All notable changes to `dotime` are documented here. The format follows
   new trajectories and targets. Zenodo version record 22673322 (concept DOI
   10.5281/zenodo.20846063), Hugging Face tag `v1.1.0`. 1.0.0 stays loadable with
   `version="1.0.0"`.
+- Opt-in seasonal and trend confounding drivers for the named structures
+  (`dotime.drivers`). A driven label `"<base>+<kind>_<visibility>"`, such as
+  `"back_door+seasonal_hidden"`, adds an exogenous driver D, a sinusoid with
+  period `U[12, 48)` or a ramp between -1 and 1 over burn-in plus `T`. D is a
+  root with instantaneous edges D -> A and D -> Y and enters both equations
+  additively with loadings `±U[0.5, 1)`. It is drawn once per episode and
+  shared by both arms, so drivers need `pair_mode="counterfactual"`, and
+  `generate_batch` refuses them. An observed D is released at column `N-2`
+  with `known_future: true`. A hidden D is zeroed in both arms like U. Each
+  episode records `metadata["driver"]`, and `released_driver_series` rebuilds D
+  from it. Driver draws come from their own seed stream, so strength 0
+  reproduces the base structure bit for bit, and plain labels and the released
+  suites are unchanged. `BackDoorOLS` adjusts for `{X, D}` or `{D}` on
+  observed-driver labels and predicts the pre-onset mean on hidden ones.
+  `scripts/release_config_seasonal_trend.yaml` defines `dot-SeasonalTrend-v1`
+  1.0.0, 10 labels of 1,000 episodes with suite seed 20262001. On its first
+  100 episodes per label (`results/reference/seasonal_trend/`), effect-sign
+  accuracy on the seasonal labels is 0.60 to 0.67 without adjusting for an
+  observed D and 0.91 and 0.97 with it. Estimators without D score 0.61 and
+  0.67 on the hidden seasonal labels, against 0.92 to 0.96 on the plain
+  structures.
 - Shared-noise (counterfactual) pairing for the discrete generator:
   `TemporalSCM.freeze_noise` / `clear_noise` and `pair_mode="counterfactual"` on
   `ExtendedDoTime` / `TSCMPrior`. One exogenous-noise realisation is drawn per
