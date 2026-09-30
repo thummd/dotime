@@ -11,9 +11,9 @@
     "workers": 4,
     "effect_eps": 0.1,
     "package_version": "0.1.3",
-    "git_commit": "5772a554e6525e4633c9d8af5e90e25fc81a8b56",
-    "src_and_scripts_clean": true,
-    "naive_ols_registered": false
+    "git_commit": "dfce909af88ae3bd76d9428cb1a34ce964daff9b",
+    "src_and_scripts_clean": false,
+    "naive_ols_registered": true
   },
   "labels": {
     "bi_variate": {
@@ -49,6 +49,15 @@
           ],
           "n_valid": 57,
           "n_zero_contrast": 57
+        },
+        "NaiveOLS": {
+          "accuracy": 0.9649122807017544,
+          "ci95": [
+            0.9122807017543859,
+            1.0
+          ],
+          "n_valid": 57,
+          "n_zero_contrast": 0
         },
         "ols_base_set": {
           "accuracy": 0.9649122807017544,
@@ -102,6 +111,15 @@
       },
       "effect_sign_accuracy": {
         "BackDoorOLS": {
+          "accuracy": 0.921875,
+          "ci95": [
+            0.859375,
+            0.984375
+          ],
+          "n_valid": 64,
+          "n_zero_contrast": 0
+        },
+        "NaiveOLS": {
           "accuracy": 0.921875,
           "ci95": [
             0.859375,
@@ -178,6 +196,15 @@
           "ci95": [
             0.8245614035087719,
             0.9824561403508771
+          ],
+          "n_valid": 57,
+          "n_zero_contrast": 0
+        },
+        "NaiveOLS": {
+          "accuracy": 0.5964912280701754,
+          "ci95": [
+            0.47368421052631576,
+            0.7368421052631579
           ],
           "n_valid": 57,
           "n_zero_contrast": 0
@@ -263,6 +290,15 @@
           "n_valid": 71,
           "n_zero_contrast": 0
         },
+        "NaiveOLS": {
+          "accuracy": 0.8028169014084507,
+          "ci95": [
+            0.704225352112676,
+            0.8873239436619719
+          ],
+          "n_valid": 71,
+          "n_zero_contrast": 0
+        },
         "ols_base_set": {
           "accuracy": 0.8028169014084507,
           "ci95": [
@@ -340,6 +376,15 @@
           "ci95": [
             0.9166666666666666,
             1.0
+          ],
+          "n_valid": 60,
+          "n_zero_contrast": 0
+        },
+        "NaiveOLS": {
+          "accuracy": 0.6666666666666666,
+          "ci95": [
+            0.55,
+            0.7833333333333333
           ],
           "n_valid": 60,
           "n_zero_contrast": 0
@@ -425,6 +470,15 @@
           "n_valid": 68,
           "n_zero_contrast": 0
         },
+        "NaiveOLS": {
+          "accuracy": 0.7647058823529411,
+          "ci95": [
+            0.6764705882352942,
+            0.8529411764705882
+          ],
+          "n_valid": 68,
+          "n_zero_contrast": 0
+        },
         "ols_base_set": {
           "accuracy": 0.8088235294117647,
           "ci95": [
@@ -505,6 +559,15 @@
           ],
           "n_valid": 64,
           "n_zero_contrast": 64
+        },
+        "NaiveOLS": {
+          "accuracy": 0.609375,
+          "ci95": [
+            0.484375,
+            0.734375
+          ],
+          "n_valid": 64,
+          "n_zero_contrast": 0
         },
         "ols_base_set": {
           "accuracy": 0.609375,
@@ -587,6 +650,15 @@
           "n_valid": 70,
           "n_zero_contrast": 70
         },
+        "NaiveOLS": {
+          "accuracy": 0.9142857142857143,
+          "ci95": [
+            0.8428571428571429,
+            0.9714285714285714
+          ],
+          "n_valid": 70,
+          "n_zero_contrast": 0
+        },
         "ols_base_set": {
           "accuracy": 0.9142857142857143,
           "ci95": [
@@ -668,6 +740,15 @@
           "n_valid": 61,
           "n_zero_contrast": 61
         },
+        "NaiveOLS": {
+          "accuracy": 0.6721311475409836,
+          "ci95": [
+            0.5569672131147541,
+            0.7868852459016393
+          ],
+          "n_valid": 61,
+          "n_zero_contrast": 0
+        },
         "ols_base_set": {
           "accuracy": 0.6721311475409836,
           "ci95": [
@@ -748,6 +829,15 @@
           ],
           "n_valid": 63,
           "n_zero_contrast": 63
+        },
+        "NaiveOLS": {
+          "accuracy": 0.7936507936507936,
+          "ci95": [
+            0.6984126984126984,
+            0.8888888888888888
+          ],
+          "n_valid": 63,
+          "n_zero_contrast": 0
         },
         "ols_base_set": {
           "accuracy": 0.7936507936507936,
