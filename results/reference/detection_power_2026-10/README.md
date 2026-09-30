@@ -234,9 +234,10 @@ the structures it routes to such an estimator.
 
 ### 1.1.0: the outputs in this folder
 
-`ident_v1_1.md` holds every table. The outputs come from commit `9a19911`, where
-NaiveOLS was not registered yet. Its rows are therefore `pending`, and so are the
-router's cells on `bi_variate` and `mediator`, which route to it. `mediator`,
+`ident_v1_1.md` holds every table, and each output records the commit that produced it
+(`code.git_commit`). They were produced before NaiveOLS was registered, so the NaiveOLS
+rows are `pending`. The router's cells on `bi_variate` and `mediator`, which route to
+NaiveOLS, are pending too. `mediator`,
 `observed_confounder` and `unobserved_confounder` have no episode with an effect of at
 least 0.1 at their 1.1.0 query, so they only score false effects.
 
@@ -274,8 +275,9 @@ Effect-sign accuracy with binomial SE:
 
 These numbers come from a scratch run, and the integrator's rerun regenerates them
 into `ident_v1_1.*` and `ident_v1_2.*`. That run must reproduce them exactly. The
-scratch tree was main `9690cf0` plus session A's commit `4f4e513`, which registers
-NaiveOLS, plus these scripts. The 1.2.0 suite was built with `scripts/build_release.py`
+scratch tree was main at "Models: load checkpoints with readout, token-lag and horizon
+options" plus session A's commit "Identifiability 1.2.0: NaiveOLS baseline and bow_graph
+in the config", which registers NaiveOLS, plus these scripts. The 1.2.0 suite was built with `scripts/build_release.py`
 and session A's `release_config_v1_2.yaml` (suite seed 20261719, 12,150 episodes). Its
 seven unchanged structures match the released 1.1.0 bit for bit (`x_obs`, `x_int`,
 `y_true` and query rows of 9,450 episodes). `mediator` differs only in its query, at
@@ -332,8 +334,9 @@ against 0 for the router.
 
 ### Exploratory results (not pre-registered, added after reading the 1.1.0 results)
 
-These come from commits `eddd3b6`, `ec52141`, `88bcf4f` and `9a19911`, which add columns
-and tables but change no pre-registered metric or criterion.
+They come from the four commits titled "Detection power: exploratory ...", which follow
+the pre-registration commit. They add columns and tables but change no pre-registered
+metric or criterion.
 
 - **Sign of each estimator's own effect**, `pred(do v) - pred(do a_ref)`. This removes
   the level-forecast term that the official score also charges. Where they apply, the
