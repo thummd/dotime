@@ -14,6 +14,10 @@ the canonical generation scheme for the released suites.
 
 from __future__ import annotations
 
+# Build-config keys that episode_specs copies into every spec. Each one switches
+# on a behaviour the frozen configs never set, so their specs stay unchanged.
+_OPT_IN_SPEC_KEYS = ("record_graph",)
+
 
 def scaled(n: int, scale: float) -> int:
     """Scale an episode count by ``scale`` (floored at 1)."""
@@ -62,6 +66,60 @@ def arms_zeroed(*arms) -> bool:
     return any(float(arm.abs().max()) == 0.0 for arm in arms)
 
 
+def _with_graph(spec: dict, ep, source, columns=None):
+    """Attach the episode's ground-truth lagged graph when the spec asks for it.
+
+    With ``spec["record_graph"]`` set, ``ep.metadata["graph"]`` receives
+    :meth:`dotime.graph_meta.LaggedGraph.to_dict` plus a ``"path"`` list with one
+    :func:`dotime.graph_meta.path_lag` summary per query, from the intervention
+    targets to that query's column. Extraction only reads the SCM, so the
+    tensors and every random stream are the same as without the flag.
+
+    Args:
+        spec: The episode spec passed to :func:`make_episode`.
+        ep: The built episode.
+        source: The sampled SCM, or ``("identifiability", structure)`` /
+            ``("continuous", structure)`` for the named-structure generators,
+            whose graph is fixed by the structure.
+        columns: SCM node name of each released column, for a builder that
+            releases only some nodes. ``None`` means every node, in the SCM's
+            topological order.
+
+    Returns:
+        ``ep``, with the graph added to its metadata if requested.
+
+    Raises:
+        TypeError: If ``spec["record_graph"]`` is not a bool.
+        ValueError: If ``source`` names an unknown generator kind.
+    """
+    flag = spec.get("record_graph", False)
+    # A strict check, because a truthy string such as "false" would otherwise
+    # switch the recording on.
+    if not isinstance(flag, bool):
+        raise TypeError(f"spec['record_graph'] must be a bool, got {type(flag).__name__}")
+    if not flag:
+        return ep
+    from dotime.graph_meta import LaggedGraph, path_lag
+
+    if isinstance(source, tuple):
+        kind, structure = source
+        if kind == "identifiability":
+            graph = LaggedGraph.from_structure(structure)
+        elif kind == "continuous":
+            graph = LaggedGraph.from_continuous_structure(structure)
+        else:
+            raise ValueError(f"no graph source for generator kind {kind!r}")
+    else:
+        graph = LaggedGraph.from_scm(source, columns=columns)
+    sources = [int(t) for t in ep.intervention.targets]
+    paths = [
+        {"target": int(q), **path_lag(graph, sources, int(q)).to_dict()}
+        for q in ep.query_target.reshape(-1).tolist()
+    ]
+    ep.metadata["graph"] = {**graph.to_dict(), "path": paths}
+    return ep
+
+
 def make_episode(spec: dict):
     """Build a single Episode from a spec dict (picklable; runs in a worker)."""
     import warnings as _w
@@ -94,7 +152,7 @@ def make_episode(spec: dict):
         for attempt in range(retries + 1):
             s = seed if attempt == 0 else seed * 100003 + attempt
             _torch.manual_seed(s)
-            x_obs, x_int, iv, _ = DoTime(seed=s).generate_pair(T=t_len)
+            x_obs, x_int, iv, scm = DoTime(seed=s).generate_pair(T=t_len)
             if attempt == retries or not arms_zeroed(x_obs, x_int):
                 break
         # Flag zeroed (diverged) episodes explicitly: v1.0.0 shipped them
@@ -102,13 +160,14 @@ def make_episode(spec: dict):
         # one arm zeroed counts too (about 1.4% of v1.0.0 Generic episodes).
         # Tensors and RNG streams are unchanged; only metadata_json gains the
         # key (v1.1+).
-        return episode_from_pair(
+        ep = episode_from_pair(
             x_obs,
             x_int,
             iv,
             scm_id=idx,
             metadata={"tier": 1, "diverged": arms_zeroed(x_obs, x_int)},
         )
+        return _with_graph(spec, ep, scm)
     if kind == "regime":
         from dotime import DoTime
 
@@ -116,10 +175,14 @@ def make_episode(spec: dict):
         for attempt in range(retries + 1):
             s = seed if attempt == 0 else seed * 100003 + attempt
             _torch.manual_seed(s)
-            x_obs, x_int, iv, _ = DoTime(seed=s).generate_regime_pair(T=t_len, num_regimes=d)
+            # Not named ``scm``: the generic branch above already binds that
+            # name as a TemporalSCM for the type checker.
+            x_obs, x_int, iv, regime_scm = DoTime(seed=s).generate_regime_pair(
+                T=t_len, num_regimes=d
+            )
             if attempt == retries or not arms_zeroed(x_obs, x_int):
                 break
-        return episode_from_pair(
+        ep = episode_from_pair(
             x_obs,
             x_int,
             iv,
@@ -127,6 +190,7 @@ def make_episode(spec: dict):
             scm_id=idx,
             metadata={"tier": spec["tier"], "n_regimes": d, "diverged": arms_zeroed(x_obs, x_int)},
         )
+        return _with_graph(spec, ep, regime_scm)
     if kind == "identifiability":
         from dotime.extended import ExtendedDoTime
 
@@ -149,7 +213,7 @@ def make_episode(spec: dict):
             zeroed = arms_zeroed(s["X_int"], s["X_obs_full"])
             if attempt == retries or not zeroed:
                 break
-        return episode_from_sample(
+        ep = episode_from_sample(
             s,
             structure=spec["structure"],
             scm_id=idx,
@@ -160,6 +224,7 @@ def make_episode(spec: dict):
                 "query_offset_range": list(spec.get("query_offset_range", (0, 0))),
             },
         )
+        return _with_graph(spec, ep, ("identifiability", spec["structure"]))
     if kind == "continuous":
         from dotime.continuous import ContinuousExtendedPrior
 
@@ -183,8 +248,27 @@ def make_episode(spec: dict):
             "query_in_window": bool(float(s["t_int_start"]) <= q_abs <= float(s["t_int_end"])),
             "window_end_idx": int((s["times"] <= float(s["t_int_end"])).sum().item()) - 1,
         }
-        return episode_from_sample(s, structure=spec["structure"], scm_id=idx, metadata=meta)
+        ep = episode_from_sample(s, structure=spec["structure"], scm_id=idx, metadata=meta)
+        return _with_graph(spec, ep, ("continuous", spec["structure"]))
     raise ValueError(f"unknown spec kind {kind!r}")
+
+
+def _forward_opt_in(cfg: dict, specs: list[dict]) -> list[dict]:
+    """Copy the opt-in build-config keys a suite config sets into every spec.
+
+    Args:
+        cfg: The suite config.
+        specs: The per-episode specs built from it.
+
+    Returns:
+        ``specs`` itself when ``cfg`` sets none of :data:`_OPT_IN_SPEC_KEYS`,
+        so frozen configs keep their exact specs. Otherwise new spec dicts that
+        also carry those keys.
+    """
+    extra = {k: cfg[k] for k in _OPT_IN_SPEC_KEYS if k in cfg}
+    if not extra:
+        return specs
+    return [{**s, **extra} for s in specs]
 
 
 def episode_specs(cfg: dict, suite_seed: int, scale: float) -> list[dict]:
@@ -257,7 +341,7 @@ def episode_specs(cfg: dict, suite_seed: int, scale: float) -> list[dict]:
                 )
     else:
         raise ValueError(f"unknown generator {gen!r}")
-    return specs
+    return _forward_opt_in(cfg, specs)
 
 
 def build_suite(cfg: dict, seed: int, scale: float, workers: int) -> list:
