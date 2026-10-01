@@ -3,7 +3,7 @@
  "code": {
   "commit": "c83f30a38efb47ee2081fc5154a663002e227878",
   "src_dirty": false,
-  "dotime_file": "/home/dennis/repos/dotime/.claude/worktrees/intelligent-poincare-05521d/src/dotime/__init__.py",
+  "dotime_file": "src/dotime/__init__.py",
   "graph_meta_sha256": "bedd8266c217c22e5cc03c5e8ea209955b6d262d8319c68d8c037b1f62cdf81a",
   "build_sha256": "3656d333ae79ad251e2af0e1be207c037639e9d7cbe6231db8e9147567684f73"
  },

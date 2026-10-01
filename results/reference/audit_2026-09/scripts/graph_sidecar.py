@@ -60,6 +60,24 @@ from dotime import _release_io
 from dotime._build import episode_specs, make_episode
 
 _REPO = Path(__file__).resolve().parents[4]
+
+
+def _portable(path: Path) -> str:
+    """A path for a published record: relative to the checkout when inside it.
+
+    Args:
+        path: An absolute path.
+
+    Returns:
+        The path relative to the repository root, or its last two components
+        (e.g. ``dotime/__init__.py``) for an installed package.
+    """
+    try:
+        return str(path.relative_to(_REPO))
+    except ValueError:
+        return str(Path(*path.parts[-2:]))
+
+
 _SUITES = {
     "dot-Generic-100k": "dot-Generic-100k-v1.0.0_graph.jsonl.gz",
     "dot-RegimeSwitch-v1": "dot-RegimeSwitch-v1.0.0_graph.jsonl.gz",
@@ -230,7 +248,9 @@ def _git_state() -> dict:
     return {
         "commit": git("rev-parse", "HEAD"),
         "src_dirty": bool(git("status", "--porcelain", "--", "src")),
-        "dotime_file": str(Path(dotime.__file__).resolve()),
+        # Relative to the checkout, so the record proves which copy of the
+        # package ran without publishing the machine's directory layout.
+        "dotime_file": _portable(Path(dotime.__file__).resolve()),
         "graph_meta_sha256": hashlib.sha256((src / "graph_meta.py").read_bytes()).hexdigest(),
         "build_sha256": hashlib.sha256((src / "_build.py").read_bytes()).hexdigest(),
     }
