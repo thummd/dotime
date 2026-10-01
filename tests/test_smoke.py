@@ -625,7 +625,16 @@ def test_reference_jsons_record_hub_checkpoints():
     def walk(obj, where):
         if isinstance(obj, dict):
             for key, val in obj.items():
-                if key == "checkpoint" and not str(val).startswith("hf://thummd/do-over-time-pfn/"):
+                # A bare file name says which file of every run was scored, not
+                # where it lives, so it cannot be a machine-local path. The
+                # pre-registered s13 results record it that way and list each
+                # run's file and digest in s13_scoring_provenance.json.
+                is_location = "/" in str(val) or "\\" in str(val)
+                if (
+                    key == "checkpoint"
+                    and is_location
+                    and not str(val).startswith("hf://thummd/do-over-time-pfn/")
+                ):
                     bad.append(f"{where}: {val}")
                 walk(val, where)
         elif isinstance(obj, list):
