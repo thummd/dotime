@@ -16,7 +16,17 @@ All notable changes to `dotime` are documented here. The format follows
   dot-SeasonalTrend-v1 it scores 0.78 to 0.83 effect-sign accuracy on the hidden
   labels, against 0.60 to 0.72 for NaiveOLS, and matches NaiveOLS without a
   driver. `results/reference/seasonal_trend/time_ols.py` reproduces the released
-  rows exactly before scoring it.
+  rows exactly before scoring it. It is a specialist: on dot-Wide-v1, which has
+  no time driver, it scores 0.587 against 0.624 for NaiveOLS.
+- Per-lag breakdown of dot-Wide-v1 (`results/reference/wide/lag_breakdown.py`,
+  `wide_lag_breakdown.json`), split by the minimum lag from treatment to query,
+  the sampled K and the effective K. The full rebuild reproduces
+  `wide_cpu_effect.json` (exact counts and accuracies, RMSE within 3e-6
+  relative). Effects shrink with the lag, from a median |effect| of 0.51 at lag 0
+  to 0.22 at lag 4 or more. NaiveOLS beats the pre-onset mean only at lag 0
+  (0.679 against 0.629) and falls below it at lags 1 and 2, so no packaged
+  estimator handles lagged effects in wide graphs. Unlike the dot-Generic-100k
+  breakdown, these numbers measure causal effects, since the arms share noise.
 - `dotime-eval-tabpfn` and `dotime-eval-chronos` score direction accuracy on
   the level and on the causal effect for every arm and take `--dir-target
   {level,effect}` to choose which fills `dir_acc` (`dotime.reference._scoring`).

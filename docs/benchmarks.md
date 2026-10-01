@@ -240,7 +240,10 @@ draws, so the sign of `y - y_obs` tends to oppose the deviation of `y_obs` from
 its mean. For two independent zero-mean symmetric draws it does so with
 probability 3/4, and choosing the query where the arms differ most raises this
 further. On these files the effect-scored sign test therefore rewards
-regression to the mean, not knowledge of the causal path.
+regression to the mean, not knowledge of the causal path. The counterfactual
+dot-Wide-v1 has a meaningful per-lag breakdown
+(`results/reference/wide/wide_lag_breakdown.json`).
+
 ## Seasonal and trend confounders (dot-SeasonalTrend-v1)
 
 A driven structure label `"<base>+<kind>_<visibility>"` adds one exogenous

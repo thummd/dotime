@@ -125,3 +125,67 @@ From the repository root:
 ```bash
 PYTHONPATH=src python results/reference/wide/qa.py --workers 4
 ```
+
+## Per-lag breakdown (October 2026)
+
+dot-Generic-100k cannot show how estimators fare across lags: its arms are
+independent draws, so its effect field measures regression to the mean
+(`docs/benchmarks.md`, "Per-lag scores"). dot-Wide-v1 can. Its arms share one
+noise realisation, its query sits at the end of the intervention window, and
+every episode records its lagged graph (`metadata["graph"]`).
+`lag_breakdown.py` rebuilds the full suite from the release config, asserts the
+per-arm target statistics, and gates on `wide_cpu_effect.json`. `dir_n_valid`
+and `dir_acc` of Zero, Mean, AR1, VAR-OLS and NaiveOLS must match exactly, and
+pooled RMSE to a relative 1e-4, the tolerance of the frozen fingerprints. The
+hardening's spectral scaling and the time-varying interventions go through the
+platform's linear algebra, sin and exp. On this Windows rebuild against the
+Linux build, counts and accuracies matched exactly, and the largest RMSE
+difference was 2.9e-6. The results are in `wide_lag_breakdown.json`, scored as
+`run_baseline` scores (effect sign, float32).
+
+By the smallest summed lag from an intervened column to the query, with
+effect-sign accuracy ± binomial SE:
+
+| Min lag | Episodes | \|effect\| ≥ 0.1 | Median \|effect\| | Mean | NaiveOLS | TimeOLS |
+|---|---|---|---|---|---|---|
+| 0 | 5,040 | 0.919 | 0.513 | 0.629 ± 0.007 | 0.679 ± 0.007 | 0.632 ± 0.007 |
+| 1 | 4,009 | 0.891 | 0.407 | 0.596 ± 0.008 | 0.568 ± 0.008 | 0.546 ± 0.008 |
+| 2 | 633 | 0.855 | 0.377 | 0.567 ± 0.021 | 0.529 ± 0.021 | 0.486 ± 0.021 |
+| 3 | 144 | 0.764 | 0.276 | 0.627 ± 0.046 | 0.555 ± 0.047 | 0.555 ± 0.047 |
+| ≥ 4 | 102 | 0.706 | 0.221 | 0.597 ± 0.058 | 0.597 ± 0.058 | 0.514 ± 0.059 |
+| unreachable | 72 | 0 | 0 | n/a | n/a | n/a |
+
+The JSON also splits by the sampled maximum lag `k_sampled` and the lag order
+the graph uses, `k_eff` (1 to 8, about 1,250 episodes each), and has the Zero,
+AR1 and VAR-OLS rows.
+
+Findings:
+
+1. Effects shrink with the lag between treatment and query. The median |effect|
+   falls from 0.51 at lag 0 to 0.22 at lag 4 or more, and the share that can be
+   scored from 0.92 to 0.71. The 72 unreachable queries have an exact zero effect
+   and are not scored.
+2. The unadjusted regression helps only for contemporaneous effects. NaiveOLS
+   beats the pre-onset mean at lag 0 (0.679 against 0.629) and falls below it at
+   lags 1 and 2 (0.568 against 0.596, 0.529 against 0.567). It regresses `Y_t` on
+   `A_t`, so it sees only paths with no lag. This is the generic counterpart of
+   the lagged mediator of dot-Identifiability-v1 1.2.0, where only an estimator
+   that models the lag separates.
+3. The sampled lag order barely matters. Across `k_sampled` from 1 to 8 the
+   accuracies stay between 0.57 and 0.66, because most queries are reached at
+   lag 0 or 1 whatever the graph's maximum lag. The lag that matters is that of
+   the path from treatment to query, which is why the graph metadata records
+   it.
+4. No packaged estimator models lagged effects in wide graphs. The lag-aware
+   structural VAR of `../detection_power_2026-10` runs only on the named
+   structures. This is an open entry for submissions.
+5. TimeOLS, which targets confounding by time, is worse than NaiveOLS here
+   (0.587 against 0.624 pooled). dot-Wide-v1 has no time driver, so its trend,
+   seasonal term and roll-forward add variance without removing bias. It is a
+   specialist estimator, not a general replacement.
+
+To reproduce (about 30 minutes to build on 16 workers, cached with `--cache`):
+
+```bash
+PYTHONPATH=src python results/reference/wide/lag_breakdown.py --workers 16 --cache wide.npz
+```
