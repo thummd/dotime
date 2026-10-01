@@ -30,9 +30,27 @@ submission's finding holds: giving an observational model the do-value buys noth
 effect sign it does buy something, by a margin of one to two standard errors on 188 scored
 episodes, in line with the detection-power analysis where every estimator that reads the
 do-value beats the naive forecasters. Any interventional-training claim therefore has to be
-read against this bar, not against a model that never sees the do-value. Larger subsamples
-(`tabpfn_ident_v1_2_ps150.json`, `chronos_ident_v1_2_full.json`) tighten these numbers
-when present.
+read against this bar, not against a model that never sees the do-value. The larger samples below tighten these numbers.
+
+### Larger samples
+
+`tabpfn_ident_v1_2_ps150.json` scores the first 150 episodes of each structure (1,350,
+server GPU, 17 minutes per arm) and `chronos_ident_v1_2_full.json` the whole suite (12,150,
+CPU, 48 minutes for the covariate arm):
+
+| Arm | Episodes | RMSE | Direction accuracy, level (n) | Direction accuracy, effect ± SE (n) |
+|---|---|---|---|---|
+| TabPFN, do-value plugged in | 1,350 | 0.581 | 0.714 (1,127) | 0.590 ± 0.022 (488) |
+| TabPFN, observational | 1,350 | 0.596 | 0.705 (1,127) | 0.531 ± 0.023 (488) |
+| Chronos-2, do-value as covariate | 12,150 | 0.486 | 0.727 (10,235) | 0.658 ± 0.007 (4,356) |
+| Chronos-2, univariate | 12,150 | 0.598 | 0.696 (10,235) | 0.526 ± 0.008 (4,356) |
+
+Effect-sign gaps with the unpaired standard error of the difference: TabPFN
++0.059 ± 0.032, Chronos-2 +0.132 ± 0.010. Level-sign gaps:
++0.009 and +0.031. An observational forecaster that is handed the do-value as a
+known future covariate gains 13 points of effect-sign accuracy over its univariate arm on
+the full suite, and its level error drops from 0.598 to 0.486. That is the bar any claim
+about interventional training has to clear.
 
 ## A dependency pin that matters
 
