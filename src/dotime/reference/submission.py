@@ -22,6 +22,7 @@ pooled + per-structure metrics, package version) and can be submitted as-is.
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import importlib
 import json
 from pathlib import Path
@@ -64,11 +65,19 @@ def main(argv: list[str] | None = None) -> int:
 
     model, name = _load_model(args.model, args.baseline, args.name)
     suite = load_benchmark(args.suite)
+    episodes = list(suite)
+    # "auto" is resolved once, from the episodes, so the QA and the scores agree
+    # on the target and the submission records which one it chose.
+    noise = evaluation.check_shared_noise(episodes)
+    dir_target = evaluation.resolve_dir_target(args.dir_target, noise, warn=False)
+    print(f"[eval_submission] {evaluation.describe_dir_target(args.dir_target, dir_target, noise)}")
     # Before the model runs, so a corrupted target never reaches a leaderboard row.
     qa_report = target_qa(
-        list(suite), dir_target=args.dir_target, raise_on_failure=args.target_qa == "enforce"
+        episodes, dir_target=dir_target, raise_on_failure=args.target_qa == "enforce"
     )
-    results = evaluation.evaluate(model, suite, dir_target=args.dir_target)
+    results = dataclasses.replace(
+        evaluation.evaluate(model, suite, dir_target=dir_target), dir_target_mode=args.dir_target
+    )
 
     payload = results.to_dict()
     payload["model"] = name

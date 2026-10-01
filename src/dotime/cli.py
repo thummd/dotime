@@ -249,23 +249,38 @@ def benchmark_main(argv: list[str] | None = None) -> int:
             f"error: unknown suite {args.suite!r}. Run `dotime-benchmark --list` to see options."
         )
 
+    import dataclasses
+
     from dotime.benchmarks import load_benchmark
-    from dotime.evaluation import evaluate
+    from dotime.evaluation import (
+        check_shared_noise,
+        describe_dir_target,
+        evaluate,
+        resolve_dir_target,
+    )
     from dotime.qa import target_qa
 
     if args.verbose:
         print(f"[dotime-benchmark] loading suite {args.suite}", file=sys.stderr)
 
     suite = load_benchmark(args.suite)
+    episodes = list(suite)
+    # "auto" is resolved once, from the episodes, so the QA and the scores
+    # below agree on the target and the run says which one it chose.
+    noise = check_shared_noise(episodes)
+    dir_target = resolve_dir_target(args.dir_target, noise, warn=False)
+    print(f"[dotime-benchmark] {describe_dir_target(args.dir_target, dir_target, noise)}")
     # Before any model runs: seeds guard against variance, not against a
     # corrupted target, and every score below is only as good as the targets.
     qa_report = target_qa(
-        list(suite), dir_target=args.dir_target, raise_on_failure=args.target_qa == "enforce"
+        episodes, dir_target=dir_target, raise_on_failure=args.target_qa == "enforce"
     )
 
     # TODO(api): expose `baselines.get(name)` returning an instantiated baseline.
     model = _baselines.get(args.baseline)
-    results = evaluate(model, suite, dir_target=args.dir_target)
+    results = dataclasses.replace(
+        evaluate(model, suite, dir_target=dir_target), dir_target_mode=args.dir_target
+    )
 
     # Results objects are expected to provide `.summary()` (human-readable) and
     # `.to_dict()` (serializable); fall back to repr if not yet implemented.

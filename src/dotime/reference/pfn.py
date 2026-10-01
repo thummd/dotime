@@ -42,8 +42,11 @@ from dotime.benchmarks import load_benchmark
 from dotime.evaluation import (
     DEFAULT_DIR_TARGET,
     add_dir_target_argument,
+    check_shared_noise,
+    describe_dir_target,
     direction_accuracy,
     query_obs_levels,
+    resolve_dir_target,
 )
 from dotime.qa import target_qa
 from dotime.reference._realignment import (
@@ -169,9 +172,10 @@ def run(model, episodes, dir_target=DEFAULT_DIR_TARGET, realignment=None):
         model: Object whose ``predict(episode)`` returns the level prediction
             at the query, such as :class:`PFNRef`.
         episodes: The episodes to score.
-        dir_target: ``"level"`` or ``"effect"``, the target that the headline
-            ``dir_acc`` reports. Both are always computed. Defaults to
-            :data:`~dotime.evaluation.DEFAULT_DIR_TARGET`.
+        dir_target: ``"level"``, ``"effect"`` or ``"auto"``, the target that
+            the headline ``dir_acc`` reports (see
+            :func:`~dotime.evaluation.resolve_dir_target`). Both are always
+            computed. Defaults to :data:`~dotime.evaluation.DEFAULT_DIR_TARGET`.
         realignment: Optional ``{scm_id: row}`` map from
             :func:`~dotime.reference._realignment.load_realignment`. When given,
             each episode's observational level is its row's ``y_obs_corrected``
@@ -179,12 +183,16 @@ def run(model, episodes, dir_target=DEFAULT_DIR_TARGET, realignment=None):
 
     Returns:
         Dict with the pooled RMSE and its episode-cluster bootstrap CI, the
-        headline, level and effect direction accuracies, and per-structure
-        metrics.
+        headline, level and effect direction accuracies, the scored target,
+        whether the pairs share their noise, and per-structure metrics.
 
     Raises:
+        ValueError: If ``dir_target`` is not a mode.
         KeyError: If ``realignment`` is given but has no row for an episode.
     """
+    episodes = list(episodes)
+    noise = check_shared_noise(episodes)
+    target = resolve_dir_target(dir_target, noise, warn=False)
     ep_pred, ep_tgt, ep_obs, structs = [], [], [], []
     for ep in episodes:
         p = torch.as_tensor(model.predict(ep), dtype=torch.float32).reshape(-1).numpy()
@@ -207,7 +215,7 @@ def run(model, episodes, dir_target=DEFAULT_DIR_TARGET, realignment=None):
     rmse = float(np.sqrt(np.mean((pred - tgt) ** 2)))
     da_level = direction_accuracy(torch.from_numpy(pred), torch.from_numpy(tgt))
     da_effect = direction_accuracy(torch.from_numpy(pred - obs), torch.from_numpy(tgt - obs))
-    da = da_effect if dir_target == "effect" else da_level
+    da = da_effect if target == "effect" else da_level
     # episode-cluster bootstrap for pooled RMSE
     rng = np.random.default_rng(0)
     sse = np.array([float(np.sum((p - t) ** 2)) for p, t in zip(ep_pred, ep_tgt, strict=True)])
@@ -227,7 +235,7 @@ def run(model, episodes, dir_target=DEFAULT_DIR_TARGET, realignment=None):
         o = np.concatenate([ep_obs[i] for i in idx])
         d_l = direction_accuracy(torch.from_numpy(p), torch.from_numpy(t))
         d_e = direction_accuracy(torch.from_numpy(p - o), torch.from_numpy(t - o))
-        d = d_e if dir_target == "effect" else d_l
+        d = d_e if target == "effect" else d_l
         per_struct[st] = {
             "rmse": float(np.sqrt(np.mean((p - t) ** 2))),
             "dir_acc": d["accuracy"],
@@ -249,6 +257,8 @@ def run(model, episodes, dir_target=DEFAULT_DIR_TARGET, realignment=None):
         "dir_acc_se": _se,
         "dir_acc_level": da_level["accuracy"],
         "dir_acc_effect": da_effect["accuracy"],
+        "dir_target": target,
+        "pairs_share_noise": noise.shared,
         "n_episodes": len(ep_pred),
         "per_structure": per_struct,
     }
@@ -332,10 +342,13 @@ def main(argv: list[str] | None = None) -> None:
         episodes = [e for eps in byst.values() for e in eps[: args.per_structure]]
     print(f"[{args.suite} v{suite.meta.version}] evaluating {len(episodes)} episodes")
     # On exactly the episodes scored below, and before a checkpoint is loaded.
+    noise = check_shared_noise(episodes)
+    dir_target = resolve_dir_target(args.dir_target, noise, warn=False)
+    print(f"[{args.suite}] {describe_dir_target(args.dir_target, dir_target, noise)}")
     qa_report = target_qa(
         episodes,
         obs_levels=sidecar_obs_levels(episodes, realignment),
-        dir_target=args.dir_target,
+        dir_target=dir_target,
         raise_on_failure=args.target_qa == "enforce",
     )
 
@@ -347,13 +360,16 @@ def main(argv: list[str] | None = None) -> None:
         # into a released result JSON.
         "realignment_sidecar": args.realignment.name if realignment is not None else None,
         "exclude_self_queries": args.exclude_self_queries,
+        "dir_target": dir_target,
+        "dir_target_mode": args.dir_target,
+        "pairs_share_noise": noise.shared,
         "target_qa": qa_report.to_dict(),
     }
     for tag, ck, obs in [("PFN_int", args.ckpt_int, False), ("PFN_obs", args.ckpt_obs, True)]:
         t0 = time.time()
         model = PFNRef(ck, device=args.device, observational=obs)
-        r = run(model, episodes, dir_target=args.dir_target, realignment=realignment)
-        out[tag] = {"checkpoint": ck, "dir_target": args.dir_target, **r}
+        r = run(model, episodes, dir_target=dir_target, realignment=realignment)
+        out[tag] = {"checkpoint": ck, **r}
         _da = r["dir_acc"] if r["dir_acc"] is not None else float("nan")
         print(
             f"{tag}: RMSE={r['pooled_rmse']:.3f} CI[{r['rmse_ci95'][0]:.3f},{r['rmse_ci95'][1]:.3f}] "

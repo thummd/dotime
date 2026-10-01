@@ -39,7 +39,12 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 import torch
 
-from dotime.evaluation import DEFAULT_DIR_TARGET, DIR_TARGETS
+from dotime.evaluation import (
+    DEFAULT_DIR_TARGET,
+    DIR_TARGET_MODES,
+    check_shared_noise,
+    resolve_dir_target,
+)
 
 if TYPE_CHECKING:
     from dotime.benchmarks import Episode
@@ -114,7 +119,8 @@ class QAReport:
             ``effect_checked`` (the effect arm without exempt queries).
         groups: The same statistics per group label, e.g. per structure.
         notes: Failed checks of scopes too small to assert.
-        dir_target: ``"level"`` or ``"effect"``, the target the run scores.
+        dir_target: ``"level"`` or ``"effect"``, the target the run scores
+            (what ``"auto"`` resolved to, when the run asked for it).
         check_effect: Whether the effect arm was asserted.
         thresholds: The thresholds used.
         label: Optional name of what was checked, e.g. a structure.
@@ -510,8 +516,10 @@ def target_qa(
         obs_levels: Observational level(s) of each episode's queries, aligned
             with ``episodes``, e.g. from the Identifiability 1.0.0 realignment
             sidecar. By default :func:`dotime.evaluation.query_obs_levels`.
-        dir_target: ``"level"``, or ``"effect"`` to also assert the effect arm
-            on the queries that can carry an effect (see :func:`is_null_effect`).
+        dir_target: ``"level"``, ``"effect"`` to also assert the effect arm
+            on the queries that can carry an effect (see :func:`is_null_effect`),
+            or ``"auto"``, which asserts it when the arms of every episode share
+            their noise (:func:`dotime.evaluation.check_shared_noise`).
         group_by: Group key, ``"structure"`` by default. Episodes without a
             label only enter the pooled statistics. ``None`` disables groups.
         thresholds: Floors, :class:`QAThresholds` defaults if ``None``.
@@ -529,9 +537,11 @@ def target_qa(
     """
     from dotime.evaluation import query_obs_levels
 
-    if dir_target not in DIR_TARGETS:
-        raise ValueError(f"dir_target must be one of {DIR_TARGETS}, got {dir_target!r}")
+    if dir_target not in DIR_TARGET_MODES:
+        raise ValueError(f"dir_target must be one of {DIR_TARGET_MODES}, got {dir_target!r}")
     episodes = list(episodes)
+    if dir_target == "auto":
+        dir_target = resolve_dir_target(dir_target, check_shared_noise(episodes))
     if obs_levels is not None and len(obs_levels) != len(episodes):
         raise ValueError(f"{len(obs_levels)} obs_levels for {len(episodes)} episodes")
     y_obs_parts, y_int_parts, exempt, groups = [], [], [], []

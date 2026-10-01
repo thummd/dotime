@@ -244,7 +244,8 @@ def test_dir_target_default_has_a_single_source():
     from dotime import cli, evaluation
 
     default = evaluation.DEFAULT_DIR_TARGET
-    assert default in evaluation.DIR_TARGETS
+    assert default in evaluation.DIR_TARGET_MODES
+    assert set(evaluation.DIR_TARGETS) < set(evaluation.DIR_TARGET_MODES)
     assert inspect.signature(evaluation.evaluate).parameters["dir_target"].default == default
     assert evaluation.Results("s", "b", 0, 0, {}).dir_target == default
     assert cli._build_benchmark_parser().parse_args([]).dir_target == default

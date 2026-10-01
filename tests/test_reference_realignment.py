@@ -455,11 +455,11 @@ def test_check_predictions_counts_and_refuses_all_nonfinite() -> None:
 def test_dir_target_selects_the_headline_and_both_scores_are_written(
     tmp_path: Path, loads: list, fits: list, forecasts: list, evaluator: Any, dir_target: str
 ) -> None:
-    """``--dir-target`` fills ``dir_acc`` from the chosen score; both scores land in the JSON.
+    """``--dir-target`` fills ``dir_acc`` from the chosen score, and the JSON says which.
 
-    The stubs predict zero, so the level score has no valid sign to match and the
-    effect score compares ``-y_obs`` with ``y_true - y_obs``: the two differ, which
-    is what makes the selection observable.
+    The stub episode's arms are stored in different column orders, so they do
+    not share their noise: the level score is always written, the effect score
+    only when it is asked for.
 
     Args:
         tmp_path: The pytest temporary directory.
@@ -472,10 +472,12 @@ def test_dir_target_selects_the_headline_and_both_scores_are_written(
     evaluator.main([*_args(tmp_path, realign=False), "--dir-target", dir_target])
     result = json.loads((tmp_path / "out.json").read_text())
     assert result["dir_target"] == dir_target
+    assert result["dir_target_mode"] == dir_target
+    assert result["pairs_share_noise"] is False
     arm = next(k for k in result if k.endswith("_int"))
     scores = result[arm]
-    for name in ("level", "effect"):
-        assert {f"dir_acc_{name}", f"dir_n_valid_{name}", f"dir_acc_se_{name}"} <= set(scores)
+    assert {"dir_acc_level", "dir_n_valid_level", "dir_acc_se_level"} <= set(scores)
+    assert ("dir_acc_effect" in scores) == (dir_target == "effect")
     assert scores["dir_acc"] == scores[f"dir_acc_{dir_target}"]
     assert scores["dir_n_valid"] == scores[f"dir_n_valid_{dir_target}"]
 

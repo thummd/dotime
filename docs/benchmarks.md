@@ -314,6 +314,7 @@ The default evaluation reports RMSE, NMSE, MAE, direction accuracy, lift-over-na
 ```python
 from dotime.evaluation import evaluate
 
+results = evaluate(model, suite)  # "auto": the effect where the arms share their noise
 results = evaluate(model, suite, dir_target="level")  # sign of the interventional level (v1)
 results = evaluate(model, suite, dir_target="effect")  # sign of the causal effect y - y_obs
 ```
@@ -331,6 +332,28 @@ take the same choice as `--dir-target`, as do `dotime-eval-reference`,
 default to `dotime.evaluation.DEFAULT_DIR_TARGET`. Effect scoring refuses the archived
 `dot-Identifiability-v1` 1.0.0 files, whose `x_obs` is misaligned; score them
 with `dotime-eval-reference --dir-target effect --realignment <sidecar>`.
+
+The default is `"auto"`. It scores the effect when the two arms of every
+evaluated episode share their noise, and the level otherwise. Shared noise
+makes `y_true - y_obs` the episode's counterfactual effect, and it shows in the
+data: the arms are bit-identical before the onset
+(`dotime.evaluation.check_shared_noise`, which skips episodes with a zeroed
+arm). An interventional arm drawn with its own noise differs there in every
+episode. On the released suites the split is complete:
+
+| Suites | Arms agree before the onset | `"auto"` scores |
+|---|---|---|
+| `dot-Identifiability-v1` 1.1.0 and 1.2.0, `dot-Continuous-v1`, `dot-SeasonalTrend-v1`, `dot-Wide-v1`, `dot-Observed-v1`, `dot-ContinuousIrregular-v1` | in every episode | the effect |
+| `dot-Identifiability-v1` 1.0.0, `dot-RegimeSwitch-v1` 1.0.0, `dot-Generic-100k` 1.0.0 | in no episode | the level, with a logged warning |
+
+On independent-noise twins `y_true - y_obs` adds a second noise draw to the
+effect, so its sign mostly rewards regression to the mean, and the level keeps
+the v1 protocol. Every result records the target it scored (`dir_target`), the
+requested mode (`dir_target_mode`) and the verdict (`pairs_share_noise`). Where
+the arms share their noise, both scores are reported (`dir_acc_level`,
+`dir_acc_effect`, each with `dir_n_valid_*` and `dir_acc_se_*`) whatever fills
+`dir_acc`. To reproduce a table published under the v1 protocol, pass
+`dir_target="level"` (`--dir-target level`).
 
 See the {doc}`api` reference for the full `benchmarks`, `baselines`, and
 `evaluation` module documentation.

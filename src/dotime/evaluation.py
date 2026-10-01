@@ -12,6 +12,9 @@ than via scikit-learn so it stays in the core install).
   :func:`compute_nmse`, :func:`compute_r2`.
 - :func:`direction_accuracy` — sign-consistent accuracy, near-zero targets excluded.
 - :func:`bootstrap_ci` — bootstrap mean/std/CI over per-sample values.
+- :func:`check_shared_noise`, :func:`resolve_dir_target` and
+  :func:`describe_dir_target` — what direction accuracy scores when the
+  default ``"auto"`` is in force (see :data:`DEFAULT_DIR_TARGET`).
 - :func:`evaluate` — run a baseline over a suite, aggregating pooled and
   per-structure metrics.
 - :class:`Results` — holds the aggregated metrics with ``.summary()`` and
@@ -21,6 +24,7 @@ than via scikit-learn so it stays in the core install).
 from __future__ import annotations
 
 import argparse
+import logging
 import math
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
@@ -33,23 +37,30 @@ from dotime.observation import impute_episode
 
 if TYPE_CHECKING:
     from dotime.baselines import Baseline
-    from dotime.benchmarks import BenchmarkSuite
+    from dotime.benchmarks import BenchmarkSuite, Episode
 
 __all__ = [
     "DEFAULT_DIR_TARGET",
     "DIR_ACC_EPS",
     "DIR_TARGETS",
+    "DIR_TARGET_MODES",
     "NONFINITE_MODES",
+    "NoiseCheck",
     "Results",
     "add_dir_target_argument",
     "bootstrap_ci",
+    "check_shared_noise",
     "compute_mae",
     "compute_nmse",
     "compute_r2",
     "compute_rmse",
+    "describe_dir_target",
     "direction_accuracy",
     "evaluate",
+    "resolve_dir_target",
 ]
+
+_LOG = logging.getLogger(__name__)
 
 # Near-zero targets are ambiguous for sign-based direction accuracy and are
 # excluded from that metric (reported separately).
@@ -57,6 +68,10 @@ DIR_ACC_EPS = 0.1
 
 # What the direction-accuracy sign test can score (see DEFAULT_DIR_TARGET).
 DIR_TARGETS = ("level", "effect")
+
+# What a caller may ask for: a target of DIR_TARGETS, or "auto", which
+# resolve_dir_target turns into one of them from the scored episodes.
+DIR_TARGET_MODES = ("auto", *DIR_TARGETS)
 
 # What evaluate() does with a non-finite prediction. "raise" names the baseline
 # and episode, because a NaN would otherwise poison every pooled metric.
@@ -66,6 +81,15 @@ NONFINITE_MODES = ("raise", "exclude")
 
 # The one switch for what direction accuracy scores by default. Set it to one of:
 #
+#   "auto"    "effect" when the two arms of every scored episode share their
+#             noise, "level" (with a logged warning) when they do not; see
+#             check_shared_noise. Shared noise makes y_true - y_obs the
+#             episode's counterfactual effect: dot-Identifiability-v1 from
+#             1.1.0, dot-Continuous-v1 and every 2026-10 suite. The v1.0.0
+#             discrete suites (Identifiability, RegimeSwitch, Generic-100k)
+#             draw the interventional arm with its own noise, so there
+#             y_true - y_obs adds a second noise draw to the effect, and the
+#             level keeps the v1 protocol.
 #   "level"   sign(y_pred) vs sign(y_true): the sign of the interventional
 #             level. The v1 paper protocol; reproduces the published v1 tables.
 #             A positive level can come from a negative effect on a positive
@@ -83,8 +107,10 @@ NONFINITE_MODES = ("raise", "exclude")
 # dotime-eval-pfn, dotime-eval-tabpfn and dotime-eval-chronos all read this
 # line. A single call or run can still override it with dir_target= /
 # --dir-target, and tests/test_smoke.py fails if a default is hard-coded
-# anywhere else.
-DEFAULT_DIR_TARGET = "level"
+# anywhere else. Every result records the target it scored ("level" or
+# "effect"), the requested mode and whether the pairs share their noise, and
+# reports both scores wherever the effect is a counterfactual effect.
+DEFAULT_DIR_TARGET = "auto"
 
 
 # --------------------------------------------------------------------------- #
@@ -277,6 +303,171 @@ def bootstrap_ci(
 
 
 # --------------------------------------------------------------------------- #
+# What direction accuracy scores under "auto"
+# --------------------------------------------------------------------------- #
+
+
+@dataclass(frozen=True)
+class NoiseCheck:
+    """Whether the two arms of a set of episodes share their noise.
+
+    Arms that share one noise realisation are bit-identical before the
+    intervention onset, while an interventional arm drawn with its own noise
+    differs there almost surely. Pre-onset agreement therefore tells the two
+    pairings apart from the episodes alone, with no metadata. On the released
+    suites the separation is complete: the v1.0.0 discrete suites agree in none
+    of their checked episodes, and every shared-noise suite in all of them.
+
+    Attributes:
+        n_episodes: Episodes inspected.
+        n_checked: Episodes with at least one pre-onset row and no zeroed arm.
+        n_shared: Checked episodes whose arms agree before the onset.
+        n_zeroed: Episodes skipped because an arm is all zero, the build's
+            mark of a diverged simulation, which says nothing about the noise.
+        n_no_history: Episodes skipped because the intervention starts at the
+            first row.
+    """
+
+    n_episodes: int
+    n_checked: int
+    n_shared: int
+    n_zeroed: int
+    n_no_history: int
+
+    @property
+    def shared(self) -> bool:
+        """Whether at least one episode was checked and every checked one agrees.
+
+        Returns:
+            The verdict that :func:`resolve_dir_target` acts on.
+        """
+        return self.n_checked > 0 and self.n_shared == self.n_checked
+
+
+def _arms_agree(a: torch.Tensor, b: torch.Tensor) -> bool:
+    """Bit-for-bit equality that counts NaN cells in the same places as equal.
+
+    Args:
+        a: One arm's rows.
+        b: The other arm's rows.
+
+    Returns:
+        Whether the two blocks are identical, missing cells included.
+    """
+    if a.shape != b.shape:
+        return False
+    # An observed suite masks the same cells in both arms, and NaN != NaN, so
+    # the masks are compared first and the values only where both are present.
+    nan_a, nan_b = torch.isnan(a), torch.isnan(b)
+    return bool(torch.equal(nan_a, nan_b) and torch.equal(a[~nan_a], b[~nan_b]))
+
+
+def _all_zero(x: torch.Tensor) -> bool:
+    """Whether every present cell of an arm is zero.
+
+    Args:
+        x: One arm, possibly with missing (NaN) cells.
+
+    Returns:
+        True for an arm the build zeroed after a diverged simulation.
+    """
+    return not bool(torch.any(torch.nan_to_num(x) != 0))
+
+
+def check_shared_noise(episodes: Iterable[Episode]) -> NoiseCheck:
+    """Check whether the two arms of every episode share their noise.
+
+    Args:
+        episodes: The episodes about to be scored, e.g. a
+            :class:`~dotime.benchmarks.BenchmarkSuite`.
+
+    Returns:
+        The counts, with :attr:`NoiseCheck.shared` as the verdict.
+    """
+    n = checked = shared = zeroed = no_history = 0
+    for ep in episodes:
+        n += 1
+        if _all_zero(ep.x_obs) or _all_zero(ep.x_int):
+            zeroed += 1
+            continue
+        times = list(ep.intervention.times)
+        onset = int(min(times)) if times else 0
+        if onset <= 0:
+            no_history += 1
+            continue
+        checked += 1
+        shared += _arms_agree(ep.x_obs[:onset], ep.x_int[:onset])
+    return NoiseCheck(n, checked, shared, zeroed, no_history)
+
+
+def describe_dir_target(mode: str, target: str, noise: NoiseCheck | None = None) -> str:
+    """One line saying what direction accuracy scores and why.
+
+    Args:
+        mode: The requested mode, one of :data:`DIR_TARGET_MODES`.
+        target: The resolved target, ``"level"`` or ``"effect"``.
+        noise: The :func:`check_shared_noise` result behind an ``"auto"`` choice.
+
+    Returns:
+        A sentence for logs and command-line output.
+    """
+    what = f"direction accuracy scores the sign of the {target}"
+    if mode != "auto":
+        return f"{what} (requested)"
+    if noise is None:
+        return f"{what} (auto)"
+    detail = (
+        f"the arms of {noise.n_shared:,} of {noise.n_checked:,} checked episodes "
+        "agree before the onset"
+    )
+    skipped = []
+    if noise.n_zeroed:
+        skipped.append(f"{noise.n_zeroed:,} with a zeroed arm")
+    if noise.n_no_history:
+        skipped.append(f"{noise.n_no_history:,} without pre-onset rows")
+    if skipped:
+        detail += " (" + " and ".join(skipped) + " skipped)"
+    if target == "level":
+        detail += (
+            ", so y_true - y_obs is not a counterfactual effect and the level keeps the v1 protocol"
+        )
+    return f"{what} (auto: {detail})"
+
+
+def resolve_dir_target(
+    dir_target: str, noise: NoiseCheck | None = None, *, warn: bool = True
+) -> str:
+    """Turn a direction-target mode into the target that is scored.
+
+    Args:
+        dir_target: One of :data:`DIR_TARGET_MODES`.
+        noise: :func:`check_shared_noise` of the scored episodes. Only
+            ``"auto"`` reads it.
+        warn: Log a warning when ``"auto"`` falls back to the level, so a run
+            that cannot score the effect says so. Command-line tools print the
+            same sentence themselves and pass ``False``.
+
+    Returns:
+        ``"level"`` or ``"effect"``.
+
+    Raises:
+        ValueError: If ``dir_target`` is not a mode, or ``"auto"`` comes
+            without a ``noise`` check.
+    """
+    if dir_target not in DIR_TARGET_MODES:
+        raise ValueError(f"dir_target must be one of {DIR_TARGET_MODES}, got {dir_target!r}")
+    if dir_target != "auto":
+        return dir_target
+    if noise is None:
+        raise ValueError('dir_target="auto" needs check_shared_noise() of the scored episodes')
+    if noise.shared:
+        return "effect"
+    if warn:
+        _LOG.warning(describe_dir_target("auto", "level", noise))
+    return "level"
+
+
+# --------------------------------------------------------------------------- #
 # Aggregated results container
 # --------------------------------------------------------------------------- #
 
@@ -291,7 +482,11 @@ class Results:
     n_queries: int
     pooled: dict[str, float]
     per_structure: dict[str, dict[str, float]] = field(default_factory=dict)
+    # The target dir_acc scored ("level" or "effect"); "auto" only on a
+    # Results built by hand, since evaluate() always records what it resolved.
     dir_target: str = DEFAULT_DIR_TARGET
+    dir_target_mode: str = DEFAULT_DIR_TARGET
+    pairs_share_noise: bool | None = None
 
     def to_dict(self) -> dict:
         """JSON-serializable view of the results."""
@@ -301,6 +496,8 @@ class Results:
             "n_episodes": self.n_episodes,
             "n_queries": self.n_queries,
             "dir_target": self.dir_target,
+            "dir_target_mode": self.dir_target_mode,
+            "pairs_share_noise": self.pairs_share_noise,
             "pooled": self.pooled,
             "per_structure": self.per_structure,
         }
@@ -311,16 +508,25 @@ class Results:
             f"Suite:    {self.suite}",
             f"Baseline: {self.baseline}",
             f"Episodes: {self.n_episodes}   Queries: {self.n_queries}",
-            f"dir_acc scores the sign of the {self.dir_target}",
+            f"dir_acc scores the sign of the {self.dir_target} (mode: {self.dir_target_mode})",
         ]
+        if self.pairs_share_noise is False:
+            lines.append(
+                "The arms do not share their noise, so y_true - y_obs is not a "
+                "counterfactual effect."
+            )
         if "n_nonfinite" in self.pooled:
             lines.append(
                 f"Non-finite predictions: {self.pooled['n_nonfinite']} "
                 "(left out of the level metrics, wrong for dir_acc)"
             )
         lines.append("")
-        cols = ["rmse", "mae", "nmse", "r2", "dir_acc", "dir_acc_se"]
-        header = f"{'group':<22}" + "".join(f"{c:>11}" for c in cols)
+        cols = ["rmse", "mae", "nmse", "r2", "dir_acc", "dir_acc_se", "dir_acc_level"]
+        if "dir_acc_effect" in self.pooled:
+            cols.append("dir_acc_effect")
+        # Short headers keep the 11-character columns aligned.
+        names = {"dir_acc_level": "acc_level", "dir_acc_effect": "acc_effect"}
+        header = f"{'group':<22}" + "".join(f"{names.get(c, c):>11}" for c in cols)
         lines.append(header)
         lines.append("-" * len(header))
 
@@ -360,11 +566,12 @@ def add_dir_target_argument(parser: argparse.ArgumentParser) -> None:
     """
     parser.add_argument(
         "--dir-target",
-        choices=DIR_TARGETS,
+        choices=DIR_TARGET_MODES,
         default=DEFAULT_DIR_TARGET,
         help="What direction accuracy scores: the sign of the interventional level "
-        "(the v1 protocol) or of the causal effect y - y_obs "
-        f"(default: {DEFAULT_DIR_TARGET}).",
+        "(the v1 protocol), of the causal effect y - y_obs, or 'auto', the effect "
+        "when the two arms of every episode share their noise and the level "
+        f"otherwise (default: {DEFAULT_DIR_TARGET}).",
     )
 
 
@@ -374,6 +581,8 @@ def _aggregate(
     metrics,
     obs: torch.Tensor | None = None,
     count_nonfinite: bool = False,
+    *,
+    dir_target: str,
 ) -> dict[str, float]:
     """Level metrics and direction accuracy of one group of queries.
 
@@ -381,13 +590,16 @@ def _aggregate(
         preds: Predictions, one per query.
         targets: Targets aligned with ``preds``.
         metrics: Level-space metrics by name.
-        obs: Observational levels. When given, direction accuracy scores the
-            sign of the effect (``preds - obs`` against ``targets - obs``).
+        obs: Observational levels. When given, the effect is scored too
+            (``preds - obs`` against ``targets - obs``).
         count_nonfinite: Report ``n_nonfinite``, the number of non-finite
             predictions (``nonfinite="exclude"``).
+        dir_target: The target that fills ``dir_acc``, ``dir_n_valid`` and
+            ``dir_acc_se``. ``"effect"`` needs ``obs``.
 
     Returns:
-        Metric name to value, plus the direction-accuracy fields.
+        Metric name to value, plus the direction-accuracy fields of the level,
+        of the effect when ``obs`` is given, and of ``dir_target`` unprefixed.
     """
     finite = torch.isfinite(preds)
     if bool(finite.all()):
@@ -396,23 +608,26 @@ def _aggregate(
         # Level metrics need a number: they run over the finite predictions,
         # while direction accuracy below still scores the others as wrong.
         out = {name: fn(preds[finite], targets[finite]) for name, fn in metrics.items()}
-    # With ``obs`` the sign test scores the effect: subtracting the same
-    # observational level from both sides leaves every level metric above
-    # unchanged but turns the sign of the level into the sign of the effect.
-    if obs is None:
-        da = direction_accuracy(preds, targets)
-    else:
-        da = direction_accuracy(preds - obs, targets - obs)
-    out["dir_acc"] = da["accuracy"]
-    # Report the uncertainty alongside the point estimate: the suites score one
-    # query per episode, so the binomial standard error is exact (no clustering).
-    # ``n_valid`` excludes near-zero targets, which carry no sign to score.
-    n_valid = int(da["n_valid"])
-    p = da["accuracy"]
-    out["dir_n_valid"] = n_valid
-    out["dir_acc_se"] = (
-        math.sqrt(p * (1.0 - p) / n_valid) if n_valid > 0 and p == p else float("nan")
-    )
+    # Subtracting the same observational level from both sides leaves every
+    # level metric above unchanged but turns the sign of the level into the
+    # sign of the effect, so one prediction pass yields both scores.
+    scores = {"level": direction_accuracy(preds, targets)}
+    if obs is not None:
+        scores["effect"] = direction_accuracy(preds - obs, targets - obs)
+    for name, da in scores.items():
+        # The suites score one query per episode, so the binomial standard
+        # error is exact (no clustering). ``n_valid`` excludes near-zero
+        # targets, which carry no sign to score.
+        n_valid = int(da["n_valid"])
+        p = da["accuracy"]
+        out[f"dir_acc_{name}"] = p
+        out[f"dir_n_valid_{name}"] = n_valid
+        out[f"dir_acc_se_{name}"] = (
+            math.sqrt(p * (1.0 - p) / n_valid) if n_valid > 0 and p == p else float("nan")
+        )
+    out["dir_acc"] = out[f"dir_acc_{dir_target}"]
+    out["dir_n_valid"] = out[f"dir_n_valid_{dir_target}"]
+    out["dir_acc_se"] = out[f"dir_acc_se_{dir_target}"]
     if count_nonfinite:
         out["n_nonfinite"] = int((~finite).sum())
     return out
@@ -444,9 +659,12 @@ def evaluate(
         suite: The benchmark suite.
         metrics: Level-space metrics by name. Defaults to RMSE, MAE, NMSE, R^2.
         dir_target: What ``dir_acc`` scores: ``"level"`` (the sign of the
-            interventional level, the v1 protocol) or ``"effect"`` (the sign of
-            ``y - y_obs`` at the query, read with :func:`query_obs_levels`). The
-            level metrics are the same either way. Defaults to
+            interventional level, the v1 protocol), ``"effect"`` (the sign of
+            ``y - y_obs`` at the query, read with :func:`query_obs_levels`), or
+            ``"auto"``, the effect when the arms of every episode share their
+            noise (:func:`check_shared_noise`) and the level otherwise. The
+            level metrics are the same either way, and both direction scores are
+            reported wherever the effect is a counterfactual effect. Defaults to
             :data:`DEFAULT_DIR_TARGET`.
         impute: Impute missing cells for models that are not ``mask_aware``.
         nonfinite: ``"raise"`` stops at the first non-finite prediction.
@@ -455,7 +673,8 @@ def evaluate(
             number as ``n_nonfinite`` in the pooled and per-structure metrics.
 
     Returns:
-        The pooled and per-structure metrics.
+        The pooled and per-structure metrics, with the scored target, the
+        requested mode and the noise verdict recorded on the result.
 
     Raises:
         ValueError: If ``dir_target`` or ``nonfinite`` is unknown, if the model
@@ -466,22 +685,28 @@ def evaluate(
             ``dotime-eval-reference --dir-target effect --realignment <sidecar>``.
     """
     metrics = metrics or _DEFAULT_METRICS
-    if dir_target not in DIR_TARGETS:
-        raise ValueError(f"dir_target must be one of {DIR_TARGETS}, got {dir_target!r}")
+    if dir_target not in DIR_TARGET_MODES:
+        raise ValueError(f"dir_target must be one of {DIR_TARGET_MODES}, got {dir_target!r}")
     if nonfinite not in NONFINITE_MODES:
         raise ValueError(f"nonfinite must be one of {NONFINITE_MODES}, got {nonfinite!r}")
-    if (
-        dir_target == "effect"
-        and suite.meta.name == "dot-Identifiability-v1"
-        and suite.meta.version == "1.0.0"
-    ):
+    noise = check_shared_noise(suite)
+    misaligned = suite.meta.name == "dot-Identifiability-v1" and suite.meta.version == "1.0.0"
+    # The archived 1.0.0 x_obs cannot give y_obs, so "auto" scores the level
+    # there whatever the arms look like; only an explicit "effect" is refused.
+    scored = (
+        "level" if dir_target == "auto" and misaligned else resolve_dir_target(dir_target, noise)
+    )
+    if scored == "effect" and misaligned:
         raise ValueError(
             "dot-Identifiability-v1 1.0.0 ships x_obs in topological order, so y_obs "
             "cannot be read from it directly. Load 1.1.0, or score 1.0.0 with "
             "dotime-eval-reference --dir-target effect --realignment "
             "results/reference/dot-Identifiability-v1.0.0_realignment.jsonl"
         )
-    effect = dir_target == "effect"
+    # The effect is scored where it is a counterfactual effect, and wherever it
+    # is asked for. On independent-noise twins it would mostly measure the
+    # second noise draw, so "auto" and "level" leave it out there.
+    effect = scored == "effect" or (noise.shared and not misaligned)
     use_imputation = impute and not getattr(model, "mask_aware", False)
     count_nonfinite = nonfinite == "exclude"
 
@@ -529,6 +754,7 @@ def evaluate(
             metrics,
             torch.cat([o for _, _, o in rows if o is not None]) if effect else None,
             count_nonfinite,
+            dir_target=scored,
         )
         for struct, rows in by_struct.items()
     }
@@ -539,8 +765,15 @@ def evaluate(
         n_episodes=n_episodes,
         n_queries=int(preds.numel()),
         pooled=_aggregate(
-            preds, targets, metrics, torch.cat(all_obs) if effect else None, count_nonfinite
+            preds,
+            targets,
+            metrics,
+            torch.cat(all_obs) if effect else None,
+            count_nonfinite,
+            dir_target=scored,
         ),
         per_structure=per_structure,
-        dir_target=dir_target,
+        dir_target=scored,
+        dir_target_mode=dir_target,
+        pairs_share_noise=noise.shared,
     )

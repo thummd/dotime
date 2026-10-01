@@ -310,6 +310,25 @@ All notable changes to `dotime` are documented here. The format follows
   with the sidecar's observational level).
 
 ### Changed
+- **The default direction-accuracy target is `"auto"`**
+  (`dotime.evaluation.DEFAULT_DIR_TARGET`, the one switch). It scores the sign
+  of the effect, `y - y_obs` at the query, when the two arms of every evaluated
+  episode share their noise, and the sign of the interventional level otherwise.
+  `check_shared_noise` decides from the episodes themselves: shared-noise arms
+  are bit-identical before the onset, independent twins differ there. That
+  selects the effect on `dot-Identifiability-v1` 1.1.0 and 1.2.0,
+  `dot-Continuous-v1` and the 2026-10 suites, and the level, with a logged
+  warning, on the v1.0.0 discrete suites, whose `y_true - y_obs` is not a
+  counterfactual effect. **Calls that relied on the old default now score the
+  effect on shared-noise suites; pass `dir_target="level"` (`--dir-target
+  level`) to reproduce a table published under the v1 protocol.** `evaluate()`,
+  `dotime.qa.target_qa` and all six evaluators accept the three modes
+  (`DIR_TARGET_MODES`), resolve `auto` once per run and print what they chose.
+- Results record the scored target (`dir_target`), the requested mode
+  (`dir_target_mode`) and the noise verdict (`pairs_share_noise`), and report
+  `dir_acc_level` and, where the arms share their noise or the effect was asked
+  for, `dir_acc_effect`, each with `dir_n_valid_*` and `dir_acc_se_*`.
+  `Results.summary()` prints both columns.
 - `evaluate(..., impute=True, nonfinite="raise")` imputes episodes with missing
   cells through `impute_episode` unless the model sets `mask_aware = True`. A
   finite episode passes through unchanged, so every latent suite scores exactly

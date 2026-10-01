@@ -14,8 +14,14 @@ synthetic suites; intervention-unaware baselines (`Zero`, `Mean`, `AR1`,
 ## Reference results (release scale)
 
 Pooled RMSE ± bootstrap std (direction accuracy in parentheses) on the **full
-frozen suites** — 10,800 / 9,999 / 9,999 / 100,000 episodes. Reproduce with the
-`dotime-eval-reference` console script (ships with the package); the backing JSONs (with 95% episode-cluster
+frozen suites** — 10,800 / 9,999 / 9,999 / 100,000 episodes. These rows follow
+the v1 protocol: the 1.0.0 suites, with direction accuracy on the sign of the
+interventional level. Reproduce them with the `dotime-eval-reference` console
+script (ships with the package), pinning both, e.g.
+`dotime-eval-reference --suite dot-Continuous-v1 --version 1.0.0 --dir-target level`.
+Since 0.2.0 the default direction target is `auto`, which scores the sign of the
+effect on suites whose arms share their noise, and `dot-Identifiability-v1`
+loads 1.2.0 by default. The backing JSONs (with 95% episode-cluster
 bootstrap CIs) live under [`results/reference/`](https://github.com/thummd/dotime/tree/main/results/reference).
 
 | Baseline | Identifiability | RegimeSwitch | Continuous | Generic |
@@ -68,8 +74,13 @@ dotime-eval-submission --suite dot-Identifiability-v1 \
   "package_version": "0.1.2",
   "n_episodes": 10800,
   "n_queries": 10800,
+  "dir_target": "effect",
+  "dir_target_mode": "auto",
+  "pairs_share_noise": true,
   "pooled":        {"rmse": 0.0, "mae": 0.0, "nmse": 0.0, "r2": 0.0,
-                    "dir_acc": 0.0, "dir_n_valid": 8641, "dir_acc_se": 0.0},
+                    "dir_acc": 0.0, "dir_n_valid": 3194, "dir_acc_se": 0.0,
+                    "dir_acc_level": 0.0, "dir_n_valid_level": 8641, "dir_acc_se_level": 0.0,
+                    "dir_acc_effect": 0.0, "dir_n_valid_effect": 3194, "dir_acc_se_effect": 0.0},
   "per_structure": {"back_door": {"rmse": 0.0, "...": 0.0}, "...": {}},
   "target_qa":     {"passed": true, "pooled": {"y_obs_level": {}, "...": {}}, "...": {}}
 }

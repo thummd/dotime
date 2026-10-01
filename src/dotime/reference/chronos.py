@@ -37,7 +37,12 @@ from pathlib import Path
 import numpy as np
 
 from dotime.benchmarks import load_benchmark
-from dotime.evaluation import add_dir_target_argument
+from dotime.evaluation import (
+    add_dir_target_argument,
+    check_shared_noise,
+    describe_dir_target,
+    resolve_dir_target,
+)
 from dotime.qa import target_qa
 from dotime.reference._realignment import (
     load_realignment,
@@ -203,13 +208,19 @@ def main(argv: list[str] | None = None) -> None:
         print(f"  realigned x_obs of {len(samp)} episodes with {args.realignment.name}")
     # The subsample is what gets scored, so it is what gets checked.
     sidecar_levels = sidecar_obs_levels(samp, realignment)
+    noise = check_shared_noise(samp)
+    dir_target = resolve_dir_target(args.dir_target, noise, warn=False)
+    print(f"  {describe_dir_target(args.dir_target, dir_target, noise)}")
     qa_report = target_qa(
         samp,
         obs_levels=sidecar_levels,
+        dir_target=dir_target,
         raise_on_failure=args.target_qa == "enforce",
     )
-    # The same factual levels the QA saw score the effect direction below.
-    y_obs = observational_levels(samp, sidecar_levels)
+    # The same factual levels the QA saw score the effect direction below,
+    # where it is a counterfactual effect or was asked for.
+    with_effect = dir_target == "effect" or noise.shared
+    y_obs = observational_levels(samp, sidecar_levels) if with_effect else None
 
     out = {
         "suite": args.suite,
@@ -219,7 +230,9 @@ def main(argv: list[str] | None = None) -> None:
         # into a released result JSON.
         "realignment_sidecar": args.realignment.name if realignment is not None else None,
         "n": len(samp),
-        "dir_target": args.dir_target,
+        "dir_target": dir_target,
+        "dir_target_mode": args.dir_target,
+        "pairs_share_noise": noise.shared,
         "target_qa": qa_report.to_dict(),
         "model_id": args.model_id,
     }
@@ -245,10 +258,10 @@ def main(argv: list[str] | None = None) -> None:
             [np.sqrt(se[rng.integers(0, len(se), len(se))].mean()) for _ in range(1000)]
         )
         ci = [float(np.quantile(boot, 0.025)), float(np.quantile(boot, 0.975))]
-        scores = direction_scores(preds, tgts, y_obs, args.dir_target)
+        scores = direction_scores(preds, tgts, y_obs, dir_target)
         out[tag] = {"pooled_rmse": rmse, "rmse_ci95": ci, "n_nonfinite": n_nonfinite, **scores}
         print(
-            f"{tag}  RMSE={rmse:.3f} CI[{ci[0]:.3f},{ci[1]:.3f}] dir_acc={scores['dir_acc']:.3f} ({args.dir_target}) "
+            f"{tag}  RMSE={rmse:.3f} CI[{ci[0]:.3f},{ci[1]:.3f}] dir_acc={scores['dir_acc']:.3f} ({dir_target}) "
             f"({time.time() - t0:.0f}s)"
         )
     if args.out:

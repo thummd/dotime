@@ -40,32 +40,40 @@ def observational_levels(
 
 
 def direction_scores(
-    preds: np.ndarray, tgts: np.ndarray, y_obs: np.ndarray, dir_target: str
+    preds: np.ndarray, tgts: np.ndarray, y_obs: np.ndarray | None, dir_target: str
 ) -> dict[str, float | int | str]:
     """Direction accuracy on the level and on the effect, with binomial errors.
 
     Args:
         preds: Predicted interventional levels.
         tgts: Released interventional levels (``y_true``).
-        y_obs: Factual levels at the query.
+        y_obs: Factual levels at the query, or ``None`` to score the level only
+            (independent-noise twins, where ``y_true - y_obs`` is no
+            counterfactual effect).
         dir_target: Which score fills ``dir_acc``: ``"level"`` compares
             ``sign(pred)`` with ``sign(y_true)``, ``"effect"`` compares
             ``sign(pred - y_obs)`` with ``sign(y_true - y_obs)``.
 
     Returns:
         ``dir_acc``, ``dir_n_valid`` and ``dir_acc_se`` for the selected
-        target, ``dir_target`` itself, and the same three numbers for both
-        targets under ``dir_acc_level`` and ``dir_acc_effect`` prefixes.
+        target, ``dir_target`` itself, and the same three numbers under
+        ``dir_acc_level`` and, with ``y_obs``, ``dir_acc_effect`` prefixes.
 
     Raises:
-        ValueError: If ``dir_target`` is unknown.
+        ValueError: If ``dir_target`` is unknown, or is ``"effect"`` without
+            ``y_obs``.
     """
     if dir_target not in DIR_TARGETS:
         raise ValueError(f"dir_target must be one of {DIR_TARGETS}, got {dir_target!r}")
+    if dir_target == "effect" and y_obs is None:
+        raise ValueError("scoring the effect needs the factual levels y_obs")
     p, t = torch.from_numpy(preds).float(), torch.from_numpy(tgts).float()
-    o = torch.from_numpy(y_obs).float()
     out: dict[str, float | int | str] = {"dir_target": dir_target}
-    for name, pp, tt in (("level", p, t), ("effect", p - o, t - o)):
+    pairs = [("level", p, t)]
+    if y_obs is not None:
+        o = torch.from_numpy(y_obs).float()
+        pairs.append(("effect", p - o, t - o))
+    for name, pp, tt in pairs:
         da = direction_accuracy(pp, tt)
         n_valid = int(da["n_valid"])
         acc = float(da["accuracy"])

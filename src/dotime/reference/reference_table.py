@@ -31,8 +31,10 @@ from dotime.benchmarks import load_benchmark
 from dotime.evaluation import (
     DEFAULT_DIR_TARGET,
     add_dir_target_argument,
-    direction_accuracy,
+    check_shared_noise,
+    describe_dir_target,
     query_obs_levels,
+    resolve_dir_target,
 )
 from dotime.reference._realignment import load_realignment, realign_episodes
 
@@ -98,8 +100,9 @@ def target_qa(episodes, realignment=None, dir_target=DEFAULT_DIR_TARGET):
         episodes: The episodes that will be scored.
         realignment: Optional ``{scm_id: row}`` realignment sidecar map, used for
             the observational level exactly as in scoring.
-        dir_target: ``"level"`` or ``"effect"``. An effect-scored run also
-            asserts the effect arm on the queries that can carry an effect.
+        dir_target: ``"level"``, ``"effect"`` or ``"auto"`` (see
+            :func:`dotime.evaluation.resolve_dir_target`). An effect-scored run
+            also asserts the effect arm on the queries that can carry an effect.
 
     Returns:
         Dict with the pooled ``y_obs_level``, ``y_int_level`` and ``effect``
@@ -128,8 +131,43 @@ def run_baseline(
     device="cpu",
     dir_target=DEFAULT_DIR_TARGET,
     realignment=None,
+    noise=None,
 ):
+    """Score one CPU baseline (or the PFN) on the given episodes.
+
+    Args:
+        name: Baseline name in :mod:`dotime.baselines`, or ``"DoOverTimePFN"``.
+        suite_episodes: The episodes to score.
+        checkpoint: PFN checkpoint path, used for ``"DoOverTimePFN"`` only.
+        device: Torch device of the PFN.
+        dir_target: ``"level"``, ``"effect"`` or ``"auto"``, the target that
+            fills ``dir_acc`` (see :func:`dotime.evaluation.resolve_dir_target`).
+        realignment: Optional ``{scm_id: row}`` realignment sidecar map. With
+            it, the observational level comes from the sidecar.
+        noise: :func:`dotime.evaluation.check_shared_noise` of the episodes,
+            computed here when ``None``. :func:`main` passes it in so the eight
+            baselines share one check.
+
+    Returns:
+        The row: pooled RMSE with its episode-cluster bootstrap interval, the
+        selected direction accuracy, the level score, the effect score where
+        the arms share their noise or the effect was asked for, and the target
+        that was scored.
+
+    Raises:
+        ValueError: If ``dir_target`` is not a mode.
+        KeyError: If ``realignment`` is given but has no row for an episode.
+    """
     from dotime.observation import impute_episode
+    from dotime.reference._scoring import direction_scores
+
+    suite_episodes = list(suite_episodes)
+    if noise is None:
+        noise = check_shared_noise(suite_episodes)
+    target = resolve_dir_target(dir_target, noise, warn=False)
+    # As in evaluate(): the effect is scored where it is a counterfactual
+    # effect, and wherever it is asked for.
+    with_effect = target == "effect" or noise.shared
 
     if name == "DoOverTimePFN":
         model = baselines.get(name, checkpoint=checkpoint, device=device)
@@ -146,7 +184,7 @@ def run_baseline(
         t = torch.as_tensor(ep.y_true, dtype=torch.float32).reshape(-1).cpu().numpy()
         ep_pred.append(p)
         ep_tgt.append(t)
-        if dir_target == "effect":
+        if with_effect:
             ep_obs.append(_episode_obs_levels(ep, realignment))
     pred = np.concatenate(ep_pred)
     tgt = np.concatenate(ep_tgt)
@@ -154,20 +192,15 @@ def run_baseline(
     # change it anyway); dir_target only changes what the sign test scores.
     rmse = _pooled_rmse(pred, tgt)
     lo, hi = _cluster_bootstrap_rmse(ep_pred, ep_tgt)
-    if dir_target == "effect":
-        obs = np.concatenate(ep_obs)
-        da = direction_accuracy(torch.from_numpy(pred - obs), torch.from_numpy(tgt - obs))
-    else:
-        da = direction_accuracy(torch.from_numpy(pred), torch.from_numpy(tgt))
+    obs = np.concatenate(ep_obs).astype(np.float64) if with_effect else None
+    scores = direction_scores(pred.astype(np.float64), tgt.astype(np.float64), obs, target)
     return {
         "baseline": name,
         "n_episodes": len(ep_pred),
         "n_queries": int(pred.size),
         "pooled_rmse": rmse,
         "rmse_ci95": [lo, hi],
-        "dir_acc": da["accuracy"],
-        "dir_n_valid": da["n_valid"],
-        "dir_target": dir_target,
+        **scores,
     }
 
 
@@ -237,7 +270,10 @@ def main(argv: list[str] | None = None) -> None:
             f"with {args.realignment.name}"
         )
 
-    qa = target_qa(episodes, realignment, args.dir_target)
+    noise = check_shared_noise(episodes)
+    dir_target = resolve_dir_target(args.dir_target, noise, warn=False)
+    print(f"[{args.suite}] {describe_dir_target(args.dir_target, dir_target, noise)}")
+    qa = target_qa(episodes, realignment, dir_target)
     rows = []
     todo = list(args.baselines)
     if args.pfn_checkpoint:
@@ -250,8 +286,9 @@ def main(argv: list[str] | None = None) -> None:
                 episodes,
                 checkpoint=args.pfn_checkpoint,
                 device=args.device,
-                dir_target=args.dir_target,
+                dir_target=dir_target,
                 realignment=realignment,
+                noise=noise,
             )
         except Exception as ex:  # keep going; report the failure
             print(f"  {name:14s} FAILED: {ex}")
@@ -261,7 +298,13 @@ def main(argv: list[str] | None = None) -> None:
         print(
             f"  {name:14s} RMSE={row['pooled_rmse']:8.3f} "
             f"[{row['rmse_ci95'][0]:.3f},{row['rmse_ci95'][1]:.3f}] "
-            f"dir_acc={row['dir_acc']:.3f}  ({time.time() - t:.1f}s)"
+            f"dir_acc={row['dir_acc']:.3f} ({dir_target})"
+            + (
+                f" level={row['dir_acc_level']:.3f} effect={row['dir_acc_effect']:.3f}"
+                if "dir_acc_effect" in row
+                else ""
+            )
+            + f"  ({time.time() - t:.1f}s)"
         )
 
     out = {
@@ -273,6 +316,9 @@ def main(argv: list[str] | None = None) -> None:
         "realignment_sidecar": args.realignment.name if realignment is not None else None,
         "n_episodes": len(episodes),
         "exclude_self_queries": args.exclude_self_queries,
+        "dir_target": dir_target,
+        "dir_target_mode": args.dir_target,
+        "pairs_share_noise": noise.shared,
         "target_qa": qa,
         "rows": rows,
     }
