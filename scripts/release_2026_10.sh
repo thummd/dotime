@@ -6,7 +6,7 @@
 # The script reads only $HF_TOKEN and $ZENODO_TOKEN from the environment and never
 # prints them. Run it from the repository root once the run directory is ready:
 #
-#   set -a; . ./.env; set +a; bash scripts/release_2026_10.sh <run-dir>
+#   set -a; . ./.env; set +a; bash scripts/release_2026_10.sh <run-dir> [<s13-checkpoint-dir>]
 #
 # <run-dir> holds one directory (or symlink) per suite, named like build_release.py
 # writes them (dot-<Suite>-<version>), each with its manifest.json and shards. The
@@ -17,7 +17,7 @@
 # have published (their JSON outputs in <run-dir> record what was published).
 set -euo pipefail
 
-RUN_DIR="${1:?usage: release_2026_10.sh <run-dir>}"
+RUN_DIR="${1:?usage: release_2026_10.sh <run-dir> [<s13-checkpoint-dir>]}"
 PY="${PY:-python}"
 : "${HF_TOKEN:?HF_TOKEN is not set (source the .env file first)}"
 : "${ZENODO_TOKEN:?ZENODO_TOKEN is not set (source the .env file first)}"
@@ -49,6 +49,13 @@ PYEOF
 
 # 2. Hugging Face mirror (dataset repo per suite, tag v<version>).
 "$PY" scripts/upload_huggingface.py --run-dir "$RUN_DIR" --namespace thummd
+
+# 2b. The pre-registered s13 checkpoints, when a directory is given as the second argument:
+#     one folder per run with do_over_time_pfn_last.pt, cmd.txt, train.log and step_losses.csv.
+if [ -n "${2:-}" ]; then
+    "$PY" scripts/upload_huggingface.py --checkpoint-dir "$2" --path-in-repo s13 \
+        --namespace thummd --model-repo do-over-time-pfn
+fi
 
 # 3. Zenodo: new version of the existing Identifiability concept record ...
 "$PY" scripts/zenodo_update.py --run-dir "$RUN_DIR"

@@ -97,6 +97,36 @@ def upload_checkpoint(api, checkpoint: Path, namespace: str, model_repo: str, pr
     return repo_id
 
 
+def upload_checkpoint_dir(
+    api, checkpoint_dir: Path, namespace: str, model_repo: str, path_in_repo: str, private: bool
+) -> str:
+    """Upload a directory of run folders (checkpoints and their run records) to a model repo.
+
+    Args:
+        api: An authenticated ``HfApi``.
+        checkpoint_dir: Directory with one sub-directory per run.
+        namespace: HF user or org.
+        model_repo: Model repo name.
+        path_in_repo: Folder inside the repo that receives the directory, e.g. ``"s13"``.
+        private: Create the repo as private if it does not exist.
+
+    Returns:
+        The repo id.
+    """
+    repo_id = f"{namespace}/{model_repo}"
+    api.create_repo(repo_id, repo_type="model", private=private, exist_ok=True)
+    api.upload_folder(
+        repo_id=repo_id,
+        repo_type="model",
+        folder_path=str(checkpoint_dir),
+        path_in_repo=path_in_repo,
+    )
+    print(
+        f"[hf] uploaded {checkpoint_dir} -> https://huggingface.co/{repo_id}/tree/main/{path_in_repo}"
+    )
+    return repo_id
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -104,6 +134,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--suite-dir", type=Path, help="A single suite directory to upload.")
     parser.add_argument("--checkpoint", type=Path, help="A model checkpoint to upload.")
+    parser.add_argument(
+        "--checkpoint-dir",
+        type=Path,
+        help="A directory of run folders to upload under --path-in-repo of the model repo.",
+    )
+    parser.add_argument(
+        "--path-in-repo", default="checkpoints", help="Target folder for --checkpoint-dir."
+    )
     parser.add_argument("--namespace", required=True, help="HF user or org, e.g. 'thummd'.")
     parser.add_argument(
         "--model-repo", default="do-over-time-pfn", help="Model repo name for the checkpoint."
@@ -125,8 +163,22 @@ def main(argv: list[str] | None = None) -> int:
             upload_checkpoint(api, args.checkpoint, args.namespace, args.model_repo, args.private)
         )
 
+    if args.checkpoint_dir:
+        repos.append(
+            upload_checkpoint_dir(
+                api,
+                args.checkpoint_dir,
+                args.namespace,
+                args.model_repo,
+                args.path_in_repo,
+                args.private,
+            )
+        )
+
     if not repos:
-        raise SystemExit("nothing to upload: pass --run-dir, --suite-dir, and/or --checkpoint")
+        raise SystemExit(
+            "nothing to upload: pass --run-dir, --suite-dir, --checkpoint and/or --checkpoint-dir"
+        )
     print(f"[hf] done: {len(repos)} repo(s).")
     return 0
 
