@@ -1,0 +1,78 @@
+{
+ "suite": "dot-Identifiability-v1",
+ "suite_version": "1.2.0",
+ "suite_shard_md5": {
+  "shard-0000.parquet": "3994e20d23af5aecb322e8503f1b47ae",
+  "shard-0001.parquet": "e3f5a3354f471d730f1537fe6b44dae5",
+  "shard-0002.parquet": "121ce5c241664325ddb30979485ccc80"
+ },
+ "n_episodes": 12150,
+ "checkpoint_file": "do_over_time_pfn_best.pt",
+ "dotime_version": "0.1.3",
+ "dotime_commit": "e8b95779862730e1473770136c8c02e3e29d7591",
+ "runs": {
+  "s13ho_all_int_seed42": {
+   "status": "ok",
+   "path": "checkpoints/s13ho_all_int_seed42/do_over_time_pfn_best.pt",
+   "sha256": "8f42035db0f3ed5585ddacb8a410764ee588844ab16eb4c9712898c7c074ed0f",
+   "n_keys": 117,
+   "seconds": 101.5
+  },
+  "s13ho_all_int_seed43": {
+   "status": "ok",
+   "path": "checkpoints/s13ho_all_int_seed43/do_over_time_pfn_best.pt",
+   "sha256": "54619b0c8ce1ffc671d2618f29cd4340a2c615bcf63cec9eb4d9b2f9df45d0ee",
+   "n_keys": 117,
+   "seconds": 100.8
+  },
+  "s13ho_all_int_seed44": {
+   "status": "ok",
+   "path": "checkpoints/s13ho_all_int_seed44/do_over_time_pfn_best.pt",
+   "sha256": "e8acf69cec5a915f6c9642ae2ac0391a0d91f7c599f8e79b098cf0d3f8e2afe8",
+   "n_keys": 117,
+   "seconds": 100.8
+  },
+  "s13ho_all_B_seed42": {
+   "status": "ok",
+   "path": "checkpoints/s13ho_all_B_seed42/do_over_time_pfn_best.pt",
+   "sha256": "a0c11dad76cefad92674b64a3681bb3a5ba851e7e17a0cbafd47266d6b74bb1b",
+   "n_keys": 117,
+   "seconds": 101.3
+  },
+  "s13ho_all_B_seed43": {
+   "status": "ok",
+   "path": "checkpoints/s13ho_all_B_seed43/do_over_time_pfn_best.pt",
+   "sha256": "9aa5e0ac8881343480164fb1a4f69d8b3e41a1377064b689f8c3deefd9c1467f",
+   "n_keys": 117,
+   "seconds": 101.3
+  },
+  "s13ho_all_B_seed44": {
+   "status": "ok",
+   "path": "checkpoints/s13ho_all_B_seed44/do_over_time_pfn_best.pt",
+   "sha256": "8b61be0b9c13cc252c6e686a5c62036dbeb9c6df87c074b35560f4b03f7170c7",
+   "n_keys": 117,
+   "seconds": 101.3
+  },
+  "s13ho_all_A_seed42": {
+   "status": "ok",
+   "path": "checkpoints/s13ho_all_A_seed42/do_over_time_pfn_best.pt",
+   "sha256": "029965a22795ecdaef2a8fe7564deb226a47d08d465ec4f9cb7f0e1954ba74e0",
+   "n_keys": 117,
+   "seconds": 101.3
+  },
+  "s13ho_all_A_seed43": {
+   "status": "ok",
+   "path": "checkpoints/s13ho_all_A_seed43_r2/do_over_time_pfn_best.pt",
+   "sha256": "47b6d370862d3324df101bc44476bafa598f5d806a9ab165f827fcb9a522f876",
+   "n_keys": 117,
+   "seconds": 101.3
+  },
+  "s13ho_all_A_seed44": {
+   "status": "ok",
+   "path": "checkpoints/s13ho_all_A_seed44/do_over_time_pfn_best.pt",
+   "sha256": "3842c3ba9512e29f19553d324f062fdd5b764435eab4e566d80e65569fbfb279",
+   "n_keys": 117,
+   "seconds": 101.3
+  }
+ }
+}
