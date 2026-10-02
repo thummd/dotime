@@ -41,22 +41,69 @@ def _req(
         return json.loads(resp.read().decode())
 
 
+# The author block of every DoTime suite record, in the order of the paper
+# (CITATION.cff, preferred-citation). zenodo_update.py imports it, so new
+# records and new versions of existing ones carry the same creators.
+CREATORS = [
+    {"name": "Thumm, Dennis", "affiliation": "National University of Singapore"},
+    {"name": "Anthony, Billy Tim", "affiliation": "National University of Singapore"},
+    {"name": "Chen, Ying", "affiliation": "National University of Singapore"},
+]
+# Fields Zenodo requires before it publishes a deposition.
+REQUIRED = ("title", "upload_type", "description", "creators")
+
+
 def _metadata(manifest: dict) -> dict:
+    """Zenodo metadata of one suite version, built from its manifest.
+
+    Every field that names the version or its size comes from the manifest, so
+    a new version never inherits the previous version's title or episode count.
+
+    Args:
+        manifest: The suite's ``manifest.json``.
+
+    Returns:
+        ``{"metadata": {...}}`` with title, upload type, description, creators,
+        license, version and keywords.
+    """
+    name, version = manifest["name"], manifest["version"]
+    about = ""
+    try:
+        from dotime.benchmarks import _SUITE_REGISTRY
+
+        if name in _SUITE_REGISTRY:
+            about = _SUITE_REGISTRY[name].description.strip() + " "
+    except ImportError:  # the package is optional for this script
+        pass
     return {
         "metadata": {
-            "title": f"DoTime — {manifest['name']} (v{manifest['version']})",
+            "title": f"DoTime: {name} (v{version})",
             "upload_type": "dataset",
             "description": (
-                f"Frozen evaluation suite '{manifest['name']}' from DoTime. "
-                f"{manifest['n_episodes']} episodes; "
-                "parquet shards + manifest + Croissant metadata. Generated reproducibly "
-                "by scripts/build_release.py."
+                f"Frozen evaluation suite '{name}' from DoTime, version {version}. {about}"
+                f"{manifest['n_episodes']} episodes; parquet shards + manifest + Croissant "
+                "metadata. Generated reproducibly by scripts/build_release.py."
             ),
+            "creators": CREATORS,
             "license": "cc-by-4.0",
-            "version": manifest["version"],
+            "version": version,
             "keywords": ["causal inference", "time series", "benchmark", "interventional"],
         }
     }
+
+
+def check_metadata(md: dict) -> None:
+    """Refuse metadata that Zenodo would not publish, before anything is created.
+
+    Args:
+        md: The ``metadata`` dict of a deposition.
+
+    Raises:
+        SystemExit: If a required field is missing or empty.
+    """
+    missing = [k for k in REQUIRED if not md.get(k)]
+    if missing:
+        raise SystemExit(f"[zenodo] metadata lacks {missing}; nothing was created")
 
 
 def upload_suite(suite_dir: Path, token: str, base: str, publish: bool = False) -> dict:
@@ -74,6 +121,7 @@ def upload_suite(suite_dir: Path, token: str, base: str, publish: bool = False) 
         ``concept_doi`` and ``published`` when the deposition was published.
     """
     manifest = json.loads((suite_dir / "manifest.json").read_text())
+    check_metadata(_metadata(manifest)["metadata"])
     dep = _req(
         "POST",
         f"{base}/deposit/depositions",

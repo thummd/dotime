@@ -28,12 +28,11 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+# upload_zenodo.py sits next to this script, which ``python scripts/...`` puts
+# on sys.path, so both scripts build a version's metadata the same way.
+from upload_zenodo import _metadata, check_metadata
+
 _BASE = "https://zenodo.org/api"
-_CREATORS = [
-    {"name": "Thumm, Dennis", "affiliation": "National University of Singapore"},
-    {"name": "Anthony, Billy Tim", "affiliation": "National University of Singapore"},
-    {"name": "Chen, Ying", "affiliation": "National University of Singapore"},
-]
 
 
 def _req(method, url, token, *, data=None, content_type=None, raw=False):
@@ -72,9 +71,11 @@ def update_suite(suite_dir: Path, old_record_id: str, token: str, publish: bool)
 
     # 4. Ensure metadata (creators + version + a supersedes note).
     md = draft["metadata"]
-    md["creators"] = _CREATORS
-    md["version"] = manifest["version"]
+    # A new version starts as a copy of the previous one, whose title and
+    # description named the old version and its episode count.
+    md.update(_metadata(manifest)["metadata"])
     md["notes"] = "Per-episode deterministic generation (scheme=perepisode)."
+    check_metadata(md)
     _req(
         "PUT",
         f"{_BASE}/deposit/depositions/{draft_id}",
