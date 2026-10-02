@@ -3,27 +3,65 @@
 # Hugging Face, publish dot-Identifiability-v1 1.2.0 as a new version of its Zenodo
 # concept record and publish the four new suites as new Zenodo records.
 #
-# The script reads only $HF_TOKEN and $ZENODO_TOKEN from the environment and never
-# prints them. Run it from the repository root once the run directory is ready:
+# Run it from the repository root once the run directory is ready, first with --check:
 #
+#   set -a; . ./.env; set +a; bash scripts/release_2026_10.sh --check <run-dir> [<s13-checkpoint-dir>]
 #   set -a; . ./.env; set +a; bash scripts/release_2026_10.sh <run-dir> [<s13-checkpoint-dir>]
+#
+# --check finds the tokens and verifies every digest, then stops before any upload.
+# The tokens may be stored under any of the usual names (see pick below); the script
+# passes them on as HF_TOKEN and ZENODO_TOKEN, which the upload scripts read, and never
+# prints a value, only the name it used.
 #
 # <run-dir> holds one directory (or symlink) per suite, named like build_release.py
 # writes them (dot-<Suite>-<version>), each with its manifest.json and shards. The
-# script stops at the first failure, so a rerun after a fix continues safely:
-# upload_huggingface.py re-points the version tag, zenodo_update.py and
-# upload_zenodo.py skip nothing but refuse to duplicate a published record only
-# through the registry check below, so do not rerun the Zenodo steps after they
-# have published (their JSON outputs in <run-dir> record what was published).
+# script stops at the first failure. upload_huggingface.py can be rerun safely (it
+# re-points the version tag), but do not rerun the Zenodo steps after they have
+# published: their JSON outputs in <run-dir> record what was published.
 set -euo pipefail
 
-RUN_DIR="${1:?usage: release_2026_10.sh <run-dir> [<s13-checkpoint-dir>]}"
+CHECK=0
+if [ "${1:-}" = "--check" ]; then
+    CHECK=1
+    shift
+fi
+RUN_DIR="${1:?usage: release_2026_10.sh [--check] <run-dir> [<s13-checkpoint-dir>]}"
+S13_DIR="${2:-}"
 PY="${PY:-python}"
-: "${HF_TOKEN:?HF_TOKEN is not set (source the .env file first)}"
-: "${ZENODO_TOKEN:?ZENODO_TOKEN is not set (source the .env file first)}"
+
+# pick <target> <name>...: export the first non-empty variable among the names as
+# <target>. Only the name is printed.
+pick() {
+    local target=$1
+    shift
+    local name
+    for name in "$@"; do
+        if [ -n "${!name:-}" ]; then
+            export "$target=${!name}"
+            echo "[release] $target: taken from \$$name"
+            return 0
+        fi
+    done
+    return 1
+}
+missing=0
+pick HF_TOKEN HF_TOKEN HUGGING_FACE_HUB_TOKEN HUGGINGFACE_HUB_TOKEN HUGGINGFACE_TOKEN \
+    HUGGING_FACE_TOKEN HF_API_TOKEN HF_API_KEY HUGGINGFACE_API_TOKEN HF_WRITE_TOKEN || missing=1
+pick ZENODO_TOKEN ZENODO_TOKEN ZENODO_ACCESS_TOKEN ZENODO_API_TOKEN ZENODO_API_KEY \
+    ZENODO_PERSONAL_TOKEN ZENODO_PAT || missing=1
+if [ "$missing" = 1 ]; then
+    echo "[release] a token is missing. Exported variables whose names mention HF, HUGGING or"
+    echo "[release] ZENODO (names only, no values):"
+    compgen -e | grep -iE 'hf|hugging|zenodo' | sed 's/^/[release]   /' || echo "[release]   none"
+    echo "[release] Set HF_TOKEN and ZENODO_TOKEN, e.g. HF_TOKEN=\$YOUR_NAME on the command line."
+    exit 1
+fi
 
 echo "[release] run dir: $RUN_DIR"
 echo "[release] suites: $(ls -d "$RUN_DIR"/dot-* | xargs -n1 basename | tr '\n' ' ')"
+if [ -n "$S13_DIR" ]; then
+    echo "[release] s13 checkpoint folders: $(ls -d "$S13_DIR"/s13ho_* | wc -l) in $S13_DIR"
+fi
 
 # 1. Offline digest check: every shard listed in a manifest must be present and match.
 "$PY" - "$RUN_DIR" <<'PYEOF'
@@ -47,13 +85,25 @@ if bad:
     sys.exit(f"[release] {bad} problem(s); nothing uploaded")
 PYEOF
 
+# 1b. The s13 folder: every file in MANIFEST.sha256 present and matching.
+if [ -n "$S13_DIR" ]; then
+    (cd "$S13_DIR" && sha256sum --quiet -c MANIFEST.sha256) \
+        || { echo "[release] s13 manifest mismatch; nothing uploaded"; exit 1; }
+    echo "[release] s13 manifest: all files match"
+fi
+
+if [ "$CHECK" = 1 ]; then
+    echo "[release] --check passed: tokens found, digests verified. Nothing was uploaded."
+    exit 0
+fi
+
 # 2. Hugging Face mirror (dataset repo per suite, tag v<version>).
 "$PY" scripts/upload_huggingface.py --run-dir "$RUN_DIR" --namespace thummd
 
 # 2b. The pre-registered s13 checkpoints, when a directory is given as the second argument:
 #     one folder per run with do_over_time_pfn_last.pt, cmd.txt, train.log and step_losses.csv.
-if [ -n "${2:-}" ]; then
-    "$PY" scripts/upload_huggingface.py --checkpoint-dir "$2" --path-in-repo s13 \
+if [ -n "$S13_DIR" ]; then
+    "$PY" scripts/upload_huggingface.py --checkpoint-dir "$S13_DIR" --path-in-repo s13 \
         --namespace thummd --model-repo do-over-time-pfn
 fi
 

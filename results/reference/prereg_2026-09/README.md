@@ -110,7 +110,8 @@ No run was relaunched or excluded because of its scores.
 ## Provenance
 
 Scoring ran on 2026-10-01 on the training host's GPU with the dotime package at commit
-`e8b9577`, on the 1.2.0 build whose shard digests are recorded in
+`e8b9577`, which the history rewrite of 2026-10-02 renamed `e640e02` with an identical tree
+(DEVIATIONS.md, item 3), on the 1.2.0 build whose shard digests are recorded in
 `s13_scoring_provenance.json` and equal the build that is released. Every checkpoint was
 loaded with the strict key check (117 tensors).
 

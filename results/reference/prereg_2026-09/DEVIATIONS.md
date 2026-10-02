@@ -14,3 +14,9 @@ scripts) followed the document as written. The two entries below are procedural.
    build whose digests equal the released ones. The scoring ran before dot-Identifiability-v1
    1.2.0 was uploaded, on the build that is being released. The digests in
    `s13_scoring_provenance.json` are the ones to compare with the released files.
+3. **2026-10-02, scoring commit renamed.** The public history after the registering commit
+   was rewritten to remove an AI co-author trailer from one commit message. The commit the
+   scoring ran on, `e8b95779862730e1473770136c8c02e3e29d7591` as recorded in
+   `s13_scoring_provenance.json`, is now `e640e02` on `main`. Both commits have the same tree,
+   `5aac54c604a3d1bb95e7e29b35c49eec8bd2e9f1`, so the scoring code is byte-identical. The registering commit 05ae974 and its
+   push record are unchanged.
