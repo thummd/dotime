@@ -30,7 +30,7 @@ from pathlib import Path
 
 # upload_zenodo.py sits next to this script, which ``python scripts/...`` puts
 # on sys.path, so both scripts build a version's metadata the same way.
-from upload_zenodo import _metadata, check_metadata
+from upload_zenodo import _md5, _metadata, _plain, check_metadata, find_published, put_file
 
 _BASE = "https://zenodo.org/api"
 
@@ -47,27 +47,35 @@ def _req(method, url, token, *, data=None, content_type=None, raw=False):
 
 def update_suite(suite_dir: Path, old_record_id: str, token: str, publish: bool) -> dict:
     manifest = json.loads((suite_dir / "manifest.json").read_text())
-    # 1. New draft version from the published record.
+    # 0. A version whose title is already published is never published twice,
+    #    so the release can be rerun after a later step fails.
+    done = find_published(_BASE, token, _metadata(manifest)["metadata"]["title"])
+    if done is not None:
+        rid = str(done.get("record_id") or done["id"])
+        print(f"[zenodo] {manifest['name']}: version already published as record {rid}, skipped")
+        return {"record_id": rid, "version_doi": done.get("doi", "")}
+    # 1. New draft version from the published record. Zenodo keeps one
+    #    unpublished new version per record, so a rerun gets the same draft back.
     dep = _req("POST", f"{_BASE}/deposit/depositions/{old_record_id}/actions/newversion", token)
     draft = _req("GET", dep["links"]["latest_draft"], token)
     draft_id, bucket = draft["id"], draft["links"]["bucket"]
 
-    # 2. Remove the files copied from the previous version.
+    # 2. Keep files that already match this build, remove the others (the
+    #    previous version's files or a partial upload).
+    local = {f.name: _md5(f) for f in sorted(suite_dir.iterdir()) if f.is_file()}
+    keep = set()
     for f in draft.get("files", []):
+        name = f.get("filename")
+        if name in local and local[name] == _plain(f.get("checksum")):
+            keep.add(name)
+            continue
         fid = f.get("id") or f.get("file_id")
         _req("DELETE", f"{_BASE}/deposit/depositions/{draft_id}/files/{fid}", token)
 
-    # 3. Upload the freshly-built files.
+    # 3. Upload the rest of the freshly built files.
     for f in sorted(suite_dir.iterdir()):
-        if f.is_file():
-            with f.open("rb") as fh:
-                _req(
-                    "PUT",
-                    f"{bucket}/{f.name}",
-                    token,
-                    data=fh.read(),
-                    content_type="application/octet-stream",
-                )
+        if f.is_file() and f.name not in keep:
+            put_file(bucket, f, token)
 
     # 4. Ensure metadata (creators + version + a supersedes note).
     md = draft["metadata"]

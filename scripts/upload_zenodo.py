@@ -8,6 +8,11 @@ is single-blind) and prints the reserved DOI; review and publish in the Zenodo U
 then backfill `zenodo_record_id`/`doi` into `dotime.benchmarks`. With ``--publish``
 the depositions are published at once (irreversible).
 
+The script can be rerun after a failure. A suite whose title is already
+published is reported and skipped, an unpublished draft that holds the suite's
+manifest is resumed, files already in it with the same checksum are not sent
+again, and every file upload is retried on a dropped connection.
+
 Usage
 -----
     export ZENODO_TOKEN=...          # personal access token (deposit:write)
@@ -20,8 +25,12 @@ Dependency-light: stdlib ``urllib`` only.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
+import ssl
+import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -37,8 +46,159 @@ def _req(
     if content_type:
         headers["Content-Type"] = content_type
     req = urllib.request.Request(url, data=data, method=method, headers=headers)
-    with urllib.request.urlopen(req) as resp:
+    with urllib.request.urlopen(req, timeout=300) as resp:
         return json.loads(resp.read().decode())
+
+
+def _md5(path: Path) -> str:
+    """MD5 of a file, read in blocks.
+
+    Args:
+        path: The file.
+
+    Returns:
+        The hex digest, as Zenodo reports file checksums.
+    """
+    h = hashlib.md5()
+    with path.open("rb") as fh:
+        for block in iter(lambda: fh.read(1 << 20), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
+def _plain(checksum: str | None) -> str:
+    """A Zenodo checksum without its ``md5:`` prefix."""
+    return (checksum or "").removeprefix("md5:")
+
+
+def list_depositions(base: str, token: str, status: str) -> list[dict]:
+    """Every deposition of the account with a status, all versions included.
+
+    Args:
+        base: API base URL.
+        token: Zenodo token.
+        status: ``"draft"`` or ``"published"``.
+
+    Returns:
+        The depositions as the API lists them.
+    """
+    out: list[dict] = []
+    page = 1
+    while True:
+        batch = _req(
+            "GET",
+            f"{base}/deposit/depositions?status={status}&size=100&page={page}&all_versions=true",
+            token,
+        )
+        if not batch:
+            return out
+        out.extend(batch)
+        if len(batch) < 100:
+            return out
+        page += 1
+
+
+def find_published(base: str, token: str, title: str) -> dict | None:
+    """The published deposition with exactly this title, if there is one.
+
+    Titles name the suite and its version, so a match means this version is
+    already archived and must not be published a second time.
+
+    Args:
+        base: API base URL.
+        token: Zenodo token.
+        title: The title :func:`_metadata` gives the version.
+
+    Returns:
+        The deposition, or ``None``.
+    """
+    for dep in list_depositions(base, token, "published"):
+        if (dep.get("metadata") or {}).get("title") == title or dep.get("title") == title:
+            return dep
+    return None
+
+
+def find_resumable_draft(base: str, token: str, manifest_md5: str) -> dict | None:
+    """An unpublished draft that already holds this suite's manifest.
+
+    A failed upload leaves its draft behind with the files that completed; the
+    manifest's checksum identifies the suite version it belongs to.
+
+    Args:
+        base: API base URL.
+        token: Zenodo token.
+        manifest_md5: MD5 of the local ``manifest.json``.
+
+    Returns:
+        The draft with its current ``files`` and ``links``, or ``None``.
+    """
+    for dep in list_depositions(base, token, "draft"):
+        full = _req("GET", f"{base}/deposit/depositions/{dep['id']}", token)
+        files = full.get("files") or []
+        if any(
+            f.get("filename") == "manifest.json" and _plain(f.get("checksum")) == manifest_md5
+            for f in files
+        ):
+            return full
+    return None
+
+
+def put_file(bucket: str, path: Path, token: str, attempts: int = 3) -> None:
+    """Stream one file into a deposition bucket, retrying a dropped connection.
+
+    Args:
+        bucket: The deposition's bucket URL.
+        path: The file.
+        token: Zenodo token.
+        attempts: How many times to try before giving up.
+
+    Raises:
+        urllib.error.HTTPError: On a client error (4xx), which a retry would
+            only repeat, or when the last attempt fails.
+        urllib.error.URLError: When the last attempt fails.
+    """
+    size = path.stat().st_size
+    for attempt in range(1, attempts + 1):
+        t0 = time.time()
+        try:
+            with path.open("rb") as fh:
+                # Zenodo's bucket API requires an explicit content type (415
+                # otherwise); the length lets urllib stream the file in blocks.
+                req = urllib.request.Request(
+                    f"{bucket}/{path.name}",
+                    data=fh,
+                    method="PUT",
+                    headers={
+                        "Authorization": f"Bearer {token}",
+                        "Content-Type": "application/octet-stream",
+                        "Content-Length": str(size),
+                    },
+                )
+                with urllib.request.urlopen(req, timeout=600) as resp:
+                    resp.read()
+        except urllib.error.HTTPError as exc:
+            if exc.code < 500 or attempt == attempts:
+                raise
+            err: Exception = exc
+        except (urllib.error.URLError, ConnectionError, TimeoutError, ssl.SSLError) as exc:
+            if attempt == attempts:
+                raise
+            err = exc
+        else:
+            dt = max(time.time() - t0, 1e-9)
+            print(
+                f"[zenodo]   {path.name}: {size / 1e6:.1f} MB in {dt:.0f} s "
+                f"({size / 1e6 / dt:.2f} MB/s)",
+                flush=True,
+            )
+            return
+        wait = 60 * attempt
+        print(
+            f"[zenodo]   {path.name}: attempt {attempt} of {attempts} failed ({err}); "
+            f"retrying in {wait} s",
+            flush=True,
+        )
+        time.sleep(wait)
 
 
 # The author block of every DoTime suite record, in the order of the paper
@@ -121,28 +281,43 @@ def upload_suite(suite_dir: Path, token: str, base: str, publish: bool = False) 
         ``concept_doi`` and ``published`` when the deposition was published.
     """
     manifest = json.loads((suite_dir / "manifest.json").read_text())
-    check_metadata(_metadata(manifest)["metadata"])
-    dep = _req(
-        "POST",
-        f"{base}/deposit/depositions",
-        token,
-        data=json.dumps({}).encode(),
-        content_type="application/json",
-    )
-    dep_id = dep["id"]
-    bucket = dep["links"]["bucket"]
+    name = manifest["name"]
+    md = _metadata(manifest)["metadata"]
+    check_metadata(md)
+    done = find_published(base, token, md["title"])
+    if done is not None:
+        result = {
+            "deposition": str(done["id"]),
+            "doi": done.get("doi", ""),
+            "record_id": str(done.get("record_id") or done["id"]),
+            "concept_doi": done.get("conceptdoi", ""),
+            "published": True,
+        }
+        print(f"[zenodo] {name}: already published as record {result['record_id']}, skipped")
+        return result
+    draft = find_resumable_draft(base, token, _md5(suite_dir / "manifest.json"))
+    if draft is not None:
+        dep_id, bucket = draft["id"], draft["links"]["bucket"]
+        have = {f["filename"]: _plain(f.get("checksum")) for f in draft.get("files") or []}
+        print(f"[zenodo] {name}: resuming draft {dep_id} ({len(have)} files already there)")
+    else:
+        dep = _req(
+            "POST",
+            f"{base}/deposit/depositions",
+            token,
+            data=json.dumps({}).encode(),
+            content_type="application/json",
+        )
+        dep_id, bucket, have = dep["id"], dep["links"]["bucket"], {}
+        print(f"[zenodo] {name}: created draft {dep_id}")
 
     for f in sorted(suite_dir.iterdir()):
-        if f.is_file():
-            with f.open("rb") as fh:
-                # Zenodo's bucket API requires an explicit content type (415 otherwise).
-                _req(
-                    "PUT",
-                    f"{bucket}/{f.name}",
-                    token,
-                    data=fh.read(),
-                    content_type="application/octet-stream",
-                )
+        if not f.is_file():
+            continue
+        if have.get(f.name) == _md5(f):
+            print(f"[zenodo]   {f.name}: already in the draft")
+            continue
+        put_file(bucket, f, token)
 
     _req(
         "PUT",
@@ -210,6 +385,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[zenodo] skip {name}: it has a concept record, use zenodo_update.py")
             continue
         results[suite_dir.name] = upload_suite(suite_dir, token, base, publish=args.publish)
+        # Written after every suite, so a later failure keeps the earlier ids.
+        (args.run_dir / "zenodo_depositions.json").write_text(json.dumps(results, indent=2))
     (args.run_dir / "zenodo_depositions.json").write_text(json.dumps(results, indent=2))
     tail = "" if args.publish else "; publish each deposition in the UI"
     print(f"[zenodo] wrote {args.run_dir / 'zenodo_depositions.json'}{tail}.")

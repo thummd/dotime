@@ -9,23 +9,28 @@
 #   set -a; . ./.env; set +a; bash scripts/release_2026_10.sh <run-dir> [<s13-checkpoint-dir>]
 #
 # --check finds the tokens and verifies every digest, then stops before any upload.
+# --zenodo-only skips the Hugging Face uploads, e.g. to resume after a Zenodo failure.
+# A rerun is safe: versions already published on Zenodo are skipped by title, an
+# unpublished draft of a suite is resumed and files already in it are not sent again.
 # The tokens may be stored under any of the usual names (see pick below); the script
 # passes them on as HF_TOKEN and ZENODO_TOKEN, which the upload scripts read, and never
 # prints a value, only the name it used.
 #
 # <run-dir> holds one directory (or symlink) per suite, named like build_release.py
 # writes them (dot-<Suite>-<version>), each with its manifest.json and shards. The
-# script stops at the first failure. upload_huggingface.py can be rerun safely (it
-# re-points the version tag), but do not rerun the Zenodo steps after they have
-# published: their JSON outputs in <run-dir> record what was published.
+# script stops at the first failure and can then be rerun with the same arguments:
+# upload_huggingface.py re-points the version tag, and the Zenodo scripts skip what
+# is already published. Their JSON outputs in <run-dir> record what was published.
 set -euo pipefail
 
 CHECK=0
-if [ "${1:-}" = "--check" ]; then
-    CHECK=1
+ZENODO_ONLY=0
+while [ "${1:-}" = "--check" ] || [ "${1:-}" = "--zenodo-only" ]; do
+    [ "$1" = "--check" ] && CHECK=1
+    [ "$1" = "--zenodo-only" ] && ZENODO_ONLY=1
     shift
-fi
-RUN_DIR="${1:?usage: release_2026_10.sh [--check] <run-dir> [<s13-checkpoint-dir>]}"
+done
+RUN_DIR="${1:?usage: release_2026_10.sh [--check] [--zenodo-only] <run-dir> [<s13-checkpoint-dir>]}"
 S13_DIR="${2:-}"
 PY="${PY:-python}"
 
@@ -97,14 +102,19 @@ if [ "$CHECK" = 1 ]; then
     exit 0
 fi
 
-# 2. Hugging Face mirror (dataset repo per suite, tag v<version>).
-"$PY" scripts/upload_huggingface.py --run-dir "$RUN_DIR" --namespace thummd
+if [ "$ZENODO_ONLY" = 0 ]; then
+    # 2. Hugging Face mirror (dataset repo per suite, tag v<version>).
+    "$PY" scripts/upload_huggingface.py --run-dir "$RUN_DIR" --namespace thummd
 
-# 2b. The pre-registered s13 checkpoints, when a directory is given as the second argument:
-#     one folder per run with do_over_time_pfn_last.pt, cmd.txt, train.log and step_losses.csv.
-if [ -n "$S13_DIR" ]; then
-    "$PY" scripts/upload_huggingface.py --checkpoint-dir "$S13_DIR" --path-in-repo s13 \
-        --namespace thummd --model-repo do-over-time-pfn
+    # 2b. The pre-registered s13 checkpoints, when a directory is given as the second
+    #     argument: one folder per run with do_over_time_pfn_last.pt, cmd.txt,
+    #     train.log and step_losses.csv.
+    if [ -n "$S13_DIR" ]; then
+        "$PY" scripts/upload_huggingface.py --checkpoint-dir "$S13_DIR" --path-in-repo s13 \
+            --namespace thummd --model-repo do-over-time-pfn
+    fi
+else
+    echo "[release] --zenodo-only: Hugging Face uploads skipped"
 fi
 
 # 3. Zenodo: new version of the existing Identifiability concept record ...
