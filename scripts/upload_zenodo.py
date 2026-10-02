@@ -11,7 +11,9 @@ the depositions are published at once (irreversible).
 The script can be rerun after a failure. A suite whose title is already
 published is reported and skipped, an unpublished draft that holds the suite's
 manifest is resumed, files already in it with the same checksum are not sent
-again, and every file upload is retried on a dropped connection.
+again, and every file upload is retried on a dropped connection. A draft is
+published only when every file in it has the checksum of the local build.
+``--plan`` reads the account and prints what a run would do, writing nothing.
 
 Usage
 -----
@@ -143,14 +145,58 @@ def find_resumable_draft(base: str, token: str, manifest_md5: str) -> dict | Non
     return None
 
 
-def put_file(bucket: str, path: Path, token: str, attempts: int = 3) -> None:
+class _Progress:
+    """A file reader that prints how far an upload has come, about once a minute.
+
+    http.client streams any request body that has ``read`` in blocks, so this
+    wrapper sees every block on its way out. Zenodo answers a file upload only
+    once the whole body has arrived, and from here one connection to it carries
+    0.2 to 0.9 MB/s, so a large shard is otherwise silent for half an hour.
+
+    Args:
+        fh: The open file.
+        name: File name, for the message.
+        size: File size in bytes.
+        every: Seconds between two messages.
+    """
+
+    def __init__(self, fh, name: str, size: int, every: float = 60.0) -> None:
+        self._fh, self._name, self._size, self._every = fh, name, size, every
+        self._sent = 0
+        self._t0 = self._last = time.time()
+
+    def read(self, n: int = -1) -> bytes:
+        """Read the next block and report progress when a minute has passed.
+
+        Args:
+            n: Block size in bytes, as http.client asks for it.
+
+        Returns:
+            The block, empty at the end of the file.
+        """
+        block = self._fh.read(n)
+        self._sent += len(block)
+        now = time.time()
+        if block and now - self._last >= self._every:
+            self._last = now
+            print(
+                f"[zenodo]   {self._name}: {self._sent / 1e6:.0f} of {self._size / 1e6:.0f} MB "
+                f"sent ({self._sent / 1e6 / (now - self._t0):.2f} MB/s)",
+                flush=True,
+            )
+        return block
+
+
+def put_file(bucket: str, path: Path, token: str, attempts: int = 5) -> None:
     """Stream one file into a deposition bucket, retrying a dropped connection.
 
     Args:
         bucket: The deposition's bucket URL.
         path: The file.
         token: Zenodo token.
-        attempts: How many times to try before giving up.
+        attempts: How many times to try before giving up. A large shard can
+            take half an hour over one connection, and the first release run
+            lost one to a dropped connection.
 
     Raises:
         urllib.error.HTTPError: On a client error (4xx), which a retry would
@@ -166,7 +212,7 @@ def put_file(bucket: str, path: Path, token: str, attempts: int = 3) -> None:
                 # otherwise); the length lets urllib stream the file in blocks.
                 req = urllib.request.Request(
                     f"{bucket}/{path.name}",
-                    data=fh,
+                    data=_Progress(fh, path.name, size),
                     method="PUT",
                     headers={
                         "Authorization": f"Bearer {token}",
@@ -192,13 +238,52 @@ def put_file(bucket: str, path: Path, token: str, attempts: int = 3) -> None:
                 flush=True,
             )
             return
-        wait = 60 * attempt
+        wait = 60 * min(attempt, 3)
         print(
             f"[zenodo]   {path.name}: attempt {attempt} of {attempts} failed ({err}); "
             f"retrying in {wait} s",
             flush=True,
         )
         time.sleep(wait)
+
+
+def local_files(suite_dir: Path) -> dict[str, str]:
+    """MD5 of every file of a suite directory, by file name.
+
+    Args:
+        suite_dir: A suite directory written by ``build_release.py``.
+
+    Returns:
+        ``{file name: md5}`` in name order.
+    """
+    return {f.name: _md5(f) for f in sorted(suite_dir.iterdir()) if f.is_file()}
+
+
+def check_draft_files(base: str, token: str, dep_id, local: dict[str, str]) -> None:
+    """Refuse to publish a draft whose files are not exactly the local build.
+
+    Publishing cannot be undone, so the draft must hold every local file with
+    the checksum Zenodo computed on its side, and nothing else.
+
+    Args:
+        base: API base URL.
+        token: Zenodo token.
+        dep_id: The draft's deposition id.
+        local: ``{file name: md5}`` of the local suite directory.
+
+    Raises:
+        SystemExit: If a file is missing, extra or differs. The draft stays
+            unpublished, and a rerun resumes it.
+    """
+    draft = _req("GET", f"{base}/deposit/depositions/{dep_id}", token)
+    remote = {f.get("filename"): _plain(f.get("checksum")) for f in draft.get("files") or []}
+    bad = sorted(str(n) for n in remote.keys() | local.keys() if remote.get(n) != local.get(n))
+    if bad:
+        raise SystemExit(
+            f"[zenodo] draft {dep_id} does not match the local build in {bad}; "
+            "it was not published, rerun to resume it"
+        )
+    print(f"[zenodo]   all {len(local)} files in draft {dep_id} match the local build")
 
 
 # The author block of every DoTime suite record, in the order of the paper
@@ -266,6 +351,92 @@ def check_metadata(md: dict) -> None:
         raise SystemExit(f"[zenodo] metadata lacks {missing}; nothing was created")
 
 
+def _published_result(base: str, done: dict) -> dict:
+    """The ids of an already published deposition, as a run reports them.
+
+    Args:
+        base: API base URL.
+        done: The deposition from :func:`find_published`.
+
+    Returns:
+        ``deposition``, ``doi``, ``record_id``, ``concept_doi`` and ``published``.
+    """
+    record_id = str(done.get("record_id") or done["id"])
+    concept_doi = done.get("conceptdoi", "")
+    if not concept_doi:
+        # The registry needs the concept DOI; the public record always has it.
+        with urllib.request.urlopen(f"{base}/records/{record_id}", timeout=300) as resp:
+            concept_doi = json.loads(resp.read().decode()).get("conceptdoi", "")
+    return {
+        "deposition": str(done["id"]),
+        "doi": done.get("doi", ""),
+        "record_id": record_id,
+        "concept_doi": concept_doi,
+        "published": True,
+    }
+
+
+def plan_suite(suite_dir: Path, token: str, base: str) -> dict:
+    """Decide what a run does with one suite, reading the account only.
+
+    A run and ``--plan`` both call this, so the plan shows what a run does.
+
+    Args:
+        suite_dir: A suite directory written by ``build_release.py``.
+        token: Zenodo personal access token.
+        base: API base URL.
+
+    Returns:
+        ``action`` (``"skip"``, ``"resume"`` or ``"create"``), the suite
+        ``name``, the ``local`` checksums, and the ``published`` deposition
+        (skip) or the ``draft`` with its ``stale`` files to delete and the
+        files to ``upload`` (resume, create).
+    """
+    manifest = json.loads((suite_dir / "manifest.json").read_text())
+    md = _metadata(manifest)["metadata"]
+    check_metadata(md)
+    plan: dict = {"name": manifest["name"], "local": local_files(suite_dir)}
+    done = find_published(base, token, md["title"])
+    if done is not None:
+        return {**plan, "action": "skip", "published": done}
+    draft = find_resumable_draft(base, token, plan["local"]["manifest.json"])
+    have = {f.get("filename"): f for f in (draft or {}).get("files") or []}
+    local = plan["local"]
+    return {
+        **plan,
+        "action": "create" if draft is None else "resume",
+        "draft": draft,
+        # A file the build does not have, or one whose upload broke off, goes.
+        "stale": [f for n, f in have.items() if local.get(n) != _plain(f.get("checksum"))],
+        "upload": [
+            n for n in local if n not in have or local[n] != _plain(have[n].get("checksum"))
+        ],
+    }
+
+
+def describe(plan: dict, suite_dir: Path) -> str:
+    """One line that says what a run will do with a suite.
+
+    Args:
+        plan: The result of :func:`plan_suite`.
+        suite_dir: The suite directory, for the upload size.
+
+    Returns:
+        The line, prefixed with ``[zenodo]``.
+    """
+    name = plan["name"]
+    if plan["action"] == "skip":
+        done = plan["published"]
+        return f"[zenodo] {name}: published as record {done.get('record_id') or done['id']}, skip"
+    mb = sum((suite_dir / n).stat().st_size for n in plan["upload"]) / 1e6
+    todo = f"upload {plan['upload']} ({mb:.0f} MB)"
+    if plan["action"] == "create":
+        return f"[zenodo] {name}: create a new record, {todo}"
+    stale = [f.get("filename") for f in plan["stale"]]
+    drop = f", delete {stale}" if stale else ""
+    return f"[zenodo] {name}: resume draft {plan['draft']['id']}{drop}, {todo}"
+
+
 def upload_suite(suite_dir: Path, token: str, base: str, publish: bool = False) -> dict:
     """Create a Zenodo deposition for one built suite and optionally publish it.
 
@@ -279,27 +450,21 @@ def upload_suite(suite_dir: Path, token: str, base: str, publish: bool = False) 
     Returns:
         ``deposition`` and ``doi`` (reserved or final), plus ``record_id``,
         ``concept_doi`` and ``published`` when the deposition was published.
+
+    Raises:
+        SystemExit: If the draft does not match the local build before publishing.
     """
+    plan = plan_suite(suite_dir, token, base)
+    name, local = plan["name"], plan["local"]
     manifest = json.loads((suite_dir / "manifest.json").read_text())
-    name = manifest["name"]
-    md = _metadata(manifest)["metadata"]
-    check_metadata(md)
-    done = find_published(base, token, md["title"])
-    if done is not None:
-        result = {
-            "deposition": str(done["id"]),
-            "doi": done.get("doi", ""),
-            "record_id": str(done.get("record_id") or done["id"]),
-            "concept_doi": done.get("conceptdoi", ""),
-            "published": True,
-        }
-        print(f"[zenodo] {name}: already published as record {result['record_id']}, skipped")
-        return result
-    draft = find_resumable_draft(base, token, _md5(suite_dir / "manifest.json"))
-    if draft is not None:
-        dep_id, bucket = draft["id"], draft["links"]["bucket"]
-        have = {f["filename"]: _plain(f.get("checksum")) for f in draft.get("files") or []}
-        print(f"[zenodo] {name}: resuming draft {dep_id} ({len(have)} files already there)")
+    print(describe(plan, suite_dir), flush=True)
+    if plan["action"] == "skip":
+        return _published_result(base, plan["published"])
+    if plan["action"] == "resume":
+        dep_id, bucket = plan["draft"]["id"], plan["draft"]["links"]["bucket"]
+        for f in plan["stale"]:
+            fid = f.get("id") or f.get("file_id")
+            _req("DELETE", f"{base}/deposit/depositions/{dep_id}/files/{fid}", token)
     else:
         dep = _req(
             "POST",
@@ -308,16 +473,12 @@ def upload_suite(suite_dir: Path, token: str, base: str, publish: bool = False) 
             data=json.dumps({}).encode(),
             content_type="application/json",
         )
-        dep_id, bucket, have = dep["id"], dep["links"]["bucket"], {}
+        dep_id, bucket = dep["id"], dep["links"]["bucket"]
         print(f"[zenodo] {name}: created draft {dep_id}")
 
-    for f in sorted(suite_dir.iterdir()):
-        if not f.is_file():
-            continue
-        if have.get(f.name) == _md5(f):
-            print(f"[zenodo]   {f.name}: already in the draft")
-            continue
-        put_file(bucket, f, token)
+    for file_name in plan["upload"]:
+        put_file(bucket, suite_dir / file_name, token)
+    check_draft_files(base, token, dep_id, local)
 
     _req(
         "PUT",
@@ -362,6 +523,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Publish each new deposition immediately (irreversible) instead of "
         "leaving it for review in the UI.",
     )
+    parser.add_argument(
+        "--plan",
+        action="store_true",
+        help="Read the account and print what a run would do; change and write nothing.",
+    )
     args = parser.parse_args(argv)
 
     token = args.token or os.environ.get("ZENODO_TOKEN")
@@ -384,9 +550,15 @@ def main(argv: list[str] | None = None) -> int:
         ):
             print(f"[zenodo] skip {name}: it has a concept record, use zenodo_update.py")
             continue
+        if args.plan:
+            print(describe(plan_suite(suite_dir, token, base), suite_dir), flush=True)
+            continue
         results[suite_dir.name] = upload_suite(suite_dir, token, base, publish=args.publish)
         # Written after every suite, so a later failure keeps the earlier ids.
         (args.run_dir / "zenodo_depositions.json").write_text(json.dumps(results, indent=2))
+    if args.plan:
+        print("[zenodo] --plan: nothing was changed or written.")
+        return 0
     (args.run_dir / "zenodo_depositions.json").write_text(json.dumps(results, indent=2))
     tail = "" if args.publish else "; publish each deposition in the UI"
     print(f"[zenodo] wrote {args.run_dir / 'zenodo_depositions.json'}{tail}.")

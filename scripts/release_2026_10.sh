@@ -8,7 +8,8 @@
 #   set -a; . ./.env; set +a; bash scripts/release_2026_10.sh --check <run-dir> [<s13-checkpoint-dir>]
 #   set -a; . ./.env; set +a; bash scripts/release_2026_10.sh <run-dir> [<s13-checkpoint-dir>]
 #
-# --check finds the tokens and verifies every digest, then stops before any upload.
+# --check finds the tokens, verifies every digest and asks Zenodo (read-only) what a
+# run would skip, resume or create, then stops before any upload.
 # --zenodo-only skips the Hugging Face uploads, e.g. to resume after a Zenodo failure.
 # A rerun is safe: versions already published on Zenodo are skipped by title, an
 # unpublished draft of a suite is resumed and files already in it are not sent again.
@@ -98,6 +99,9 @@ if [ -n "$S13_DIR" ]; then
 fi
 
 if [ "$CHECK" = 1 ]; then
+    echo "[release] Zenodo plan (read-only):"
+    "$PY" scripts/zenodo_update.py --run-dir "$RUN_DIR" --plan
+    "$PY" scripts/upload_zenodo.py --run-dir "$RUN_DIR" --plan
     echo "[release] --check passed: tokens found, digests verified. Nothing was uploaded."
     exit 0
 fi
