@@ -1,6 +1,6 @@
 # Frozen Benchmark Suites
 
-DoTime ships four versioned, immutable suites for reproducible evaluation. Each has a Zenodo DOI and Croissant metadata.
+DoTime ships eight versioned, immutable suites for reproducible evaluation. Each has a Zenodo DOI and Croissant metadata. The four v1 suites come first. `dot-Wide-v1`, `dot-SeasonalTrend-v1`, `dot-Observed-v1` and `dot-ContinuousIrregular-v1`, released with 0.2.0, have their own sections below.
 
 ## Suites
 
@@ -11,7 +11,7 @@ DoTime ships four versioned, immutable suites for reproducible evaluation. Each 
 
 **`dot-Identifiability-v1` 1.1.0 (2026-09)** regenerates the suite with one exogenous-noise realisation per episode shared across both arms (`pair_mode="counterfactual"`): the arms agree exactly before the intervention onset, `y_true - y_obs` is a per-episode counterfactual effect, the released `x_obs` is canonically aligned with hidden variables zeroed, `y_causal_effect` is correct, and diverged episodes are resampled (0 zeroed episodes, verified on all 10 800 episodes). It is a new artifact with new trajectories and targets. Pin `version="1.0.0"` to load the frozen original.
 
-The generator also builds a ninth structure that no frozen suite contains yet,
+Version 1.2.0 adds a ninth structure,
 `bow_graph`: a hidden U drives A and Y, and A drives Y. It is
 `unobserved_confounder` plus the causal edge A→Y, and it is the structure that
 is **not identifiable**. Nothing observed blocks the back-door path A←U→Y and
@@ -22,7 +22,7 @@ distribution and still differ in the effect of `do(A)`.
 ExtendedDoTime(tscm_structure="bow_graph", pair_mode="counterfactual")
 ```
 
-**`dot-Identifiability-v1` 1.2.0 (prepared, not yet minted)** is configured by
+**`dot-Identifiability-v1` 1.2.0 (2026-10, Zenodo `10.5281/zenodo.23095083`)** is configured by
 `scripts/release_config_v1_2.yaml`. It keeps the 1.1.0 generator, seeds and
 episode indices and makes two changes. `mediator` is queried one step after the
 onset, because its A→M edge is lagged and its effect at the onset is exactly
@@ -42,7 +42,7 @@ suite = load_benchmark("dot-Identifiability-v1", version="1.0.0")
 On first access the suite is fetched into `~/.cache/dotime/` — from the Hugging Face
 mirror ([`thummd/dot-*`](https://huggingface.co/thummd)) by default, falling back to the
 Zenodo archive of record (concept DOIs `10.5281/zenodo.20846063`, `.20846073`, `.20845980`,
-`.20845982`, each resolving to the latest archived version) — and md5-verified
+`.20845982` for the v1 suites and `10.5281/zenodo.23095147` (dot-Wide-v1), `10.5281/zenodo.23095133` (dot-SeasonalTrend-v1), `10.5281/zenodo.23095116` (dot-Observed-v1), `10.5281/zenodo.23095096` (dot-ContinuousIrregular-v1), each resolving to the latest archived version) — and md5-verified
 against the manifest. Pass `force_download=True` to
 re-fetch. Override the cache with `$DOTIME_CACHE` or `cache_dir=`.
 
@@ -456,8 +456,8 @@ the regular grid this equals `index / (T - 1)`. On an irregular grid no
 fraction of `T` recovers the row, so a suite with irregular grids declares the
 `"time/span"` encoding, which resolves each row from `obs_times`.
 
-`scripts/release_config_continuous_irregular.yaml` prepares
-`dot-ContinuousIrregular-v1` 1.0.0, which is not built yet. It has the
+`scripts/release_config_continuous_irregular.yaml` defines
+`dot-ContinuousIrregular-v1` 1.0.0. It has the
 structures, `T = 200`, episode count (9,999) and suite seed of
 `dot-Continuous-v1`, with one third of the episodes on each schedule: `regular`,
 `jittered` (`dt = 1`, `jitter = 0.5`, 2 sub-steps) and `poisson` (`rate = 1`,
@@ -560,7 +560,7 @@ more often. Censoring piles values up at the two bounds, and quantization
 rounds a value halfway between two steps to the even one. MNAR compares the
 latent value strictly with its threshold.
 
-**`dot-Observed-v1` (prepared, not built).**
+**`dot-Observed-v1` 1.0.0.**
 `scripts/release_config_observed_v1.yaml` observes the first 100 latent
 episodes of each structure of the `dot-Identifiability-v1` v1.2 protocol (the
 same seeds and shared-noise pairs, with `mediator` queried at offset 1). The

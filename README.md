@@ -28,7 +28,7 @@ estimates interventional effects.
 - **Regime-switching SCMs** as a strict generalization of interrupted-time-series.
 - **Nine named identification structures** (back-door, front-door, IV, one non-identified, …) with
   exact interventional ground truth. Shared-noise counterfactuals from suite v1.1.0.
-- **Reference baselines** and **four frozen evaluation suites** (released with
+- **Reference baselines** and **eight frozen evaluation suites** (released with
   Zenodo DOIs and Croissant metadata).
 
 ## Install
@@ -60,15 +60,21 @@ dotime-benchmark --list                            # list frozen benchmark suite
 
 ## Hosted artifacts
 
-Four frozen suites, on the Hugging Face Hub (discovery) and Zenodo (citable
+Eight frozen suites, on the Hugging Face Hub (discovery) and Zenodo (citable
 archive). `load_benchmark("dot-Identifiability-v1")` pulls and md5-verifies them.
+The Zenodo concept DOIs below resolve to each suite's latest version; pass
+`version=` to `load_benchmark` to pin an earlier one.
 
 | Suite | Episodes | Hugging Face | Zenodo DOI |
 |---|---|---|---|
-| `dot-Identifiability-v1` | 10,800 | [thummd/dot-Identifiability-v1](https://huggingface.co/datasets/thummd/dot-Identifiability-v1) | [10.5281/zenodo.20846064](https://doi.org/10.5281/zenodo.20846064) |
-| `dot-RegimeSwitch-v1` | 9,999 | [thummd/dot-RegimeSwitch-v1](https://huggingface.co/datasets/thummd/dot-RegimeSwitch-v1) | [10.5281/zenodo.20846074](https://doi.org/10.5281/zenodo.20846074) |
-| `dot-Continuous-v1` | 9,999 | [thummd/dot-Continuous-v1](https://huggingface.co/datasets/thummd/dot-Continuous-v1) | [10.5281/zenodo.20845981](https://doi.org/10.5281/zenodo.20845981) |
-| `dot-Generic-100k` | 100,000 | [thummd/dot-Generic-100k](https://huggingface.co/datasets/thummd/dot-Generic-100k) | [10.5281/zenodo.20845983](https://doi.org/10.5281/zenodo.20845983) |
+| `dot-Identifiability-v1` | 12,150 | [thummd/dot-Identifiability-v1](https://huggingface.co/datasets/thummd/dot-Identifiability-v1) | [10.5281/zenodo.20846063](https://doi.org/10.5281/zenodo.20846063) |
+| `dot-RegimeSwitch-v1` | 9,999 | [thummd/dot-RegimeSwitch-v1](https://huggingface.co/datasets/thummd/dot-RegimeSwitch-v1) | [10.5281/zenodo.20846073](https://doi.org/10.5281/zenodo.20846073) |
+| `dot-Continuous-v1` | 9,999 | [thummd/dot-Continuous-v1](https://huggingface.co/datasets/thummd/dot-Continuous-v1) | [10.5281/zenodo.20845980](https://doi.org/10.5281/zenodo.20845980) |
+| `dot-Generic-100k` | 100,000 | [thummd/dot-Generic-100k](https://huggingface.co/datasets/thummd/dot-Generic-100k) | [10.5281/zenodo.20845982](https://doi.org/10.5281/zenodo.20845982) |
+| `dot-ContinuousIrregular-v1` | 9,999 | [thummd/dot-ContinuousIrregular-v1](https://huggingface.co/datasets/thummd/dot-ContinuousIrregular-v1) | [10.5281/zenodo.23095096](https://doi.org/10.5281/zenodo.23095096) |
+| `dot-Observed-v1` | 10,800 | [thummd/dot-Observed-v1](https://huggingface.co/datasets/thummd/dot-Observed-v1) | [10.5281/zenodo.23095116](https://doi.org/10.5281/zenodo.23095116) |
+| `dot-SeasonalTrend-v1` | 10,000 | [thummd/dot-SeasonalTrend-v1](https://huggingface.co/datasets/thummd/dot-SeasonalTrend-v1) | [10.5281/zenodo.23095133](https://doi.org/10.5281/zenodo.23095133) |
+| `dot-Wide-v1` | 10,000 | [thummd/dot-Wide-v1](https://huggingface.co/datasets/thummd/dot-Wide-v1) | [10.5281/zenodo.23095147](https://doi.org/10.5281/zenodo.23095147) |
 
 Trained Do-Over-Time-PFN checkpoints: [thummd/do-over-time-pfn](https://huggingface.co/thummd/do-over-time-pfn).
 

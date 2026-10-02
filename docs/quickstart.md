@@ -74,7 +74,7 @@ dotime-benchmark --suite dot-Identifiability-v1 --baseline VAR-OLS
 
 ## Where to go next
 
-- {doc}`benchmarks` — the four frozen suites and their evaluation protocol.
+- {doc}`benchmarks` — the frozen suites and their evaluation protocol.
 - {doc}`custom_data` — running Do-Over-Time-PFN on your own dataset.
 - {doc}`troubleshoot` — common install / runtime issues.
 - {doc}`api` — the full API reference.

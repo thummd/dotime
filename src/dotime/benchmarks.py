@@ -246,8 +246,8 @@ _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
     "dot-Identifiability-v1": SuiteMetadata(
         name="dot-Identifiability-v1",
         version="1.2.0",
-        hf_repo_id="",  # set with the 1.2.0 record id when the version is minted
-        zenodo_record_id="LOCAL",  # 1.2.0 is built locally until it is minted
+        hf_repo_id="thummd/dot-Identifiability-v1",
+        zenodo_record_id="23095083",
         doi="10.5281/zenodo.20846063",  # concept DOI (resolves to latest version)
         description=(
             "Named identification structures with exact shared-noise counterfactual "
@@ -307,13 +307,13 @@ _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
         query_time_encoding="step",
     ),
     # The four suites below are built from scripts/release_config_*.yaml and
-    # read from the local cache until they are minted, when their record ids
-    # and Hugging Face repos replace the LOCAL sentinel.
+    # released with 0.2.0 on Zenodo and the Hugging Face Hub.
     "dot-SeasonalTrend-v1": SuiteMetadata(
         name="dot-SeasonalTrend-v1",
         version="1.0.0",
-        zenodo_record_id="LOCAL",
-        doi="",
+        zenodo_record_id="23095134",
+        doi="10.5281/zenodo.23095133",
+        hf_repo_id="thummd/dot-SeasonalTrend-v1",
         description=(
             "Named structures under observed or hidden seasonal and trend drivers "
             "that confound treatment and outcome, with plain controls."
@@ -336,8 +336,9 @@ _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
     "dot-Wide-v1": SuiteMetadata(
         name="dot-Wide-v1",
         version="1.0.0",
-        zenodo_record_id="LOCAL",
-        doi="",
+        zenodo_record_id="23095148",
+        doi="10.5281/zenodo.23095147",
+        hf_repo_id="thummd/dot-Wide-v1",
         description=(
             "Wide generic graphs: 12 to 40 variables, up to 8 lags, hardened dynamics, "
             "shared-noise counterfactual arms, latent variables removed, queried at the "
@@ -349,8 +350,9 @@ _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
     "dot-Observed-v1": SuiteMetadata(
         name="dot-Observed-v1",
         version="1.0.0",
-        zenodo_record_id="LOCAL",
-        doi="",
+        zenodo_record_id="23095117",
+        doi="10.5281/zenodo.23095116",
+        hf_repo_id="thummd/dot-Observed-v1",
         description=(
             "The dot-Identifiability-v1 1.2.0 episodes seen through measurement noise "
             "and missingness cells; targets stay latent."
@@ -372,8 +374,9 @@ _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
     "dot-ContinuousIrregular-v1": SuiteMetadata(
         name="dot-ContinuousIrregular-v1",
         version="1.0.0",
-        zenodo_record_id="LOCAL",
-        doi="",
+        zenodo_record_id="23095097",
+        doi="10.5281/zenodo.23095096",
+        hf_repo_id="thummd/dot-ContinuousIrregular-v1",
         description=(
             "Continuous-time intervention windows on regular, jittered and Poisson "
             "observation grids; the regular third equals dot-Continuous-v1 1.0.0."

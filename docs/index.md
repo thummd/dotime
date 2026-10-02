@@ -4,7 +4,7 @@
 
 `dotime` samples multivariate temporal structural causal models (SCMs),
 applies interventions, and produces paired observational / interventional
-trajectories with exact counterfactual targets. It ships four frozen evaluation
+trajectories with exact counterfactual targets. It ships eight frozen evaluation
 suites, reference baselines, and an evaluation harness.
 
 ```{toctree}

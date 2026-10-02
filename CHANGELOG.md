@@ -6,7 +6,17 @@ All notable changes to `dotime` are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-02
+
 ### Added
+- Suites released with this version:
+  - `dot-Identifiability-v1` 1.2.0: Zenodo `10.5281/zenodo.23095083`, a new version under the concept
+    DOI `10.5281/zenodo.20846063`, Hugging Face tag `v1.2.0`.
+  - `dot-Wide-v1` 1.0.0: Zenodo `10.5281/zenodo.23095148` (concept `10.5281/zenodo.23095147`), Hugging Face `thummd/dot-Wide-v1`.
+  - `dot-SeasonalTrend-v1` 1.0.0: Zenodo `10.5281/zenodo.23095134` (concept `10.5281/zenodo.23095133`), Hugging Face `thummd/dot-SeasonalTrend-v1`.
+  - `dot-Observed-v1` 1.0.0: Zenodo `10.5281/zenodo.23095117` (concept `10.5281/zenodo.23095116`), Hugging Face `thummd/dot-Observed-v1`.
+  - `dot-ContinuousIrregular-v1` 1.0.0: Zenodo `10.5281/zenodo.23095097` (concept `10.5281/zenodo.23095096`), Hugging Face `thummd/dot-ContinuousIrregular-v1`.
+  - The nine s13 checkpoints: Hugging Face `thummd/do-over-time-pfn`, folder `s13/`.
 - `dotime-eval-tabpfn` and `dotime-eval-chronos` score direction accuracy on
   the level and on the causal effect for every arm and take `--dir-target
   {level,effect}` to choose which fills `dir_acc` (`dotime.reference._scoring`).
@@ -80,8 +90,8 @@ All notable changes to `dotime` are documented here. The format follows
   (`query_time_to_index(..., times=...)`). Suite-config keys reach the episode
   specs through `dotime._build._OPT_IN_SPEC_KEYS`. Released configs set none,
   so their specs and episodes are unchanged.
-- `scripts/release_config_continuous_irregular.yaml` prepares
-  `dot-ContinuousIrregular-v1` 1.0.0 (not built): the structures, `T`, episode
+- `scripts/release_config_continuous_irregular.yaml` defines
+  `dot-ContinuousIrregular-v1` 1.0.0: the structures, `T`, episode
   count and suite seed of `dot-Continuous-v1`, one third each on the `regular`,
   `jittered` (`jitter` 0.5, 2 sub-steps) and `poisson` (`rate` 1, `max_gap` 4,
   4 sub-steps) schedules, and `record_obs_times`. Its regular third is the
@@ -112,8 +122,8 @@ All notable changes to `dotime` are documented here. The format follows
   `latent_row`. `dotime._build.make_episode` simulates and then observes when a
   spec carries an observation model. Without one it returns the simulation
   unchanged, so the frozen suites regenerate bit-identically.
-  `scripts/release_config_observed_v1.yaml` prepares `dot-Observed-v1` 1.0.0
-  (not built): measurement {none, snr10, snr3} × missingness {none, mcar10,
+  `scripts/release_config_observed_v1.yaml` defines `dot-Observed-v1` 1.0.0:
+  measurement {none, snr10, snr3} × missingness {none, mcar10,
   block, mnar} on 100 latent episodes of each `dot-Identifiability-v1` v1.2
   structure, 10,800 rows.
 - `per_variable_normalize(..., obs_mask=...)` computes the statistics over
@@ -133,7 +143,7 @@ All notable changes to `dotime` are documented here. The format follows
   `dotime-eval-reference` runs it right after `BackDoorOLS`. Its slope carries
   the omitted-confounder bias that `BackDoorOLS` removes on the back-door
   structures and that no observed adjustment set removes on `bow_graph`.
-  `scripts/release_config_v1_2.yaml` (prepared, not yet minted) appends
+  `scripts/release_config_v1_2.yaml` appends
   `bow_graph` at tier 3 as episodes 10800 to 12149. That makes nine structures
   and 12,150 episodes, with every 1.1.0 episode index and seed unchanged. In the
   first 100 `bow_graph` episodes of that config, 61% of the effects reach

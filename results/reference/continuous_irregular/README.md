@@ -2,7 +2,7 @@
 
 Measurement behind the observation schedules of
 `scripts/release_config_continuous_irregular.yaml` (`dot-ContinuousIrregular-v1`
-1.0.0, prepared but not built). No model was trained.
+1.0.0, prepared but not yet built when this ran). No model was trained.
 
 `measure_irregular_grids.py` takes, for each structure of `dot-Continuous-v1`,
 the first 300 episode indices of that structure in the suite (suite seed
