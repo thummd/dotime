@@ -130,3 +130,14 @@ loaded with the strict key check (117 tensors).
 `s13_predictions.parquet` holds one row per (episode, arm, seed) with the prediction, the
 target and the factual level, so every number above can be recomputed with
 `scripts/analyze_prereg.py`.
+
+## Erratum (2026-10-08): the onset-row sentence of PREREG.md Section 4
+
+Section 4 of the registration says that "with the interpolation mask every arm sees the
+treatment's factual value at the onset row". That describes the data tensor, not the model
+input. The encoder of the training code fills its context window with the rows strictly
+before the onset, so the onset row that the interpolation mask restores never reaches the
+network, whatever the token-lag setting. The training repository records this as a test
+(`tests/test_encoder_window.py`, diagnostic D4 of October 2026). All three arms were built
+and scored the same way, so the comparison, the primary endpoint and the label are
+unaffected. The registered text is kept as written, and this note is the correction.
