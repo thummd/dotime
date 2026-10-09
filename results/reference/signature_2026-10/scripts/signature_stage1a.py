@@ -53,7 +53,14 @@ from dotime.evaluation import query_obs_levels
 REPO = Path(__file__).resolve().parents[4]
 OUT_DIR = REPO / "results" / "reference" / "signature_2026-10"
 DP = REPO / "results" / "reference" / "detection_power_2026-10" / "ident_v1_2_predictions.parquet"
-PRIMARY_STRUCTURES = ("bi_variate", "back_door", "confounder_mediator", "front_door", "instrumental_variable", "mediator")
+PRIMARY_STRUCTURES = (
+    "bi_variate",
+    "back_door",
+    "confounder_mediator",
+    "front_door",
+    "instrumental_variable",
+    "mediator",
+)
 EPS = 0.1
 SEED = 20261009
 
@@ -82,7 +89,12 @@ def truncated_signature(path: np.ndarray, level: int) -> list[np.ndarray]:
         e2 = np.outer(inc, inc) / 2.0
         if level >= 3:
             # S <- S (x) exp(inc): level 3 collects every split of the word.
-            s3 = s3 + np.einsum("ij,k->ijk", s2, inc) + np.einsum("i,jk->ijk", s1, e2) + np.einsum("i,j,k->ijk", inc, inc, inc) / 6.0
+            s3 = (
+                s3
+                + np.einsum("ij,k->ijk", s2, inc)
+                + np.einsum("i,jk->ijk", s1, e2)
+                + np.einsum("i,j,k->ijk", inc, inc, inc) / 6.0
+            )
         if level >= 2:
             s2 = s2 + np.outer(s1, inc) + e2
         s1 = s1 + inc
@@ -105,7 +117,11 @@ def log_signature(sig: list[np.ndarray]) -> list[np.ndarray]:
         raise ValueError("the log-signature needs level 3")
     s1, s2, s3 = sig
     l2 = s2 - 0.5 * np.outer(s1, s1)
-    l3 = s3 - 0.5 * (np.einsum("i,jk->ijk", s1, s2) + np.einsum("ij,k->ijk", s2, s1)) + np.einsum("i,j,k->ijk", s1, s1, s1) / 3.0
+    l3 = (
+        s3
+        - 0.5 * (np.einsum("i,jk->ijk", s1, s2) + np.einsum("ij,k->ijk", s2, s1))
+        + np.einsum("i,j,k->ijk", s1, s1, s1) / 3.0
+    )
     return [s1, l2, l3]
 
 
@@ -138,7 +154,13 @@ def primary_episodes(suite):
         The episodes and a dict of arrays: scm_id, structure, onset, A, Y, v,
         a_ref, y_true, y_obs, mu (per column), sd (per column).
     """
-    eps, rec = [], {k: [] for k in ("scm_id", "structure", "onset", "A", "Y", "v", "a_ref", "y_true", "y_obs")}
+    eps, rec = (
+        [],
+        {
+            k: []
+            for k in ("scm_id", "structure", "onset", "A", "Y", "v", "a_ref", "y_true", "y_obs")
+        },
+    )
     for ep in suite:
         if ep.structure not in PRIMARY_STRUCTURES:
             continue
@@ -243,7 +265,7 @@ def build_features(eps, rec, variant: dict) -> tuple[np.ndarray, list[str], np.n
         row = np.concatenate([[dv], base, dv * base])
         rows.append(row)
         if labels is None:
-            labels = ["dv"] + feat_labels + [f"dv*{l}" for l in feat_labels]
+            labels = ["dv"] + feat_labels + [f"dv*{lab}" for lab in feat_labels]
     return np.array(rows), labels, np.array(dvs)
 
 
@@ -284,9 +306,14 @@ def fit_and_score(phi: np.ndarray, target: np.ndarray, labels: list[str], seed: 
     freq = counts / n_boot
     full = Lasso(alpha=alpha, max_iter=20000).fit(z, target)
     stable = sorted(
-        [(labels[j], float(freq[j]), float(full.coef_[j])) for j in range(len(labels)) if freq[j] >= 0.75],
+        [
+            (labels[j], float(freq[j]), float(full.coef_[j]))
+            for j in range(len(labels))
+            if freq[j] >= 0.75
+        ],
         key=lambda t: -abs(t[2]),
     )
+    # (labels of the stable coordinates, their frequency, their standardised coefficient)
     return {
         "effect_sign_acc_cv": acc,
         "se": float(np.sqrt(acc * (1 - acc) / n)),
@@ -294,15 +321,27 @@ def fit_and_score(phi: np.ndarray, target: np.ndarray, labels: list[str], seed: 
         "alpha": alpha,
         "n_features": int(z.shape[1]),
         "n_nonzero_full_fit": int(np.sum(full.coef_ != 0)),
-        "stable_coordinates": [{"feature": f, "selection_freq": fr, "coef_std": c} for f, fr, c in stable[:25]],
+        "stable_coordinates": [
+            {"feature": f, "selection_freq": fr, "coef_std": c} for f, fr, c in stable[:25]
+        ],
     }
 
 
 def git_commit(repo: Path) -> str:
     """Short commit hash of a repository, ``-dirty`` when tracked files changed."""
     try:
-        sha = subprocess.run(["git", "-C", str(repo), "rev-parse", "--short", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
-        dirty = subprocess.run(["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=no"], capture_output=True, text=True, check=True).stdout.strip()
+        sha = subprocess.run(
+            ["git", "-C", str(repo), "rev-parse", "--short", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        dirty = subprocess.run(
+            ["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=no"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
         return sha + ("-dirty" if dirty else "")
     except (OSError, subprocess.CalledProcessError):
         return "unknown"
@@ -314,7 +353,13 @@ VARIANTS = {
     "norm_sig3_tAY": {"path": "AY", "level": 3, "normalise": True, "with_time": True},
     "norm_sig3_AY_notime": {"path": "AY", "level": 3, "normalise": True, "with_time": False},
     "raw_sig3_tAY": {"path": "AY", "level": 3, "normalise": False, "with_time": True},
-    "norm_logsig3_tAY": {"path": "AY", "level": 3, "normalise": True, "with_time": True, "log": True},
+    "norm_logsig3_tAY": {
+        "path": "AY",
+        "level": 3,
+        "normalise": True,
+        "with_time": True,
+        "log": True,
+    },
     "norm_sig2_full": {"path": "full", "level": 2, "normalise": True, "with_time": True},
     "norm_sig3_full": {"path": "full", "level": 3, "normalise": True, "with_time": True},
 }
@@ -333,10 +378,17 @@ def main() -> int:
     eps, rec = primary_episodes(suite)
     if len(eps) != 3528:
         raise SystemExit(f"primary set has {len(eps)} episodes, expected 3,528")
-    sd_y = np.array([max(float(ep.x_obs[: int(o), int(y)].std(unbiased=True)), 1e-4) for ep, o, y in zip(eps, rec["onset"], rec["Y"])])
+    sd_y = np.array(
+        [
+            max(float(ep.x_obs[: int(o), int(y)].std(unbiased=True)), 1e-4)
+            for ep, o, y in zip(eps, rec["onset"], rec["Y"], strict=True)
+        ]
+    )
     effect = rec["y_true"] - rec["y_obs"]
     target = effect / sd_y
-    digest = hashlib.sha256(np.array([rec["scm_id"], rec["y_true"], rec["y_obs"], rec["v"]], dtype=np.float64).tobytes()).hexdigest()[:16]
+    digest = hashlib.sha256(
+        np.array([rec["scm_id"], rec["y_true"], rec["y_obs"], rec["v"]], dtype=np.float64).tobytes()
+    ).hexdigest()[:16]
 
     # The estimators on the same episodes, from the detection-power table.
     dp = pd.read_parquet(DP)
@@ -348,7 +400,11 @@ def main() -> int:
         if ok.sum() < len(g) // 2:
             continue
         ref[est] = {
-            "effect_sign_acc": float(np.mean((np.sign(g["pred"].to_numpy() - g["y_obs"].to_numpy()) == np.sign(effect))[ok])),
+            "effect_sign_acc": float(
+                np.mean(
+                    (np.sign(g["pred"].to_numpy() - g["y_obs"].to_numpy()) == np.sign(effect))[ok]
+                )
+            ),
             "n": int(ok.sum()),
         }
 
@@ -359,7 +415,12 @@ def main() -> int:
         "n_primary": len(eps),
         "primary_digest": digest,
         "target": "counterfactual effect (y_true - y_obs) over the outcome's pre-onset standard deviation",
-        "slope_blind_ceiling": float(max(np.mean(effect / (rec["v"] - rec["a_ref"]) > 0), 1 - np.mean(effect / (rec["v"] - rec["a_ref"]) > 0))),
+        "slope_blind_ceiling": float(
+            max(
+                np.mean(effect / (rec["v"] - rec["a_ref"]) > 0),
+                1 - np.mean(effect / (rec["v"] - rec["a_ref"]) > 0),
+            )
+        ),
         "estimators_same_episodes": ref,
         "variants": {k: dict(v) for k, v in VARIANTS.items()},
         "pooled": {},
@@ -370,23 +431,35 @@ def main() -> int:
             # Column layouts differ across structures, so the full path is fit per structure only.
             for s in PRIMARY_STRUCTURES:
                 m = rec["structure"] == s
-                sub_eps = [e for e, keep in zip(eps, m) if keep]
+                sub_eps = [e for e, keep in zip(eps, m, strict=True) if keep]
                 sub_rec = {k: v[m] for k, v in rec.items()}
                 phi, labels, _ = build_features(sub_eps, sub_rec, variant)
                 out["per_structure"][s][name] = fit_and_score(phi, target[m], labels, SEED)
                 r = out["per_structure"][s][name]
-                print(f"{name:22s} {s:22s} acc {r['effect_sign_acc_cv']:.3f} (n {int(m.sum())}) nz {r['n_nonzero_full_fit']} top {[c['feature'] for c in r['stable_coordinates'][:4]]}", flush=True)
+                print(
+                    f"{name:22s} {s:22s} acc {r['effect_sign_acc_cv']:.3f} (n {int(m.sum())}) nz {r['n_nonzero_full_fit']} top {[c['feature'] for c in r['stable_coordinates'][:4]]}",
+                    flush=True,
+                )
             continue
         phi, labels, _ = build_features(eps, rec, variant)
         out["pooled"][name] = fit_and_score(phi, target, labels, SEED)
         r = out["pooled"][name]
-        print(f"{name:22s} pooled                 acc {r['effect_sign_acc_cv']:.3f} rmse {r['rmse_norm_effect_cv']:.3f} nz {r['n_nonzero_full_fit']}/{r['n_features']} top {[c['feature'] for c in r['stable_coordinates'][:5]]}", flush=True)
+        print(
+            f"{name:22s} pooled                 acc {r['effect_sign_acc_cv']:.3f} rmse {r['rmse_norm_effect_cv']:.3f} nz {r['n_nonzero_full_fit']}/{r['n_features']} top {[c['feature'] for c in r['stable_coordinates'][:5]]}",
+            flush=True,
+        )
         for s in PRIMARY_STRUCTURES:
             m = rec["structure"] == s
             out["per_structure"][s][name] = fit_and_score(phi[m], target[m], labels, SEED)
             rs = out["per_structure"][s][name]
-            print(f"    {s:22s} acc {rs['effect_sign_acc_cv']:.3f} (n {int(m.sum())}) top {[c['feature'] for c in rs['stable_coordinates'][:4]]}", flush=True)
-    print("estimators on the same episodes:", {k: round(v["effect_sign_acc"], 3) for k, v in ref.items()})
+            print(
+                f"    {s:22s} acc {rs['effect_sign_acc_cv']:.3f} (n {int(m.sum())}) top {[c['feature'] for c in rs['stable_coordinates'][:4]]}",
+                flush=True,
+            )
+    print(
+        "estimators on the same episodes:",
+        {k: round(v["effect_sign_acc"], 3) for k, v in ref.items()},
+    )
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     (OUT_DIR / "stage1a_dotime.json").write_text(json.dumps(out, indent=1))
     print(f"wrote {OUT_DIR / 'stage1a_dotime.json'}")
