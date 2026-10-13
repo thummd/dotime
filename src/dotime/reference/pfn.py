@@ -56,8 +56,24 @@ from dotime.reference._realignment import (
 )
 
 
-def episode_to_batch_interp(episode, n_max, device, observational=False):
-    """_episode_to_batch with interpolation masking + optional obs-mode zeroing."""
+def episode_to_batch_interp(episode, n_max, device, observational=False, convention=None):
+    """_episode_to_batch with interpolation masking + optional obs-mode zeroing.
+
+    Args:
+        episode: The episode to score.
+        n_max: Padded variable width of the model.
+        device: Torch device of the batch.
+        observational: Zero every intervention field (the PFN_obs protocol).
+        convention: The checkpoint's ``data`` block (``model.input_convention``).
+            ``center_intervention_value`` selects the do-value as the shift from
+            the treatment's pre-onset mean, ``(v - mu) / sd``, instead of the
+            legacy ``v / sd``. ``None`` or an empty dict is the legacy convention,
+            under which the batch is unchanged except for the added
+            ``a_ref_norm`` field, which legacy models never read.
+
+    Returns:
+        The normalised batch for one query.
+    """
     from dotime.normalization import normalize_batch
     from dotime.observation import require_finite_history
 
@@ -82,7 +98,16 @@ def episode_to_batch_interp(episode, n_max, device, observational=False):
     raw_value = episode.intervention.values
     raw_value = float(raw_value) if isinstance(raw_value, (int, float)) else 0.0
     pre = x_obs[:onset, int_target] if onset > 0 else x_obs[:, int_target]
-    int_value_norm = raw_value / max(float(pre.std().item()) if pre.numel() > 1 else 1.0, 1e-4)
+    centred = bool((convention or {}).get("center_intervention_value", False))
+    pre_sd = float(pre.std().item()) if pre.numel() > 1 else 1.0
+    pre_mu = float(pre.mean().item()) if pre.numel() > 1 else 0.0
+    # Legacy: v / sd, bit for bit as before. Centred (do-over-time-pfn wave
+    # W1): (v - mu) / sd with the same pre-onset statistics the trainer used.
+    int_value_norm = (raw_value - (pre_mu if centred else 0.0)) / max(pre_sd, 1e-4)
+    # The treatment's factual value at the onset row in the same frame; the
+    # trainer emits it for every arm, and only query_a_ref models read it.
+    a_ref = float(x_obs[onset, int_target].item()) if onset < t_len else pre_mu
+    a_ref_norm = (a_ref - pre_mu) / max(pre_sd, 1e-4) if pre.numel() > 1 else 0.0
 
     def _norm_time(v):
         return v if v <= 1.0 else v / t_len
@@ -118,6 +143,7 @@ def episode_to_batch_interp(episode, n_max, device, observational=False):
         "query_target": torch.tensor([int(episode.query_target[0])], device=device),
         "query_time": torch.tensor([_norm_time(q_time)], dtype=torch.float32, device=device),
         "Y_true": episode.y_true[:1].to(device),
+        "a_ref_norm": torch.tensor([a_ref_norm], dtype=torch.float32, device=device),
     }
     if observational:
         # analyze_s7 obs protocol: zero every intervention feature
@@ -148,10 +174,13 @@ class PFNRef:
 
         self.model = load_dotpfn(checkpoint, device=device)
         self.n_max = int(getattr(self.model, "n_max", 41))
+        self.convention = dict(getattr(self.model, "input_convention", {}) or {})
 
     @torch.no_grad()
     def predict(self, episode):
-        batch = episode_to_batch_interp(episode, self.n_max, self.device, self.observational)
+        batch = episode_to_batch_interp(
+            episode, self.n_max, self.device, self.observational, self.convention
+        )
         out = self.model(batch)
         head = getattr(self.model, "quantile_head", None) or getattr(self.model, "bar_head", None)
         if head is None:

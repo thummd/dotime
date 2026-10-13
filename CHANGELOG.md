@@ -6,6 +6,26 @@ All notable changes to `dotime` are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- The vendored Do-Over-Time-PFN (`dotime.models`) mirrors the options the training
+  repository added in its October 2026 recovery program, so pilot and future
+  pre-registered checkpoints load here: `query_a_ref` (the treatment's normalised
+  factual onset value on the query token), `stat_tokens="ols_a"|"ols_path"`
+  (in-context regression statistics added to the variable tokens,
+  `dotime.models.stat_tokens`), `joint_branch` (`dotime.models.joint_encoder`) and
+  `role_embed` (learned vectors that mark the treated and the queried token). All
+  default off and leave legacy checkpoints and their predictions unchanged.
+- `episode_to_batch_interp` (`dotime.reference.pfn`) builds the do-value under the
+  checkpoint's own convention, read from its `data` block (`model.input_convention`):
+  the legacy `v / sd` or the centred `(v - mu) / sd`, and always emits `a_ref_norm`.
+
+### Changed
+- `load_dotpfn` refuses a checkpoint whose weights do not match its config instead of
+  loading it partially. Every checkpoint behind a published number (the s9 series of
+  Tables 3 and 4, s10, s11, the nine pre-registered s13 runs) loads completely; only
+  pre-s9 experimental checkpoints with an older mixer layout are refused, and those were
+  previously scored with freshly initialised attention weights.
+
 ## [0.2.0] - 2026-10-02
 
 ### Added

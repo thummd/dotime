@@ -32,7 +32,14 @@ def load_dotpfn(checkpoint: str | Path, device: str = "cpu") -> DoOverTimePFN:
             config["tau_levels"] = tau.detach().cpu().tolist()
 
     model = DoOverTimePFN(**config)
-    model.load_state_dict(state, strict=False)
+    # A silent partial load would score a model with freshly initialised
+    # parts, which is exactly the failure a reference scorer must not have.
+    missing, unexpected = model.load_state_dict(state, strict=False)
+    if missing or unexpected:
+        raise ValueError(
+            f"checkpoint {checkpoint} does not match its own config: "
+            f"missing {sorted(missing)}, unexpected {sorted(unexpected)}"
+        )
 
     # Restore the bar distribution's borders for bar-head models.
     if ckpt.get("head_type") == "bar" and "borders" in ckpt and hasattr(model, "bar_head"):
@@ -46,4 +53,8 @@ def load_dotpfn(checkpoint: str | Path, device: str = "cpu") -> DoOverTimePFN:
     model.eval()
     # Expose the padded variable width so callers can build matching batches.
     model.n_max = int(config.get("n_max", 41))
+    # The trainer's ``data`` block records the input convention the checkpoint
+    # was trained with (centred do-value, clip half-width, target key); an
+    # older checkpoint has none, which means the legacy convention.
+    model.input_convention = dict(ckpt.get("data") or {})
     return model

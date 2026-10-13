@@ -16,7 +16,9 @@ import torch.nn as nn
 from dotime.models.bar_head import BarDistributionHead
 from dotime.models.cross_variable_mixer import CrossVariableMixer
 from dotime.models.encoder import TemporalEncoder
+from dotime.models.joint_encoder import JointTokenEncoder
 from dotime.models.quantile_head import QuantileHead
+from dotime.models.stat_tokens import InContextStatistics
 from dotime.models.value_bypass import make_value_bypass
 
 
@@ -49,9 +51,31 @@ class DoOverTimePFN(nn.Module):
         horizon_embed: str = "none",
         horizon_heads: int = 0,
         horizon_mixers: int = 0,
+        query_a_ref: bool = False,
+        stat_tokens: str = "none",
+        stat_lags: int = 3,
+        joint_branch: bool = False,
+        joint_layers: int = 2,
+        role_embed: bool = False,
     ):
         super().__init__()
         self.head_type = head_type
+        self.query_a_ref = bool(query_a_ref)
+        # do-over-time-pfn recovery program, wave W3: representations the
+        # slope can be read from. "ols_a" adds pre-onset regression
+        # coefficients on the treatment to every variable token (variant b),
+        # "ols_path" adds the queried variable's regression on every variable
+        # given the treatment and the role flags (variant c), joint_branch
+        # appends one token over the pre-onset cross-sections (variant a).
+        if stat_tokens not in ("none", "ols_a", "ols_path"):
+            raise ValueError(f"Unknown stat_tokens: {stat_tokens!r} (none | ols_a | ols_path)")
+        self.stat_tokens = stat_tokens
+        self.joint_branch = bool(joint_branch)
+        # The encoder treats every column with the same weights and positions,
+        # so a variable token carries no column identity and the mixer's
+        # one-hot indices cannot address it. Two learned vectors mark the
+        # treated and the queried token at query time; zero at init.
+        self.role_embed = nn.Parameter(torch.zeros(2, embed_size)) if role_embed else None
         # A bank of K mixers implies a bank of K heads: nothing trainable after
         # the encoder is shared across horizons, so one horizon's gradient
         # cannot move another horizon's path (a shared mixer drifts a working
@@ -85,6 +109,7 @@ class DoOverTimePFN(nn.Module):
                 n_heads=n_cross_attn_heads,
                 n_mixer_layers=n_mixer_layers,
                 horizon_embed=horizon_embed,
+                query_a_ref=query_a_ref,
             )
 
         if self.horizon_mixers_n > 0:
@@ -109,6 +134,27 @@ class DoOverTimePFN(nn.Module):
             self.quantile_head = None
 
         self.value_bypass = make_value_bypass(value_bypass, embed_size)
+        self.in_context_stats = (
+            InContextStatistics(
+                embed_size, n_lags=stat_lags, window=context_window, mode=stat_tokens
+            )
+            if stat_tokens != "none"
+            else None
+        )
+        self.joint_encoder = (
+            JointTokenEncoder(
+                n_max=n_max,
+                embed_size=embed_size,
+                n_layers=joint_layers,
+                n_heads=n_heads,
+                token_lags=max(token_lags, 1),
+                context_window=context_window,
+                readout_last_k=readout_last_k,
+                pos_init_std=pos_init_std,
+            )
+            if self.joint_branch
+            else None
+        )
 
     @property
     def head(self):
@@ -126,10 +172,39 @@ class DoOverTimePFN(nn.Module):
         -------
         h_vars : (B, N_max, E) per-variable temporal representations
         """
-        return self.temporal_encoder(
+        h_vars = self.temporal_encoder(
             batch["X_obs_norm"],
             batch["variable_mask"],
             int_onset_idx=batch.get("int_onset_idx"),
+        )
+        if self.in_context_stats is not None:
+            h_vars = self.in_context_stats(h_vars, batch)
+        if self.joint_encoder is not None:
+            # One extra token per trajectory; query() extends the key mask for it.
+            h_joint = self.joint_encoder(
+                batch["X_obs_norm"], batch["variable_mask"], batch.get("int_onset_idx")
+            )
+            h_vars = torch.cat([h_vars, h_joint.unsqueeze(1)], dim=1)
+        return h_vars
+
+    def _mark_roles(
+        self, h_vars: torch.Tensor, intervention_target: torch.Tensor, query_target: torch.Tensor
+    ) -> torch.Tensor:
+        """Add the treated and queried role vectors to the two tokens they name.
+
+        Args:
+            h_vars: ``(B, N, E)`` tokens, one row per query.
+            intervention_target: ``(B,)`` treated column per query (zero when withheld).
+            query_target: ``(B,)`` queried column per query.
+
+        Returns:
+            ``(B, N, E)`` tokens with the role vectors added.
+        """
+        n = h_vars.shape[1]
+        is_a = torch.nn.functional.one_hot(intervention_target.long(), n).to(h_vars.dtype)
+        is_y = torch.nn.functional.one_hot(query_target.long(), n).to(h_vars.dtype)
+        return (
+            h_vars + is_a.unsqueeze(2) * self.role_embed[0] + is_y.unsqueeze(2) * self.role_embed[1]
         )
 
     def query(self, h_vars: torch.Tensor, batch: dict[str, torch.Tensor]) -> torch.Tensor:
@@ -145,6 +220,13 @@ class DoOverTimePFN(nn.Module):
         output : (B, Q) quantile predictions or (B, n_buckets) logits
         """
         query_offset = self._query_offset(batch)
+        variable_mask = batch["variable_mask"]
+        if self.joint_branch:
+            variable_mask = torch.cat(
+                [variable_mask, variable_mask.new_ones(variable_mask.shape[0], 1)], dim=1
+            )
+        if self.role_embed is not None:
+            h_vars = self._mark_roles(h_vars, batch["intervention_target"], batch["query_target"])
         mixer_kwargs = dict(
             intervention_target=batch["intervention_target"],
             intervention_type=batch["intervention_type"],
@@ -153,8 +235,9 @@ class DoOverTimePFN(nn.Module):
             intervention_time_end=batch["intervention_time_end"],
             query_target=batch["query_target"],
             query_time=batch["query_time"],
-            variable_mask=batch["variable_mask"],
+            variable_mask=variable_mask,
             query_offset=query_offset,
+            a_ref=batch.get("a_ref_norm") if self.query_a_ref else None,
         )
         if self.horizon_mixers_n == 0:
             h_causal = self.cross_variable_mixer(h_vars=h_vars, **mixer_kwargs)

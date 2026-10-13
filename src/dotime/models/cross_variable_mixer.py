@@ -24,6 +24,7 @@ class CrossVariableMixer(nn.Module):
         n_heads: int = 4,
         n_mixer_layers: int = 1,
         horizon_embed: str = "none",
+        query_a_ref: bool = False,
     ):
         super().__init__()
         self.n_max = n_max
@@ -45,7 +46,13 @@ class CrossVariableMixer(nn.Module):
         if horizon_embed not in ("none", "scalar"):
             raise ValueError(f"Unknown horizon_embed: {horizon_embed!r} (none | scalar)")
         self.horizon_embed = horizon_embed
-        query_input_dim = n_max + (2 if horizon_embed == "scalar" else 1)
+        # query_a_ref appends the treatment's normalised factual onset value,
+        # so the mixer can form v - a_ref: the encoder window stops one row
+        # before the onset and never sees it (do-over-time-pfn, wave W1).
+        self.query_a_ref = bool(query_a_ref)
+        query_input_dim = (
+            n_max + (2 if horizon_embed == "scalar" else 1) + (1 if self.query_a_ref else 0)
+        )
         self.query_encoder = nn.Sequential(
             nn.Linear(query_input_dim, embed_size),
             nn.GELU(),
@@ -92,6 +99,7 @@ class CrossVariableMixer(nn.Module):
         query_time: torch.Tensor,
         variable_mask: torch.Tensor,
         query_offset: torch.Tensor | None = None,
+        a_ref: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Combine variable representations with intervention/query context.
 
@@ -143,7 +151,11 @@ class CrossVariableMixer(nn.Module):
             if query_offset is None:
                 query_offset = torch.zeros(B, device=device)
             query_parts.append(query_offset.to(device).float().unsqueeze(1) / 10.0)
-        query_features = torch.cat(query_parts, dim=1)  # (B, N_max + 1 [+1])
+        if self.query_a_ref:
+            if a_ref is None:
+                raise ValueError("query_a_ref=True needs the batch field a_ref_norm")
+            query_parts.append(a_ref.to(device).float().unsqueeze(1))
+        query_features = torch.cat(query_parts, dim=1)  # (B, N_max + 1 [+1] [+1])
 
         h_query = self.query_encoder(query_features)  # (B, E)
 

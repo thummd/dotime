@@ -25,6 +25,25 @@ _CKPTS = sorted(
 _needs_ckpt = pytest.mark.skipif(not _CKPTS, reason="no local DoOverTimePFN checkpoint")
 
 
+def _loadable_checkpoint():
+    """The first local checkpoint whose weights match the vendored model.
+
+    Pre-s9 experimental checkpoints carry an older mixer layout (a single
+    cross-attention block, no gate projections) that the loader now refuses
+    instead of loading partially, so the inference test takes the first one
+    that loads completely and skips when there is none.
+    """
+    from dotime.models.loader import load_dotpfn
+
+    for path in _CKPTS:
+        try:
+            load_dotpfn(path)
+        except ValueError:
+            continue
+        return path
+    pytest.skip("no local checkpoint matches the vendored model")
+
+
 def test_model_constructs_from_config():
     from dotime.models.do_over_time_pfn import DoOverTimePFN
 
@@ -57,7 +76,7 @@ def test_load_dotpfn_and_predict_runs():
         SuiteMetadata("BD", "1.0.0", "LOCAL", "", "", len(episodes), structures=("back_door",)),
         episodes,
     )
-    model = baselines.get("DoOverTimePFN", checkpoint=_CKPTS[0])
+    model = baselines.get("DoOverTimePFN", checkpoint=_loadable_checkpoint())
     results = evaluation.evaluate(model, suite)
     # The inference path runs and yields finite predictions (exact-number
     # reproduction is a separate, checkpoint-matched verification step).
