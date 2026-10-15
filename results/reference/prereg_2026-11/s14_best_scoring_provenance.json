@@ -1,0 +1,237 @@
+{
+ "series": "s14ho_all",
+ "seeds": [
+  42,
+  43,
+  44
+ ],
+ "arms": [
+  "int",
+  "B",
+  "A"
+ ],
+ "suite": "dot-Identifiability-v1",
+ "suite_version": "1.2.0",
+ "suite_shard_md5": {
+  "shard-0000.parquet": "3994e20d23af5aecb322e8503f1b47ae",
+  "shard-0001.parquet": "e3f5a3354f471d730f1537fe6b44dae5",
+  "shard-0002.parquet": "121ce5c241664325ddb30979485ccc80"
+ },
+ "n_episodes": 12150,
+ "checkpoint_file": "do_over_time_pfn_best.pt",
+ "in_support_sd": 3.0,
+ "dotime_version": "0.2.0",
+ "dotime_commit": "",
+ "torch_version": "2.10.0+cu128",
+ "device": "cuda:1",
+ "host": "aidf-svr-gpu04",
+ "runs": {
+  "s14ho_all_int_seed42": {
+   "status": "ok",
+   "path": "checkpoints/s14ho_all_int_seed42/do_over_time_pfn_best.pt",
+   "sha256": "5d9363fc4951f03cb6bb311cc0929d21cd4070031632858fc2c7aff9d92334c6",
+   "n_keys": 124,
+   "seconds": 561.0,
+   "input_convention": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 6.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "positivity_aware",
+    "pair_mode": "counterfactual",
+    "target_key": "Y_true",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "model_options": {
+    "query_a_ref": true,
+    "stat_tokens": "ols_path",
+    "role_embed": true,
+    "joint_branch": false
+   }
+  },
+  "s14ho_all_int_seed43": {
+   "status": "ok",
+   "path": "checkpoints/s14ho_all_int_seed43/do_over_time_pfn_best.pt",
+   "sha256": "e7f5cf1086ce3fbe985f1b9fd357be5a7558f3e3fc7e1acbda1e59cdec183f1d",
+   "n_keys": 124,
+   "seconds": 559.9,
+   "input_convention": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 6.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "positivity_aware",
+    "pair_mode": "counterfactual",
+    "target_key": "Y_true",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "model_options": {
+    "query_a_ref": true,
+    "stat_tokens": "ols_path",
+    "role_embed": true,
+    "joint_branch": false
+   }
+  },
+  "s14ho_all_int_seed44": {
+   "status": "ok",
+   "path": "checkpoints/s14ho_all_int_seed44/do_over_time_pfn_best.pt",
+   "sha256": "7e843deadc4bf681eec36ed3edfec6e724be55cf96cb91f4fea3422aeb5c6d74",
+   "n_keys": 124,
+   "seconds": 559.1,
+   "input_convention": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 6.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "positivity_aware",
+    "pair_mode": "counterfactual",
+    "target_key": "Y_true",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "model_options": {
+    "query_a_ref": true,
+    "stat_tokens": "ols_path",
+    "role_embed": true,
+    "joint_branch": false
+   }
+  },
+  "s14ho_all_B_seed42": {
+   "status": "ok",
+   "path": "checkpoints/s14ho_all_B_seed42/do_over_time_pfn_best.pt",
+   "sha256": "b0e23112a7375b4e28496f4d79fde988581a43748fd43d4b459d6913ec275844",
+   "n_keys": 124,
+   "seconds": 144.8,
+   "input_convention": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 6.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "positivity_aware",
+    "pair_mode": "counterfactual",
+    "target_key": "Y_true",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "model_options": {
+    "query_a_ref": true,
+    "stat_tokens": "ols_path",
+    "role_embed": true,
+    "joint_branch": false
+   }
+  },
+  "s14ho_all_B_seed43": {
+   "status": "ok",
+   "path": "checkpoints/s14ho_all_B_seed43/do_over_time_pfn_best.pt",
+   "sha256": "10ac600154518b3b0192cf18fefba798edd5a2818ff3faa03ce46916f9b8ed65",
+   "n_keys": 124,
+   "seconds": 144.7,
+   "input_convention": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 6.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "positivity_aware",
+    "pair_mode": "counterfactual",
+    "target_key": "Y_true",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "model_options": {
+    "query_a_ref": true,
+    "stat_tokens": "ols_path",
+    "role_embed": true,
+    "joint_branch": false
+   }
+  },
+  "s14ho_all_B_seed44": {
+   "status": "ok",
+   "path": "checkpoints/s14ho_all_B_seed44/do_over_time_pfn_best.pt",
+   "sha256": "bf335d2c5f6f37cdcd5155b009e061760395ac01bec4fe29427789a26d2b5969",
+   "n_keys": 124,
+   "seconds": 144.9,
+   "input_convention": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 6.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "positivity_aware",
+    "pair_mode": "counterfactual",
+    "target_key": "Y_true",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "model_options": {
+    "query_a_ref": true,
+    "stat_tokens": "ols_path",
+    "role_embed": true,
+    "joint_branch": false
+   }
+  },
+  "s14ho_all_A_seed42": {
+   "status": "ok",
+   "path": "checkpoints/s14ho_all_A_seed42/do_over_time_pfn_best.pt",
+   "sha256": "46bf61d36ff01f4fe09a99b81dd21218ddb34c81805532a5f9ee39de1e8fd0c9",
+   "n_keys": 124,
+   "seconds": 144.8,
+   "input_convention": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 6.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "positivity_aware",
+    "pair_mode": "counterfactual",
+    "target_key": "Y_obs",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "model_options": {
+    "query_a_ref": true,
+    "stat_tokens": "ols_path",
+    "role_embed": true,
+    "joint_branch": false
+   }
+  },
+  "s14ho_all_A_seed43": {
+   "status": "ok",
+   "path": "checkpoints/s14ho_all_A_seed43/do_over_time_pfn_best.pt",
+   "sha256": "2fdd282b9fa13744b6598a7572c5469d85b12643d16199d0e5d10dfc6083a8b1",
+   "n_keys": 124,
+   "seconds": 144.6,
+   "input_convention": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 6.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "positivity_aware",
+    "pair_mode": "counterfactual",
+    "target_key": "Y_obs",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "model_options": {
+    "query_a_ref": true,
+    "stat_tokens": "ols_path",
+    "role_embed": true,
+    "joint_branch": false
+   }
+  },
+  "s14ho_all_A_seed44": {
+   "status": "ok",
+   "path": "checkpoints/s14ho_all_A_seed44/do_over_time_pfn_best.pt",
+   "sha256": "7eb4ec0dac8ed4c6e93afb5bdc685b2273c1d909868f42236bf986b11b0584c7",
+   "n_keys": 124,
+   "seconds": 144.8,
+   "input_convention": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 6.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "positivity_aware",
+    "pair_mode": "counterfactual",
+    "target_key": "Y_obs",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "model_options": {
+    "query_a_ref": true,
+    "stat_tokens": "ols_path",
+    "role_embed": true,
+    "joint_branch": false
+   }
+  }
+ }
+}
