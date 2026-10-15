@@ -11,3 +11,9 @@ and a reason, in the order it happened.
    prints the commit it read from it, `74769ff5facadfc588a45eb52d0e1ae632e07f16`, which is the registering commit
    whose archive was deployed (Section 10). The script is left as registered; the predictions and every other
    provenance field are unaffected.
+
+2. **2026-10-15 16:40 SGT, checkpoint locations in the training-prior read records.** The three gate records in
+   `training_prior_reads/` were written on the training host with the absolute path of each checkpoint. The repository's
+   test suite requires every recorded checkpoint location under `results/reference/` to be its Hugging Face Hub path,
+   so the `checkpoint` field of each record was rewritten to `hf://thummd/do-over-time-pfn/s14/<tag>/do_over_time_pfn_last.pt`,
+   the location of the identical file (digests in `PREREG.md` Section 10). No other field changed.

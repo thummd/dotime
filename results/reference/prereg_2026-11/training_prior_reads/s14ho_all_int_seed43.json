@@ -5,7 +5,7 @@
  "torch": "2.10.0+cu128",
  "tag": "s14ho_all_int_seed43",
  "arm": "int",
- "checkpoint": "/data/dennis/s14/runs/checkpoints/s14ho_all_int_seed43/do_over_time_pfn_last.pt",
+ "checkpoint": "hf://thummd/do-over-time-pfn/s14/s14ho_all_int_seed43/do_over_time_pfn_last.pt",
  "checkpoint_data": {
   "center_intervention_value": true,
   "positivity_clip_sd": 6.0,
