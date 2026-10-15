@@ -130,6 +130,23 @@ def load_suite(args):
     return episodes, manifest
 
 
+def dotime_commit() -> str:
+    """The commit of the public package the scoring runs on.
+
+    A git checkout answers ``git rev-parse``; a ``git archive`` deployment has
+    no ``.git`` and carries the commit in a ``COMMIT`` file at its root instead.
+
+    Returns:
+        The commit hash, or an empty string if neither source exists.
+    """
+    root = Path(__file__).resolve().parents[3]
+    out = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=root)
+    if out.returncode == 0 and out.stdout.strip():
+        return out.stdout.strip()
+    marker = root / "COMMIT"
+    return marker.read_text().strip() if marker.exists() else ""
+
+
 def column_stats(x_obs: torch.Tensor, onset: int, col: int) -> tuple[float, float]:
     """Pre-onset mean and standard deviation of one column, as the batch builder uses them.
 
@@ -251,9 +268,7 @@ def main() -> None:
         "checkpoint_file": args.checkpoint,
         "in_support_sd": IN_SUPPORT_SD,
         "dotime_version": dotime.__version__,
-        "dotime_commit": subprocess.run(
-            ["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=Path(__file__).parent
-        ).stdout.strip(),
+        "dotime_commit": dotime_commit(),
         "torch_version": torch.__version__,
         "device": args.device,
         "host": platform.node(),
