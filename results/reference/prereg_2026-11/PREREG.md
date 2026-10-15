@@ -238,7 +238,9 @@ CHECKPOINT_TABLE
 Training-prior reads of these checkpoints before the push: TRAINING_PRIOR_READS
 
 Scoring uses scripts/score_prereg.py and scripts/analyze_prereg.py in this folder, together with
-the public dotime package at commit SCORING_COMMIT. Neither script changes after registration. A
+the public dotime package at the commit of this registration (the scorer records the hash it ran on
+in s14_scoring_provenance.json; a git archive of that commit carries it in a COMMIT file). Neither
+script changes after registration. A
 bug fix after unblinding is a deviation, and both versions are reported. The checkpoints go to the
 public Hugging Face repository thummd/do-over-time-pfn under s14.
 

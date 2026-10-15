@@ -1,0 +1,262 @@
+{
+ "generated": "2026-10-15T05:25:32+00:00",
+ "repo_commit": "unknown",
+ "python": "3.12.13",
+ "torch": "2.10.0+cu128",
+ "tag": "s14ho_all_int_seed42",
+ "arm": "int",
+ "checkpoint": "/data/dennis/s14/runs/checkpoints/s14ho_all_int_seed42/do_over_time_pfn_last.pt",
+ "checkpoint_data": {
+  "center_intervention_value": true,
+  "positivity_clip_sd": 6.0,
+  "eval_positivity_clip_sd": 3.0,
+  "intervention_source": "positivity_aware",
+  "pair_mode": "counterfactual",
+  "target_key": "Y_true",
+  "value_aux_weight": 0.5,
+  "value_aux_anchor": true
+ },
+ "model_config": {
+  "n_max": 12,
+  "embed_size": 512,
+  "n_heads": 4,
+  "n_encoder_layers": 6,
+  "n_cross_attn_heads": 4,
+  "n_buckets": 1000,
+  "encoder_backend": "transformer",
+  "head_type": "quantile",
+  "tau_levels": null,
+  "n_mixer_layers": 3,
+  "context_window": 200,
+  "value_bypass": "none",
+  "readout": "mean_last",
+  "readout_last_k": 4,
+  "pos_init_std": 1.0,
+  "token_lags": 4,
+  "horizon_embed": "scalar",
+  "horizon_heads": 0,
+  "horizon_mixers": 0,
+  "query_a_ref": true,
+  "stat_tokens": "ols_path",
+  "stat_lags": 3,
+  "joint_branch": false,
+  "joint_layers": 2,
+  "role_embed": true
+ },
+ "value_convention": "centred",
+ "device": "cuda:1",
+ "loader": {
+  "seed": 12345,
+  "T": 200,
+  "n_batches": 40,
+  "offsets": {
+   "back_door": [
+    0,
+    0
+   ],
+   "front_door": [
+    1,
+    5
+   ],
+   "instrumental_variable": [
+    0,
+    5
+   ]
+  },
+  "intervention_source": "positivity_aware",
+  "positivity_clip_sd": 3.0,
+  "pair_mode": "counterfactual",
+  "batch_cache": "/data/dennis/s14pilot/gate/s7_cache"
+ },
+ "gates": {
+  "G_P1": {
+   "mirror_flip_rate_min": 0.8,
+   "anchor_error_ratio_max": 1.0,
+   "eval_loss_ratio_max": 0.9
+  },
+  "G_P2": {
+   "pooled_effect_sign_min": 0.75,
+   "margin_over_B_min": 0.1,
+   "per_structure_min": 0.6,
+   "slope_sign_agreement_min": 0.65
+  }
+ },
+ "structures": {
+  "back_door": {
+   "n": 640,
+   "eval_set_digest": "73882008b9391aa2",
+   "effect_sign": {
+    "acc": 0.9145077720207254,
+    "n": 386,
+    "se": 0.014231915798346643
+   },
+   "level_rmse": 0.41546387899368603,
+   "mirror_flip_rate": 0.675,
+   "anchor_error_ratio_median": 1.0699474271593488,
+   "slope_sign_agreement": 0.9766839378238342,
+   "references": {
+    "TrajMean": {
+     "acc": 0.6062176165803109,
+     "n": 386,
+     "se": 0.02486845276286098
+    },
+    "NaiveOLS": {
+     "effect_sign": {
+      "acc": 0.917098445595855,
+      "n": 386,
+      "se": 0.014034458581375192
+     },
+     "mirror_flip_rate": 0.762987012987013,
+     "anchor_error_ratio_median": 0.7791991282486078,
+     "slope_sign_agreement": 0.9481865284974094
+    },
+    "do-SVAR": {
+     "effect_sign": {
+      "acc": 0.8575129533678757,
+      "n": 386,
+      "se": 0.017791574545373237
+     },
+     "mirror_flip_rate": 0.6444805194805194,
+     "anchor_error_ratio_median": 0.6932819228098184,
+     "slope_sign_agreement": 0.7616580310880829
+    }
+   }
+  },
+  "front_door": {
+   "n": 640,
+   "eval_set_digest": "1559e63025b07d60",
+   "effect_sign": {
+    "acc": 0.6333333333333333,
+    "n": 180,
+    "se": 0.0359182886116547
+   },
+   "level_rmse": 0.6681648933608998,
+   "mirror_flip_rate": 0.0171875,
+   "anchor_error_ratio_median": 1.0165174776967771,
+   "slope_sign_agreement": 0.5222222222222223,
+   "references": {
+    "TrajMean": {
+     "acc": 0.6111111111111112,
+     "n": 180,
+     "se": 0.036335957167312194
+    },
+    "NaiveOLS": {
+     "effect_sign": {
+      "acc": 0.5777777777777777,
+      "n": 180,
+      "se": 0.03681414411789386
+     },
+     "mirror_flip_rate": 0.6491803278688525,
+     "anchor_error_ratio_median": 1.0189769471628638,
+     "slope_sign_agreement": 0.5611111111111111
+    },
+    "do-SVAR": {
+     "effect_sign": {
+      "acc": 0.7111111111111111,
+      "n": 180,
+      "se": 0.03378297555849298
+     },
+     "mirror_flip_rate": 0.28524590163934427,
+     "anchor_error_ratio_median": 0.9875678546580711,
+     "slope_sign_agreement": 0.6555555555555556
+    }
+   }
+  },
+  "instrumental_variable": {
+   "n": 640,
+   "eval_set_digest": "988d55a7c7dd4b74",
+   "effect_sign": {
+    "acc": 0.7,
+    "n": 230,
+    "se": 0.030216609311120097
+   },
+   "level_rmse": 0.410008855195606,
+   "mirror_flip_rate": 0.1375,
+   "anchor_error_ratio_median": 1.01818155289957,
+   "slope_sign_agreement": 0.6434782608695652,
+   "references": {
+    "TrajMean": {
+     "acc": 0.6043478260869565,
+     "n": 230,
+     "se": 0.032243066743162435
+    },
+    "NaiveOLS": {
+     "effect_sign": {
+      "acc": 0.691304347826087,
+      "n": 230,
+      "se": 0.030460426679391563
+     },
+     "mirror_flip_rate": 0.7520391517128875,
+     "anchor_error_ratio_median": 1.0044939665291917,
+     "slope_sign_agreement": 0.6695652173913044
+    },
+    "do-SVAR": {
+     "effect_sign": {
+      "acc": 0.7782608695652173,
+      "n": 230,
+      "se": 0.027391754429644564
+     },
+     "mirror_flip_rate": 0.35294117647058826,
+     "anchor_error_ratio_median": 0.9881171034627869,
+     "slope_sign_agreement": 0.7130434782608696
+    }
+   }
+  }
+ },
+ "pooled": {
+  "effect_sign": {
+   "acc": 0.7889447236180904,
+   "n": 796,
+   "se": 0.014463215631337815
+  },
+  "level_rmse": 0.5122375167853529,
+  "mirror_flip_rate": 0.2765625,
+  "anchor_error_ratio_median": 1.0188065641739161,
+  "slope_sign_agreement": 0.7776381909547738,
+  "references": {
+   "TrajMean": {
+    "acc": 0.6067839195979899,
+    "n": 796,
+    "se": 0.017313151626446123
+   },
+   "NaiveOLS": {
+    "effect_sign": {
+     "acc": 0.7751256281407035,
+     "n": 796,
+     "se": 0.014797879819792912
+    },
+    "mirror_flip_rate": 0.7215878194671017,
+    "anchor_error_ratio_median": 0.9624246096889932,
+    "slope_sign_agreement": 0.7801507537688442
+   },
+   "do-SVAR": {
+    "effect_sign": {
+     "acc": 0.8015075376884422,
+     "n": 796,
+     "se": 0.01413739138142798
+    },
+    "mirror_flip_rate": 0.4281828073993471,
+    "anchor_error_ratio_median": 0.9510813473113895,
+    "slope_sign_agreement": 0.7236180904522613
+   }
+  }
+ },
+ "plateau": {
+  "eval_loss_at_5000": 0.3312,
+  "s13_int_same_seed": 0.3975,
+  "ratio": 0.8332075471698113,
+  "passes": true
+ },
+ "gate_G_P1_mechanism": {
+  "flip_ok": false,
+  "anchor_ok": false,
+  "plateau_ok": true
+ },
+ "gate_G_P2_accuracy": {
+  "pooled_threshold": 0.75,
+  "pooled_ok": true,
+  "per_structure_ok": true,
+  "slope_ok": true,
+  "margin_over_B": "compare with the B arm's record of the same wave"
+ }
+}
