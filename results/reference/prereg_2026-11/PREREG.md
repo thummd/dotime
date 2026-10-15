@@ -1,6 +1,6 @@
 # Pre-registration s14: a redesigned Do-Over-Time-PFN against the do-information ablation and the unadjusted in-context regression
 
-Registered on REGISTRATION_DATE by the commit that adds this file to the public dotime repository.
+Registered on 2026-10-15 by the commit that adds this file to the public dotime repository.
 The timestamp is that commit and its GitHub push event, saved as push_event.json. Unlike s13, the
 nine training runs of this re-test started before the registration, on 2026-10-14 at 18:17
 Singapore time (SGT), because the training takes days on a shared server and the author chose to
@@ -227,15 +227,22 @@ ctp_manifest.sha256 is the s13 manifest of the causal_time_prior copy; every one
 was re-hashed on the training host on 2026-10-14 and none had changed. Each run writes its command,
 host, start time and code commit to results/<tag>/cmd.txt.
 
-Checkpoints pinned at registration (SHA-256 of do_over_time_pfn_last.pt; the launcher starts the
-remaining runs as GPU slots free up, and a run that has not finished at the push is pinned by its
-cmd.txt and listed as pending, to be pinned in DEVIATIONS.md with its digest when it finishes):
+Checkpoints pinned at registration (SHA-256 of do_over_time_pfn_last.pt; all nine runs finished
+between 2026-10-15 01:00 and 14:34 SGT, before this push):
 
 | Run | Start (SGT) | SHA-256 |
 |---|---|---|
-CHECKPOINT_TABLE
+| s14ho_all_int_seed42 | 2026-10-14 18:16 | 460cb1c325de86fcb2ce91e780b4864c04946e4cfbfaaeef2f756f467e1894db |
+| s14ho_all_int_seed43 | 2026-10-14 18:17 | 96fbf741609571e5ffc188e9eeede9f2d75cb0648c634d98d4170bd0e98ab1f1 |
+| s14ho_all_int_seed44 | 2026-10-15 01:08 | 79e3362df26c0afe2dbf23169444a3c5984f668b55726cb6318662b04724a7f8 |
+| s14ho_all_B_seed42 | 2026-10-14 18:17 | 7f9234a38c6e6fe45eef713c238f0484dd582374a338c37067eb14b2994c6dab |
+| s14ho_all_B_seed43 | 2026-10-15 01:02 | 8510f9a1fdbd589d7f7c11a26f55a2493fd3349badf4cb44878edff61b28094a |
+| s14ho_all_B_seed44 | 2026-10-15 01:17 | 966244c7efd993d4f9cb8e25a491813f09648459e90a738a8eeec13a93394502 |
+| s14ho_all_A_seed42 | 2026-10-15 07:39 | 39a209c2350c266bad1074f908782394c9a725bf5128ba8b802f1b47520f4789 |
+| s14ho_all_A_seed43 | 2026-10-15 07:50 | dcff4214ffea4c30ce972d30ee2dca32166f739a2f96f069db88cb977d38faa6 |
+| s14ho_all_A_seed44 | 2026-10-15 07:50 | bb09ebc28618afd81ae687a5e80c9dc3846fc9f6dd24a26b57cf58cb64a54068 |
 
-Training-prior reads of these checkpoints before the push: TRAINING_PRIOR_READS
+Training-prior reads of these checkpoints before the push: the pilot's gate script (do-over-time-pfn scripts/pilot_gate.py at commit ac8a4ac) was run on the training-prior set of PILOT_S14.md for each finished int checkpoint on 2026-10-15, 13:24 to 13:28 SGT, before this push. s14ho_all_int_seed42 (training_prior_reads/s14ho_all_int_seed42.json): pooled effect sign 0.789 (back_door 0.915, front_door 0.633, instrumental_variable 0.700), flip rate 0.277, anchor ratio 1.019, slope agreement 0.778 s14ho_all_int_seed43 (training_prior_reads/s14ho_all_int_seed43.json): pooled effect sign 0.783 (back_door 0.920, front_door 0.628, instrumental_variable 0.674), flip rate 0.255, anchor ratio 1.023, slope agreement 0.768 s14ho_all_int_seed44 (training_prior_reads/s14ho_all_int_seed44.json): pooled effect sign 0.789 (back_door 0.930, front_door 0.622, instrumental_variable 0.683), flip rate 0.269, anchor ratio 1.010, slope agreement 0.769 These are secondary endpoint S7 and touch no released suite.
 
 Scoring uses scripts/score_prereg.py and scripts/analyze_prereg.py in this folder, together with
 the public dotime package at the commit of this registration (the scorer records the hash it ran on
@@ -245,7 +252,7 @@ bug fix after unblinding is a deviation, and both versions are reported. The che
 public Hugging Face repository thummd/do-over-time-pfn under s14.
 
 ## 11. Freeze and reporting
-The primary analysis runs once all six int and B checkpoints exist, and no later than FREEZE_DATE
+The primary analysis runs once all six int and B checkpoints exist, and no later than 2026-10-20 12:00 SGT
 on whatever is complete. results.json and README.md report every endpoint, including the
 unfavourable ones. The summary sentence is composed of four parts in this order: the P1 sentence
 of the label, the P2 sentence of the label, the claim sentence, and the closing sentence. L and U
