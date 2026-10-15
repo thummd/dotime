@@ -1,0 +1,156 @@
+{
+ "description": "S7 training-prior check: the pilot gate script (do-over-time-pfn scripts/pilot_gate.py, commit ac8a4ac) on the fixed training-prior set of PILOT_S14.md, run on the int checkpoints before the registration push (PREREG.md Section 10).",
+ "loader": {
+  "seed": 12345,
+  "T": 200,
+  "n_batches": 40,
+  "offsets": {
+   "back_door": [
+    0,
+    0
+   ],
+   "front_door": [
+    1,
+    5
+   ],
+   "instrumental_variable": [
+    0,
+    5
+   ]
+  },
+  "intervention_source": "positivity_aware",
+  "positivity_clip_sd": 3.0,
+  "pair_mode": "counterfactual",
+  "batch_cache": "/data/dennis/s14pilot/gate/s7_cache"
+ },
+ "gates": {
+  "G_P1": {
+   "mirror_flip_rate_min": 0.8,
+   "anchor_error_ratio_max": 1.0,
+   "eval_loss_ratio_max": 0.9
+  },
+  "G_P2": {
+   "pooled_effect_sign_min": 0.75,
+   "margin_over_B_min": 0.1,
+   "per_structure_min": 0.6,
+   "slope_sign_agreement_min": 0.65
+  }
+ },
+ "scored_on": "2026-10-15 13:24 to 13:28 SGT, aidf-svr-gpu04 cuda:1",
+ "runs": {
+  "s14ho_all_int_seed42": {
+   "record": "training_prior_reads/s14ho_all_int_seed42.json",
+   "checkpoint_data": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 6.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "positivity_aware",
+    "pair_mode": "counterfactual",
+    "target_key": "Y_true",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "pooled": {
+    "effect_sign": {
+     "acc": 0.7889447236180904,
+     "n": 796,
+     "se": 0.014463215631337815
+    },
+    "mirror_flip_rate": 0.2765625,
+    "anchor_error_ratio_median": 1.0188065641739161,
+    "slope_sign_agreement": 0.7776381909547738
+   },
+   "per_structure_effect_sign": {
+    "back_door": 0.9145077720207254,
+    "front_door": 0.6333333333333333,
+    "instrumental_variable": 0.7
+   },
+   "eval_set_digests": {
+    "back_door": "73882008b9391aa2",
+    "front_door": "1559e63025b07d60",
+    "instrumental_variable": "988d55a7c7dd4b74"
+   },
+   "references_pooled": {
+    "TrajMean": 0.6067839195979899,
+    "NaiveOLS": 0.7751256281407035,
+    "do-SVAR": 0.8015075376884422
+   }
+  },
+  "s14ho_all_int_seed43": {
+   "record": "training_prior_reads/s14ho_all_int_seed43.json",
+   "checkpoint_data": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 6.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "positivity_aware",
+    "pair_mode": "counterfactual",
+    "target_key": "Y_true",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "pooled": {
+    "effect_sign": {
+     "acc": 0.7826633165829145,
+     "n": 796,
+     "se": 0.014618320295583041
+    },
+    "mirror_flip_rate": 0.2546875,
+    "anchor_error_ratio_median": 1.023146061936766,
+    "slope_sign_agreement": 0.7675879396984925
+   },
+   "per_structure_effect_sign": {
+    "back_door": 0.9196891191709845,
+    "front_door": 0.6277777777777778,
+    "instrumental_variable": 0.6739130434782609
+   },
+   "eval_set_digests": {
+    "back_door": "73882008b9391aa2",
+    "front_door": "1559e63025b07d60",
+    "instrumental_variable": "988d55a7c7dd4b74"
+   },
+   "references_pooled": {
+    "TrajMean": 0.6067839195979899,
+    "NaiveOLS": 0.7751256281407035,
+    "do-SVAR": 0.8015075376884422
+   }
+  },
+  "s14ho_all_int_seed44": {
+   "record": "training_prior_reads/s14ho_all_int_seed44.json",
+   "checkpoint_data": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 6.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "positivity_aware",
+    "pair_mode": "counterfactual",
+    "target_key": "Y_true",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "pooled": {
+    "effect_sign": {
+     "acc": 0.7889447236180904,
+     "n": 796,
+     "se": 0.014463215631337815
+    },
+    "mirror_flip_rate": 0.26875,
+    "anchor_error_ratio_median": 1.0100580757949862,
+    "slope_sign_agreement": 0.7688442211055276
+   },
+   "per_structure_effect_sign": {
+    "back_door": 0.9300518134715026,
+    "front_door": 0.6222222222222222,
+    "instrumental_variable": 0.6826086956521739
+   },
+   "eval_set_digests": {
+    "back_door": "73882008b9391aa2",
+    "front_door": "1559e63025b07d60",
+    "instrumental_variable": "988d55a7c7dd4b74"
+   },
+   "references_pooled": {
+    "TrajMean": 0.6067839195979899,
+    "NaiveOLS": 0.7751256281407035,
+    "do-SVAR": 0.8015075376884422
+   }
+  }
+ }
+}
