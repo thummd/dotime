@@ -1,0 +1,273 @@
+{
+ "series": "s15ho_all",
+ "seeds": [
+  42,
+  43,
+  44
+ ],
+ "arms": [
+  "int",
+  "B",
+  "A"
+ ],
+ "suite": "dot-Identifiability-v1",
+ "suite_version": "1.2.0",
+ "suite_shard_md5": {
+  "shard-0000.parquet": "3994e20d23af5aecb322e8503f1b47ae",
+  "shard-0001.parquet": "e3f5a3354f471d730f1537fe6b44dae5",
+  "shard-0002.parquet": "121ce5c241664325ddb30979485ccc80"
+ },
+ "n_episodes": 12150,
+ "checkpoint_file": "do_over_time_pfn_last.pt",
+ "in_support_sd": 3.0,
+ "dotime_version": "0.2.0",
+ "dotime_commit": "3106898b3330f76b662286e29eeb4b2d72614061",
+ "torch_version": "2.10.0+cu128",
+ "device": "cuda:1",
+ "host": "aidf-svr-gpu04",
+ "runs": {
+  "s15ho_all_int_seed42": {
+   "status": "ok",
+   "path": "checkpoints/s15ho_all_int_seed42/do_over_time_pfn_last.pt",
+   "sha256": "155eecc8b4d6c757b1bc9c12b4e310d195048a68aa48561359c018133488ed3f",
+   "n_keys": 124,
+   "seconds": 2536.5,
+   "input_convention": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 3.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "standardized",
+    "dose_range": [
+     0.5,
+     20.0
+    ],
+    "pair_mode": "counterfactual",
+    "target_key": "Y_true",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "model_options": {
+    "query_a_ref": true,
+    "stat_tokens": "ols_path",
+    "role_embed": true,
+    "joint_branch": false
+   }
+  },
+  "s15ho_all_int_seed43": {
+   "status": "ok",
+   "path": "checkpoints/s15ho_all_int_seed43/do_over_time_pfn_last.pt",
+   "sha256": "856696cad4c9e22bb1cfe2c84595c60f152a384c0050b640e7053eb300818e54",
+   "n_keys": 124,
+   "seconds": 2458.8,
+   "input_convention": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 3.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "standardized",
+    "dose_range": [
+     0.5,
+     20.0
+    ],
+    "pair_mode": "counterfactual",
+    "target_key": "Y_true",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "model_options": {
+    "query_a_ref": true,
+    "stat_tokens": "ols_path",
+    "role_embed": true,
+    "joint_branch": false
+   }
+  },
+  "s15ho_all_int_seed44": {
+   "status": "ok",
+   "path": "checkpoints/s15ho_all_int_seed44/do_over_time_pfn_last.pt",
+   "sha256": "3984f3ad380e49da744dea69b833157f85b4d92777d532f6833d050de5130f42",
+   "n_keys": 124,
+   "seconds": 2762.3,
+   "input_convention": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 3.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "standardized",
+    "dose_range": [
+     0.5,
+     20.0
+    ],
+    "pair_mode": "counterfactual",
+    "target_key": "Y_true",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "model_options": {
+    "query_a_ref": true,
+    "stat_tokens": "ols_path",
+    "role_embed": true,
+    "joint_branch": false
+   }
+  },
+  "s15ho_all_B_seed42": {
+   "status": "ok",
+   "path": "checkpoints/s15ho_all_B_seed42/do_over_time_pfn_last.pt",
+   "sha256": "071138d7f53e0003dbabf8a2dfc08ddeace401bd86e9eebb78885b82dfbb8b7b",
+   "n_keys": 124,
+   "seconds": 596.9,
+   "input_convention": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 3.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "standardized",
+    "dose_range": [
+     0.5,
+     20.0
+    ],
+    "pair_mode": "counterfactual",
+    "target_key": "Y_true",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "model_options": {
+    "query_a_ref": true,
+    "stat_tokens": "ols_path",
+    "role_embed": true,
+    "joint_branch": false
+   }
+  },
+  "s15ho_all_B_seed43": {
+   "status": "ok",
+   "path": "checkpoints/s15ho_all_B_seed43/do_over_time_pfn_last.pt",
+   "sha256": "8445f3e84595b13331a20754592f3ceaacebad10bc495c53903e63f35293ee46",
+   "n_keys": 124,
+   "seconds": 765.6,
+   "input_convention": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 3.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "standardized",
+    "dose_range": [
+     0.5,
+     20.0
+    ],
+    "pair_mode": "counterfactual",
+    "target_key": "Y_true",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "model_options": {
+    "query_a_ref": true,
+    "stat_tokens": "ols_path",
+    "role_embed": true,
+    "joint_branch": false
+   }
+  },
+  "s15ho_all_B_seed44": {
+   "status": "ok",
+   "path": "checkpoints/s15ho_all_B_seed44/do_over_time_pfn_last.pt",
+   "sha256": "7700d6a39e7ff8d3bb24e421b29adeae42e5b823a3178da40b33c47d6136a945",
+   "n_keys": 124,
+   "seconds": 766.3,
+   "input_convention": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 3.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "standardized",
+    "dose_range": [
+     0.5,
+     20.0
+    ],
+    "pair_mode": "counterfactual",
+    "target_key": "Y_true",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "model_options": {
+    "query_a_ref": true,
+    "stat_tokens": "ols_path",
+    "role_embed": true,
+    "joint_branch": false
+   }
+  },
+  "s15ho_all_A_seed42": {
+   "status": "ok",
+   "path": "checkpoints/s15ho_all_A_seed42/do_over_time_pfn_last.pt",
+   "sha256": "a4f17a2afdeb79af692a2c7ab91dc81d71452dd584c49c1d00380a92e96117e1",
+   "n_keys": 124,
+   "seconds": 866.8,
+   "input_convention": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 3.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "standardized",
+    "dose_range": [
+     0.5,
+     20.0
+    ],
+    "pair_mode": "counterfactual",
+    "target_key": "Y_obs",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "model_options": {
+    "query_a_ref": true,
+    "stat_tokens": "ols_path",
+    "role_embed": true,
+    "joint_branch": false
+   }
+  },
+  "s15ho_all_A_seed43": {
+   "status": "ok",
+   "path": "checkpoints/s15ho_all_A_seed43/do_over_time_pfn_last.pt",
+   "sha256": "1bb047db1115ac6f9210e0565696dc5d8b51d6681e41faa6045b42449716b562",
+   "n_keys": 124,
+   "seconds": 1140.3,
+   "input_convention": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 3.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "standardized",
+    "dose_range": [
+     0.5,
+     20.0
+    ],
+    "pair_mode": "counterfactual",
+    "target_key": "Y_obs",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "model_options": {
+    "query_a_ref": true,
+    "stat_tokens": "ols_path",
+    "role_embed": true,
+    "joint_branch": false
+   }
+  },
+  "s15ho_all_A_seed44": {
+   "status": "ok",
+   "path": "checkpoints/s15ho_all_A_seed44/do_over_time_pfn_last.pt",
+   "sha256": "c7a52676845ffcbba739ce4a62fb7b5835667915e074383037a2086bf3f97fe6",
+   "n_keys": 124,
+   "seconds": 672.4,
+   "input_convention": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 3.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "standardized",
+    "dose_range": [
+     0.5,
+     20.0
+    ],
+    "pair_mode": "counterfactual",
+    "target_key": "Y_obs",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "model_options": {
+    "query_a_ref": true,
+    "stat_tokens": "ols_path",
+    "role_embed": true,
+    "joint_branch": false
+   }
+  }
+ }
+}

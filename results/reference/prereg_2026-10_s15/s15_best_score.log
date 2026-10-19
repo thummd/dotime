@@ -1,0 +1,12 @@
+== 2026-10-19 13:36:29 scoring start, package commit 3106898b3330f76b662286e29eeb4b2d72614061
+[s15ho_all_int_seed42] 12150 predictions in 2635 s
+[s15ho_all_int_seed43] 12150 predictions in 3248 s
+[s15ho_all_int_seed44] 12150 predictions in 4335 s
+[s15ho_all_B_seed42] 12150 predictions in 898 s
+[s15ho_all_B_seed43] 12150 predictions in 1095 s
+[s15ho_all_B_seed44] 12150 predictions in 1182 s
+[s15ho_all_A_seed42] 12150 predictions in 1081 s
+[s15ho_all_A_seed43] 12150 predictions in 1359 s
+[s15ho_all_A_seed44] 12150 predictions in 1510 s
+wrote 109350 rows to /data/dennis/s15/score
+== 2026-10-19 18:25:58 scoring exit 0

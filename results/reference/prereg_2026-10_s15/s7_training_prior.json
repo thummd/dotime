@@ -1,0 +1,168 @@
+{
+ "description": "S7 training-prior check: the pilot gate script (do-over-time-pfn scripts/pilot_gate.py, commit ac8a4ac) on the fixed training-prior set of PILOT_S14.md, run on the s15 int checkpoints after the registration push and after the registered scoring had started (PREREG.md Section 8, S7). Its loader keeps the pilot's 3 sd clip.",
+ "loader": {
+  "seed": 12345,
+  "T": 200,
+  "n_batches": 40,
+  "offsets": {
+   "back_door": [
+    0,
+    0
+   ],
+   "front_door": [
+    1,
+    5
+   ],
+   "instrumental_variable": [
+    0,
+    5
+   ]
+  },
+  "intervention_source": "positivity_aware",
+  "positivity_clip_sd": 3.0,
+  "pair_mode": "counterfactual",
+  "batch_cache": "/data/dennis/s14pilot/gate/s7_cache"
+ },
+ "gates": {
+  "G_P1": {
+   "mirror_flip_rate_min": 0.8,
+   "anchor_error_ratio_max": 1.0,
+   "eval_loss_ratio_max": 0.9
+  },
+  "G_P2": {
+   "pooled_effect_sign_min": 0.75,
+   "margin_over_B_min": 0.1,
+   "per_structure_min": 0.6,
+   "slope_sign_agreement_min": 0.65
+  }
+ },
+ "scored_on": "2026-10-19 18:25 to 18:43 SGT, aidf-svr-gpu04 cuda:3, after the registered scoring had started",
+ "runs": {
+  "s15ho_all_int_seed42": {
+   "record": "training_prior_reads/s15ho_all_int_seed42.json",
+   "checkpoint_data": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 3.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "standardized",
+    "dose_range": [
+     0.5,
+     20.0
+    ],
+    "pair_mode": "counterfactual",
+    "target_key": "Y_true",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "pooled": {
+    "effect_sign": {
+     "acc": 0.7964824120603015,
+     "n": 796,
+     "se": 0.014270281315297208
+    },
+    "mirror_flip_rate": 0.27447916666666666,
+    "anchor_error_ratio_median": 1.0084215948630049,
+    "slope_sign_agreement": 0.7826633165829145
+   },
+   "per_structure_effect_sign": {
+    "back_door": 0.9248704663212435,
+    "front_door": 0.6333333333333333,
+    "instrumental_variable": 0.7086956521739131
+   },
+   "eval_set_digests": {
+    "back_door": "73882008b9391aa2",
+    "front_door": "1559e63025b07d60",
+    "instrumental_variable": "988d55a7c7dd4b74"
+   },
+   "references_pooled": {
+    "TrajMean": 0.6067839195979899,
+    "NaiveOLS": 0.7751256281407035,
+    "do-SVAR": 0.8015075376884422
+   }
+  },
+  "s15ho_all_int_seed43": {
+   "record": "training_prior_reads/s15ho_all_int_seed43.json",
+   "checkpoint_data": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 3.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "standardized",
+    "dose_range": [
+     0.5,
+     20.0
+    ],
+    "pair_mode": "counterfactual",
+    "target_key": "Y_true",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "pooled": {
+    "effect_sign": {
+     "acc": 0.7939698492462312,
+     "n": 796,
+     "se": 0.014335434527181263
+    },
+    "mirror_flip_rate": 0.2708333333333333,
+    "anchor_error_ratio_median": 1.0058142739677445,
+    "slope_sign_agreement": 0.7625628140703518
+   },
+   "per_structure_effect_sign": {
+    "back_door": 0.9300518134715026,
+    "front_door": 0.6222222222222222,
+    "instrumental_variable": 0.7
+   },
+   "eval_set_digests": {
+    "back_door": "73882008b9391aa2",
+    "front_door": "1559e63025b07d60",
+    "instrumental_variable": "988d55a7c7dd4b74"
+   },
+   "references_pooled": {
+    "TrajMean": 0.6067839195979899,
+    "NaiveOLS": 0.7751256281407035,
+    "do-SVAR": 0.8015075376884422
+   }
+  },
+  "s15ho_all_int_seed44": {
+   "record": "training_prior_reads/s15ho_all_int_seed44.json",
+   "checkpoint_data": {
+    "center_intervention_value": true,
+    "positivity_clip_sd": 3.0,
+    "eval_positivity_clip_sd": 3.0,
+    "intervention_source": "standardized",
+    "dose_range": [
+     0.5,
+     20.0
+    ],
+    "pair_mode": "counterfactual",
+    "target_key": "Y_true",
+    "value_aux_weight": 0.5,
+    "value_aux_anchor": true
+   },
+   "pooled": {
+    "effect_sign": {
+     "acc": 0.7939698492462312,
+     "n": 796,
+     "se": 0.014335434527181263
+    },
+    "mirror_flip_rate": 0.2791666666666667,
+    "anchor_error_ratio_median": 1.0009455053522531,
+    "slope_sign_agreement": 0.757537688442211
+   },
+   "per_structure_effect_sign": {
+    "back_door": 0.9248704663212435,
+    "front_door": 0.6277777777777778,
+    "instrumental_variable": 0.7043478260869566
+   },
+   "eval_set_digests": {
+    "back_door": "73882008b9391aa2",
+    "front_door": "1559e63025b07d60",
+    "instrumental_variable": "988d55a7c7dd4b74"
+   },
+   "references_pooled": {
+    "TrajMean": 0.6067839195979899,
+    "NaiveOLS": 0.7751256281407035,
+    "do-SVAR": 0.8015075376884422
+   }
+  }
+ }
+}
