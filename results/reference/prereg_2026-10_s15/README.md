@@ -1,6 +1,6 @@
 # Pre-registered test s15: results
 
-Registered in `PREREG.md` (commit 3106898, pushed 2026-10-17 04:51:24 UTC, `push_event.json`) before any run started. The nine runs trained from 2026-10-17 12:52 to 2026-10-19 03:41 SGT, and the registered scorer ran on 2026-10-19 from 13:36 to 17:06 SGT at the registering commit. This file reports every endpoint. Nothing here was chosen after seeing the numbers: the scripts in `scripts/` are byte-identical to the registered ones, and the one procedural deviation is in `DEVIATIONS.md`.
+Registered in `PREREG.md` (commit 3106898, pushed 2026-10-17 04:51:24 UTC, `push_event.json`; now `2c7d062` with the same tree after the message rewrite of `DEVIATIONS.md` item 2) before any run started. The nine runs trained from 2026-10-17 12:52 to 2026-10-19 03:41 SGT, and the registered scorer ran on 2026-10-19 from 13:36 to 17:06 SGT at the registering commit. This file reports every endpoint. Nothing here was chosen after seeing the numbers: the scripts in `scripts/` are byte-identical to the registered ones, and the one procedural deviation is in `DEVIATIONS.md`.
 
 ## Outcome
 
