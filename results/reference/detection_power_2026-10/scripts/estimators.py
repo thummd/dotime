@@ -51,13 +51,15 @@ if TYPE_CHECKING:
 __all__ = [
     "ASSOCIATION",
     "CLASS_OF",
-    "ESTIMATOR_ORDER",
-    "IDENTIFICATION_AWARE",
-    "NAIVE",
+    "DEFAULT_ESTIMATORS",
     "DoSVAR",
+    "ESTIMATOR_ORDER",
+    "EXTENSIONS",
     "Estimator",
     "FrontDoorOLS",
     "GraphRouter",
+    "IDENTIFICATION_AWARE",
+    "NAIVE",
     "OracleEstimator",
     "PackageEstimator",
     "PendingEstimatorError",
@@ -76,19 +78,28 @@ __all__ = [
 NAIVE = ("Zero", "Mean", "AR1", "VAR-OLS")
 ASSOCIATION = ("NaiveOLS",)
 IDENTIFICATION_AWARE = ("BackDoorOLS", "IV2SLS", "FrontDoorOLS")
+# Package estimators registered after the October study. They are scored only
+# when named on the command line, so the default rows, the routes, the
+# separation contrasts and the graded predictions of the study stay those of
+# its registration (README, "Pre-registration"). Their own registration is
+# ../../lagged_backdoor_2026-10/PREREG.md.
+EXTENSIONS = ("LaggedBackDoorOLS", "LaggedBackDoorOLS-L3")
 ESTIMATOR_ORDER = (
     *NAIVE,
     *ASSOCIATION,
     "do-SVAR",
     *IDENTIFICATION_AWARE,
+    *EXTENSIONS,
     "GraphRouter",
     "Oracle",
 )
+DEFAULT_ESTIMATORS = tuple(n for n in ESTIMATOR_ORDER if n not in EXTENSIONS)
 CLASS_OF = {
     **dict.fromkeys(NAIVE, "naive"),
     **dict.fromkeys(ASSOCIATION, "association"),
     "do-SVAR": "do-SVAR",
     **dict.fromkeys(IDENTIFICATION_AWARE, "identification-aware"),
+    **dict.fromkeys(EXTENSIONS, "identification-aware"),
     "GraphRouter": "router",
     "Oracle": "oracle",
 }
@@ -297,7 +308,7 @@ class PackageEstimator:
         KeyError: If the package does not register ``name``.
     """
 
-    _NAMES = (*NAIVE, *ASSOCIATION, "BackDoorOLS", "IV2SLS")
+    _NAMES = (*NAIVE, *ASSOCIATION, "BackDoorOLS", "IV2SLS", *EXTENSIONS)
 
     def __init__(self, name: str) -> None:
         if name not in self._NAMES:
@@ -312,13 +323,14 @@ class PackageEstimator:
             structure: The episode's structure label.
 
         Returns:
-            ``False`` for the naive baselines, and for BackDoorOLS and IV2SLS
-            on structures they decline (they then predict the pre-onset outcome
+            ``False`` for the naive baselines, and for BackDoorOLS, its lagged
+            variants and IV2SLS on structures they decline (they then predict the pre-onset outcome
             mean). ``True`` for NaiveOLS, which applies to every structure.
         """
         if self.name in NAIVE:
             return False
-        if self.name == "BackDoorOLS":
+        if self.name == "BackDoorOLS" or self.name in EXTENSIONS:
+            # The lagged variants inherit the parent's applicability rule.
             return structure in BackDoorOLSBaseline._BACK_DOOR
         if self.name == "IV2SLS":
             # IV2SLSBaseline.predict tests this literal inline; it has no
