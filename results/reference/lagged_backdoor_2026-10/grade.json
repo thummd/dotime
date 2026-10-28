@@ -1,0 +1,210 @@
+{
+ "source": "ident_v1_2_predictions.parquet",
+ "margin": 0.03,
+ "rows": [
+  {
+   "id": "L1",
+   "structure": "observed_confounder",
+   "statistic": "false_effect",
+   "rule": "upper_below_zero",
+   "statement": "LaggedBackDoorOLS makes false effects on observed_confounder at a lower rate than BackDoorOLS (paired 95% CI of the difference below 0)",
+   "n": 1350,
+   "diff": -0.014074074074074072,
+   "ci95": [
+    -0.03407407407407409,
+    0.00666666666666671
+   ],
+   "outcome": "not confirmed",
+   "estimator_a": 0.46444444444444444,
+   "estimator_b": 0.4785185185185185
+  },
+  {
+   "id": "L1b",
+   "structure": "observed_confounder",
+   "statistic": "false_effect",
+   "rule": "upper_below_zero",
+   "statement": "LaggedBackDoorOLS makes false effects on observed_confounder at a lower rate than do-SVAR (paired 95% CI of the difference below 0)",
+   "n": 1350,
+   "diff": 0.10074074074074074,
+   "ci95": [
+    0.07777777777777778,
+    0.12444444444444447
+   ],
+   "outcome": "not confirmed",
+   "estimator_a": 0.46444444444444444,
+   "estimator_b": 0.3637037037037037
+  },
+  {
+   "id": "L2",
+   "structure": "back_door",
+   "statistic": "effect_sign",
+   "rule": "lower_above_minus_margin",
+   "statement": "on back_door the effect-sign accuracy of LaggedBackDoorOLS is not below BackDoorOLS's by more than 0.03 (lower bound of the paired 95% CI above -0.03)",
+   "n": 789,
+   "diff": -0.0038022813688213253,
+   "ci95": [
+    -0.019011406844106515,
+    0.011406844106463976
+   ],
+   "outcome": "confirmed",
+   "estimator_a": 0.8060836501901141,
+   "estimator_b": 0.8098859315589354
+  },
+  {
+   "id": "L3",
+   "structure": "confounder_mediator",
+   "statistic": "effect_sign",
+   "rule": "lower_above_minus_margin",
+   "statement": "on confounder_mediator the effect-sign accuracy of LaggedBackDoorOLS is not below BackDoorOLS's by more than 0.03 (lower bound of the paired 95% CI above -0.03)",
+   "n": 351,
+   "diff": -0.005698005698005715,
+   "ci95": [
+    -0.031339031339031376,
+    0.019943019943019946
+   ],
+   "outcome": "not confirmed",
+   "estimator_a": 0.6723646723646723,
+   "estimator_b": 0.6780626780626781
+  },
+  {
+   "id": "X1a",
+   "structure": "observed_confounder",
+   "statistic": "false_effect",
+   "statement": "lag 3 against BackDoorOLS",
+   "n": 1350,
+   "diff": -0.0222222222222222,
+   "ci95": [
+    -0.047407407407407454,
+    0.0022222222222221823
+   ],
+   "outcome": "reported",
+   "estimator_a": 0.4562962962962963,
+   "estimator_b": 0.4785185185185185
+  },
+  {
+   "id": "X1b",
+   "structure": "observed_confounder",
+   "statistic": "false_effect",
+   "statement": "lag 3 against do-SVAR",
+   "n": 1350,
+   "diff": 0.09259259259259262,
+   "ci95": [
+    0.07111111111111107,
+    0.11333333333333334
+   ],
+   "outcome": "reported",
+   "estimator_a": 0.4562962962962963,
+   "estimator_b": 0.3637037037037037
+  },
+  {
+   "id": "X1c",
+   "structure": "back_door",
+   "statistic": "effect_sign",
+   "statement": "lag 3 against BackDoorOLS",
+   "n": 789,
+   "diff": -0.01520912547528519,
+   "ci95": [
+    -0.03295310519645123,
+    0.0038022813688212143
+   ],
+   "outcome": "reported",
+   "estimator_a": 0.7946768060836502,
+   "estimator_b": 0.8098859315589354
+  },
+  {
+   "id": "X1d",
+   "structure": "confounder_mediator",
+   "statistic": "effect_sign",
+   "statement": "lag 3 against BackDoorOLS",
+   "n": 351,
+   "diff": -0.01139601139601143,
+   "ci95": [
+    -0.04850427350427358,
+    0.028490028490028463
+   ],
+   "outcome": "reported",
+   "estimator_a": 0.6666666666666666,
+   "estimator_b": 0.6780626780626781
+  },
+  {
+   "id": "X1e",
+   "structure": "back_door",
+   "statistic": "effect_sign",
+   "statement": "lag 3 against lag 1",
+   "n": 789,
+   "diff": -0.011406844106463865,
+   "ci95": [
+    -0.026615969581749055,
+    0.0038022813688213253
+   ],
+   "outcome": "reported",
+   "estimator_a": 0.7946768060836502,
+   "estimator_b": 0.8060836501901141
+  },
+  {
+   "id": "X2a",
+   "structure": "back_door",
+   "statistic": "effect_sign",
+   "statement": "lag 1 against do-SVAR",
+   "n": 789,
+   "diff": 0.03041825095057038,
+   "ci95": [
+    0.002503168567807339,
+    0.0583016476552598
+   ],
+   "outcome": "reported",
+   "estimator_a": 0.8060836501901141,
+   "estimator_b": 0.7756653992395437
+  },
+  {
+   "id": "X2b",
+   "structure": "confounder_mediator",
+   "statistic": "effect_sign",
+   "statement": "lag 1 against do-SVAR",
+   "n": 351,
+   "diff": 0.014245014245014231,
+   "ci95": [
+    -0.02564102564102566,
+    0.054131054131054124
+   ],
+   "outcome": "reported",
+   "estimator_a": 0.6723646723646723,
+   "estimator_b": 0.6581196581196581
+  },
+  {
+   "id": "X2c",
+   "structure": "confounder_mediator",
+   "statistic": "effect_sign",
+   "statement": "lag 1 against FrontDoorOLS",
+   "n": 351,
+   "diff": -0.03988603988603989,
+   "ci95": [
+    -0.08262108262108259,
+    0.002849002849002802
+   ],
+   "outcome": "reported",
+   "estimator_a": 0.6723646723646723,
+   "estimator_b": 0.7122507122507122
+  },
+  {
+   "id": "X3a",
+   "structure": "observed_confounder",
+   "statistic": "false_effect",
+   "statement": "lag 1 rate against the study's 0.10 bar",
+   "n": 1350,
+   "outcome": "reported",
+   "estimator_a": 0.46444444444444444,
+   "estimator_b": null
+  },
+  {
+   "id": "X3b",
+   "structure": "observed_confounder",
+   "statistic": "false_effect",
+   "statement": "lag 3 rate against the study's 0.10 bar",
+   "n": 1350,
+   "outcome": "reported",
+   "estimator_a": 0.4562962962962963,
+   "estimator_b": null
+  }
+ ]
+}

@@ -1,0 +1,49 @@
+{
+  "gate": 3,
+  "what": "every structure other than mediator scores exactly as on 1.1.0, and the oracle scores 1 wherever the effect sign is defined",
+  "structures_compared": [
+    "bi_variate",
+    "back_door",
+    "observed_confounder",
+    "front_door",
+    "confounder_mediator",
+    "instrumental_variable",
+    "unobserved_confounder"
+  ],
+  "cells_compared": 77,
+  "cells_skipped_pending": [
+    "LaggedBackDoorOLS/bi_variate",
+    "LaggedBackDoorOLS-L3/bi_variate",
+    "LaggedBackDoorOLS/back_door",
+    "LaggedBackDoorOLS-L3/back_door",
+    "LaggedBackDoorOLS/observed_confounder",
+    "LaggedBackDoorOLS-L3/observed_confounder",
+    "LaggedBackDoorOLS/front_door",
+    "LaggedBackDoorOLS-L3/front_door",
+    "LaggedBackDoorOLS/confounder_mediator",
+    "LaggedBackDoorOLS-L3/confounder_mediator",
+    "LaggedBackDoorOLS/instrumental_variable",
+    "LaggedBackDoorOLS-L3/instrumental_variable",
+    "LaggedBackDoorOLS/unobserved_confounder",
+    "LaggedBackDoorOLS-L3/unobserved_confounder"
+  ],
+  "mismatches": [
+    "VAR-OLS/bi_variate: ['level_rmse']",
+    "NaiveOLS/bi_variate: ['effect_rmse', 'level_rmse']",
+    "GraphRouter/bi_variate: ['effect_rmse', 'level_rmse']",
+    "NaiveOLS/back_door: ['effect_rmse']",
+    "NaiveOLS/front_door: ['effect_rmse']",
+    "VAR-OLS/confounder_mediator: ['level_rmse']",
+    "VAR-OLS/instrumental_variable: ['level_rmse']",
+    "VAR-OLS/unobserved_confounder: ['level_rmse']"
+  ],
+  "oracle_failures": [],
+  "passed": false,
+  "reference_table": "ident_v1_1.json",
+  "code": {
+    "git_commit": "e1e0b6c3551f660b0d55c9b161b7ebf1f0300b8c",
+    "code_dirty": false,
+    "dotime_version": "0.2.0",
+    "naive_ols_registered": true
+  }
+}
