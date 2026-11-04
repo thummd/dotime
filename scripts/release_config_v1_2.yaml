@@ -1,4 +1,6 @@
-# dot-Identifiability-v1 version 1.2.0 (PREPARED, NOT YET MINTED): the v1.1.0
+# dot-Identifiability-v1 version 1.2.0 (minted 2026-10-02 with package 0.2.0:
+# Zenodo record 23095083 under concept DOI 10.5281/zenodo.20846063, Hugging
+# Face tag v1.2.0): the v1.1.0
 # shared-noise suite with a per-structure query offset protocol and a ninth
 # structure, bow_graph, the non-identified case. Nine structures x 1350 episodes
 # = 12,150 episodes.
