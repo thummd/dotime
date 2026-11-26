@@ -29,6 +29,11 @@ import torch
 
 from dotime.continuous.extended_prior import ContinuousExtendedPrior
 
+# ACM production accepts Type 1 and TrueType fonts only. Matplotlib's default PDF
+# backend embeds Type 3 glyphs, so the fonts are embedded as TrueType (type 42).
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["ps.fonttype"] = 42
+
 COL_OBS = "#1f77b4"
 COL_INT = "#d62728"
 
@@ -82,19 +87,19 @@ def main(argv: list[str] | None = None) -> int:
 
     ax_a.plot(ts, xo[lo:hi, a], color=COL_OBS, lw=1.3, alpha=0.85)
     ax_a.plot(ts, xi[lo:hi, a], color=COL_INT, lw=1.5, ls=(0, (3, 1.2)))
-    ax_a.set_ylabel("treatment $A$", fontsize=8)
+    ax_a.set_ylabel("Treatment $A$", fontsize=8)
 
-    ax_y.plot(ts, xo[lo:hi, y], color=COL_OBS, lw=1.3, alpha=0.85, label="observational")
+    ax_y.plot(ts, xo[lo:hi, y], color=COL_OBS, lw=1.3, alpha=0.85, label="Observational")
     ax_y.plot(
         ts,
         xi[lo:hi, y],
         color=COL_INT,
         lw=1.5,
         ls=(0, (3, 1.2)),
-        label=r"counterfactual do$(A{=}v)$, shared noise",
+        label=r"Counterfactual do$(A{=}v)$, shared noise",
     )
-    ax_y.set_ylabel("outcome $Y$", fontsize=8)
-    ax_y.set_xlabel("time $t$", fontsize=8)
+    ax_y.set_ylabel("Outcome $Y$", fontsize=8)
+    ax_y.set_xlabel("Time $t$", fontsize=8)
 
     for ax in (ax_a, ax_y):
         ax.axvspan(onset, end, color=COL_INT, alpha=0.06, lw=0)

@@ -28,6 +28,11 @@ import torch
 
 from dotime.continuous.extended_prior import ContinuousExtendedPrior
 
+# ACM production accepts Type 1 and TrueType fonts only. Matplotlib's default PDF
+# backend embeds Type 3 glyphs, so the fonts are embedded as TrueType (type 42).
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["ps.fonttype"] = 42
+
 COL = "#DD8452"
 
 
@@ -82,8 +87,8 @@ def main(argv: list[str] | None = None) -> int:
     ax.axhline(0, color="0.7", lw=0.8, ls=":")
     peak = int(np.nanargmax(mean))
     ax.axvline(peak, color="0.5", lw=0.8, ls="--")
-    ax.set_xlabel("query offset (steps after onset)", fontsize=8)
-    ax.set_ylabel(r"mean $|Y^{\mathrm{int}}-Y^{\mathrm{obs}}|\,/\,\sigma_Y$", fontsize=8)
+    ax.set_xlabel("Query offset (steps after onset)", fontsize=8)
+    ax.set_ylabel(r"Mean $|Y^{\mathrm{int}}-Y^{\mathrm{obs}}|\,/\,\sigma_Y$", fontsize=8)
     ax.set_ylim(bottom=0)
     ax.tick_params(labelsize=7)
     ax.spines[["top", "right"]].set_visible(False)
