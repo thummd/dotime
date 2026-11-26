@@ -303,9 +303,9 @@ class DoTime:
         ------
         ValueError
             If ``pair_mode`` is unknown, or if it is ``"counterfactual"`` while
-            ``regime_switching_prob`` is not zero. Regime-switching SCMs draw
-            their noise step by step from the global numpy RNG, so their arms
-            cannot share it.
+            ``regime_switching_prob`` is not zero. This method freezes noise only
+            on a ``TemporalSCM``. A regime-switching SCM shares its noise and its
+            regime path through :meth:`generate_regime_pair`.
         """
         # Validated before any draw, so a bad call leaves every RNG untouched.
         if pair_mode not in _PAIR_MODES:
@@ -359,12 +359,47 @@ class DoTime:
         self,
         T: int | None = None,
         num_regimes: int = 2,
+        pair_mode: str = "interventional",
     ) -> tuple[torch.Tensor, torch.Tensor, InterventionSpec, RegimeSwitchingTemporalSCM]:
         """Generate a paired (obs, int) trajectory from a regime-switching SCM.
 
         Like :meth:`generate_pair` but forces a regime-switching SCM with a fixed
         number of regimes (for the regime-density benchmark tiers).
+
+        Parameters
+        ----------
+        T : int, optional
+            Length of time series. If None, uses config default.
+        num_regimes : int
+            Number of regimes of the SCM.
+        pair_mode : str
+            ``"interventional"`` (the default, which dot-RegimeSwitch-v1 1.0.0
+            uses) simulates the two arms with independent noise from
+            ``self.generator`` and independent regime paths from numpy's global
+            generator. ``"counterfactual"`` draws one noise realisation and one
+            regime path for the whole pair from a separate generator seeded from
+            ``seed`` and freezes them on the SCM (see
+            :meth:`RegimeSwitchingTemporalSCM.freeze_noise`). The arms then agree
+            exactly before the intervention onset, and their difference is a
+            per-episode counterfactual effect. Both modes draw the same SCM and
+            intervention from ``self.generator``. The returned SCM keeps the
+            frozen realisation.
+
+        Returns
+        -------
+        Tuple[torch.Tensor, torch.Tensor, InterventionSpec, RegimeSwitchingTemporalSCM]
+            (X_obs, X_int, intervention_spec, scm)
+
+        Raises
+        ------
+        ValueError
+            If ``pair_mode`` is unknown.
         """
+        # Validated before any draw, so a bad call leaves every RNG untouched.
+        if pair_mode not in _PAIR_MODES:
+            raise ValueError(
+                f"pair_mode must be interventional or counterfactual, got {pair_mode!r}"
+            )
         if T is None:
             T = self.config["T"]
 
@@ -389,6 +424,11 @@ class DoTime:
             harden_scm(scm, **self.hardening)
 
         intervention = InterventionSampler(N=N, T=T, generator=self.generator).sample()
+        if pair_mode == "counterfactual":
+            # After the intervention draw and from its own generator, so the SCM
+            # and the intervention are those of an interventional pair with the
+            # same seed. The frozen arms no longer read self.generator.
+            scm.freeze_noise(T + self.config["burn_in"], generator=self._counterfactual_generator())
         X_obs = scm.sample_observational(
             T=T, burn_in=self.config["burn_in"], generator=self.generator
         )

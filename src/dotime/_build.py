@@ -510,8 +510,9 @@ _QUERY_ROWS = ("window_end",)
 # Options DoTime reads from its config on top of the DEFAULT_CONFIG keys.
 _EXTRA_PRIOR_CONFIG_KEYS = ("N_min", "hardening", "regime_canonical_weights")
 # The opt-in keys that reconfigure a regime suite. Setting any of them moves the
-# suite to the "regime_configured" spec kind. Without them the specs and the
-# episodes stay those of the released dot-RegimeSwitch-v1 1.0.0.
+# suite to the "regime_configured" spec kind, and so does pair_mode:
+# counterfactual. Without them the specs and the episodes stay those of the
+# released dot-RegimeSwitch-v1 1.0.0.
 _REGIME_PRIOR_KEYS = ("prior_config", "query_row")
 # Options that only the generic builder reads. episode_specs forwards them into
 # the specs of any suite, so a regime suite that set one would have it ignored.
@@ -676,26 +677,25 @@ def _regime_spec_kind(cfg: dict) -> str:
 
     Returns:
         ``"regime_configured"`` when ``cfg`` sets ``prior_config`` or
-        ``query_row``, which :func:`make_episode` builds with
+        ``query_row``, or ``pair_mode: counterfactual``, which
+        :func:`make_episode` builds with
         :func:`_make_configured_regime_episode`. Otherwise ``"regime"``, the
         legacy path of the released dot-RegimeSwitch-v1 1.0.0.
 
     Raises:
         ValueError: If ``cfg`` sets an option that only generic suites read, if
-            ``pair_mode`` is not ``"interventional"``, if ``prior_config`` is not
-            a mapping or sets a key the prior does not read, or if ``query_row``
-            is not ``"window_end"``.
+            ``pair_mode`` is unknown, if ``prior_config`` is not a mapping or
+            sets a key the prior does not read, or if ``query_row`` is not
+            ``"window_end"``.
     """
     ignored = [k for k in _GENERIC_ONLY_KEYS if k in cfg]
     if ignored:
         raise ValueError(f"{ignored} only apply to generator: generic, not to a regime suite")
-    # The regime simulator draws its noise step by step and skips the draw of a
-    # variable under a hard intervention, so the two arms cannot share noise.
-    if cfg.get("pair_mode", "interventional") != "interventional":
-        raise ValueError(
-            f"a regime suite pairs independent draws, got pair_mode {cfg['pair_mode']!r}"
-        )
-    if not any(k in cfg for k in _REGIME_PRIOR_KEYS):
+    pair_mode = cfg.get("pair_mode", "interventional")
+    if pair_mode not in ("interventional", "counterfactual"):
+        raise ValueError(f"pair_mode must be interventional or counterfactual, got {pair_mode!r}")
+    # An explicit pair_mode: interventional asks for what the legacy branch does.
+    if pair_mode == "interventional" and not any(k in cfg for k in _REGIME_PRIOR_KEYS):
         return "regime"
     _check_prior_config(cfg.get("prior_config", {}))
     if cfg.get("query_row", "window_end") not in _QUERY_ROWS:
@@ -709,8 +709,11 @@ def _make_configured_regime_episode(spec: dict):
     The retry rule is the legacy regime branch's: attempt ``a > 0`` reseeds with
     ``seed * 100003 + a``, and an episode is resampled while either arm is
     zeroed. Unlike the legacy branch, every attempt also seeds numpy's global
-    generator, which draws the regime path of each arm. Options the spec does
-    not set keep the defaults of :class:`~dotime.prior.DoTime`.
+    generator, which draws the regime path of each arm of an interventional
+    pair. With ``pair_mode: counterfactual`` both arms share one noise
+    realisation and one regime path, which the prior draws from its own
+    generator. Options the spec does not set keep the defaults of
+    :class:`~dotime.prior.DoTime`.
 
     Args:
         spec: A ``"regime_configured"`` spec from :func:`episode_specs`, with
@@ -718,8 +721,10 @@ def _make_configured_regime_episode(spec: dict):
 
     Returns:
         The :class:`~dotime.benchmarks.Episode`, labelled ``regime_<d>``. Its
-        metadata holds ``tier``, ``n_regimes``, ``diverged`` and, when the
-        suite sets it, ``query_row``.
+        metadata holds ``tier``, ``n_regimes``, ``diverged``, ``pair_mode`` and,
+        when the suite sets it, ``query_row``. A counterfactual episode with
+        ``record_graph`` also records the shared regime of every step as
+        ``metadata["graph"]["regime_path"]``.
 
     Raises:
         TypeError: If ``prior_config`` holds a value of the wrong type (see
@@ -734,6 +739,7 @@ def _make_configured_regime_episode(spec: dict):
 
     seed, t_len, d = spec["seed"], spec["T"], spec["num_regimes"]
     retries = int(spec.get("stability_retries", 0))
+    pair_mode = spec.get("pair_mode", "interventional")
     for attempt in range(retries + 1):
         s = seed if attempt == 0 else seed * 100003 + attempt
         _torch.manual_seed(s)
@@ -742,16 +748,21 @@ def _make_configured_regime_episode(spec: dict):
         # there because v1.0.0 mechanisms ignore the path. With
         # regime_canonical_weights the trajectories depend on it, so an unseeded
         # build would change with the worker count and from run to run. The
-        # mask keeps a retry seed inside the 32 bits numpy accepts.
+        # mask keeps a retry seed inside the 32 bits numpy accepts. A
+        # counterfactual pair draws its path from the prior's own generator and
+        # does not read this one.
         _np.random.seed(s & 0xFFFFFFFF)
         prior = DoTime(config=spec.get("prior_config"), seed=s)
-        x_obs, x_int, iv, scm = prior.generate_regime_pair(T=t_len, num_regimes=d)
+        x_obs, x_int, iv, scm = prior.generate_regime_pair(
+            T=t_len, num_regimes=d, pair_mode=pair_mode
+        )
         if attempt == retries or not arms_zeroed(x_obs, x_int):
             break
     metadata: dict = {
         "tier": spec["tier"],
         "n_regimes": d,
         "diverged": arms_zeroed(x_obs, x_int),
+        "pair_mode": pair_mode,
     }
     query_row = None
     if spec.get("query_row") == "window_end":
@@ -768,7 +779,14 @@ def _make_configured_regime_episode(spec: dict):
         metadata=metadata,
         query_row=query_row,
     )
-    return _with_graph(spec, ep, scm)
+    ep = _with_graph(spec, ep, scm)
+    path = scm.frozen_regime_path(prior.config["burn_in"])
+    if path is not None and "graph" in ep.metadata:
+        # Both arms follow this path, so it says which of regime_edges is
+        # active at each released step. An interventional pair has two
+        # independent paths and none is recorded.
+        ep.metadata["graph"]["regime_path"] = [int(r) for r in path]
+    return ep
 
 
 def _drop_latent_columns(x_obs, x_int, intervention, names: list[str]) -> tuple:

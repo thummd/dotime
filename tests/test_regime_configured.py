@@ -1,11 +1,12 @@
 """Tests for the configured regime build path behind ``dot-RegimeSwitch-v1`` 1.1.0.
 
-A ``generator: regime`` suite that sets ``prior_config`` or ``query_row`` is
-built by the ``regime_configured`` spec kind. It is the only regime path that
-reads a prior config, and the only one that seeds numpy's global generator,
-which draws the regime path of each arm. A suite that sets neither option keeps
-the specs and the episodes of the released version 1.0.0, so every option here
-is opt-in.
+A ``generator: regime`` suite that sets ``prior_config``, ``query_row`` or
+``pair_mode: counterfactual`` is built by the ``regime_configured`` spec kind.
+It is the only regime path that reads a prior config, the only one that seeds
+numpy's global generator, which draws the regime path of each arm of an
+interventional pair, and the only one that can share noise across the arms. A
+suite that sets none of these keeps the specs and the episodes of the released
+version 1.0.0, so every option here is opt-in.
 """
 
 from __future__ import annotations
@@ -23,6 +24,7 @@ import yaml
 
 from dotime import DoTime
 from dotime._build import build_suite, episode_seed, episode_specs, make_episode
+from dotime.evaluation import check_shared_noise
 from dotime.hardening import RECOMMENDED_HARDENING
 
 _ROOT = Path(__file__).resolve().parents[1]
@@ -100,7 +102,11 @@ def test_configured_regime_specs_forward_the_options():
     assert "prior_config" not in only_query[0]
     # The graph record alone does not reconfigure the prior.
     assert episode_specs({**_SMALL, "record_graph": True}, 11, 1.0)[0]["kind"] == "regime"
+    # An explicit interventional pair mode asks for what the legacy branch does.
     assert episode_specs({**_SMALL, "pair_mode": "interventional"}, 11, 1.0)[0]["kind"] == "regime"
+    shared = episode_specs({**_SMALL, "pair_mode": "counterfactual"}, 11, 1.0)
+    assert {s["kind"] for s in shared} == {"regime_configured"}
+    assert all(s["pair_mode"] == "counterfactual" for s in shared)
 
 
 @pytest.mark.parametrize(
@@ -109,7 +115,7 @@ def test_configured_regime_specs_forward_the_options():
         {"prior_config": {"N_maxx": 5}},
         {"prior_config": [("N_max", 5)]},
         {"query_row": "last"},
-        {"pair_mode": "counterfactual"},
+        {"pair_mode": "shared"},
         {"chain_prob": 0.0},
         {"regime_switching_prob": 1.0},
         {"latent": "drop"},
@@ -150,9 +156,15 @@ def test_configured_build_seeds_the_regime_paths():
 
 
 @pytest.mark.slow
-def test_configured_build_is_independent_of_the_worker_count():
-    """One worker and two workers build the same repaired suite."""
-    cfg = {**_SMALL, "prior_config": _REPAIRED, "query_row": "window_end"}
+@pytest.mark.parametrize("pair_mode", ["interventional", "counterfactual"])
+def test_configured_build_is_independent_of_the_worker_count(pair_mode):
+    """One worker and two workers build the same repaired suite, in either pair mode."""
+    cfg = {
+        **_SMALL,
+        "prior_config": _REPAIRED,
+        "query_row": "window_end",
+        "pair_mode": pair_mode,
+    }
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
         serial = build_suite(cfg, _SUITE_SEED, 1.0, 1)
@@ -202,6 +214,50 @@ def test_window_end_query_on_a_regime_episode():
         assert torch.equal(plain.x_int, ep.x_int)
         assert plain.metadata["query_time_idx"] == [spec["T"] - 1]
         assert "query_row" not in plain.metadata
+
+
+def test_counterfactual_regime_episodes_share_noise_and_regime_path():
+    """``pair_mode: counterfactual`` gives arms that differ only through the intervention."""
+    cfg = {
+        **_SMALL,
+        "stability_retries": 5,
+        "prior_config": {**_REPAIRED, "N_max": 5},
+        "pair_mode": "counterfactual",
+        "query_row": "window_end",
+        "record_graph": True,
+    }
+    shared = _build(cfg)
+    twins = _build({k: v for k, v in cfg.items() if k != "pair_mode"})
+    check = check_shared_noise(shared)
+    assert (check.n_checked, check.n_shared) == (12, 12)
+    assert check_shared_noise(twins).n_shared == 0
+    for ep, twin in zip(shared, twins, strict=True):
+        assert ep.metadata["pair_mode"] == "counterfactual"
+        assert twin.metadata["pair_mode"] == "interventional"
+        assert not ep.metadata["diverged"]
+        # Both modes draw the same regime graphs and the same intervention.
+        assert ep.metadata["graph"]["regime_edges"] == twin.metadata["graph"]["regime_edges"]
+        assert ep.intervention.times == twin.intervention.times
+        # The shared path is recorded, and only where one exists.
+        path = ep.metadata["graph"]["regime_path"]
+        assert len(path) == cfg["T"]
+        assert set(path) <= set(range(ep.metadata["n_regimes"]))
+        assert "regime_path" not in twin.metadata["graph"]
+        # With shared noise the gap between the arms is the effect, so the
+        # query is the most affected untreated variable at the window's end.
+        end = max(ep.intervention.times)
+        effect = (ep.x_int[end] - ep.x_obs[end]).abs()
+        effect[list(ep.intervention.targets)] = -1.0
+        assert int(ep.query_target[0]) == int(effect.argmax())
+        assert ep.metadata["query_time_idx"] == [end]
+    # numpy's global generator, which draws the paths of the twins, plays no part here.
+    spec = episode_specs(cfg, _SUITE_SEED, 1.0)[2]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        np.random.seed(123)
+        again = make_episode(spec)
+    assert torch.equal(again.x_obs, shared[2].x_obs)
+    assert torch.equal(again.x_int, shared[2].x_int)
 
 
 def test_retries_resample_zeroed_episodes():

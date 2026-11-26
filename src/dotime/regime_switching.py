@@ -5,6 +5,7 @@ can change over time according to a discrete Markov process.
 """
 
 import warnings
+from typing import Any
 
 import numpy as np
 import torch
@@ -78,6 +79,9 @@ class RegimeSwitchingTemporalSCM:
         self.num_regimes = len(dags)
         assert len(mechanisms) == self.num_regimes
         assert transition_matrix.shape == (self.num_regimes, self.num_regimes)
+        # Set by freeze_noise: the noise and the regime path that every later
+        # simulation reuses. None keeps the step-by-step draws of v1.0.0.
+        self._frozen: dict[str, Any] | None = None
 
         # Precompute parents for each regime
         self._regime_parents = []
@@ -111,6 +115,142 @@ class RegimeSwitchingTemporalSCM:
             lagged_parents[v] = parents_per_lag
 
         return lagged_parents
+
+    def freeze_noise(
+        self, total_T: int, generator: torch.Generator | None = None
+    ) -> dict[str, torch.Tensor]:
+        """Draw one noise realisation and one regime path and reuse them for every simulation.
+
+        Calling this before ``sample_observational`` and ``sample_interventional``
+        turns the pair into a shared-noise counterfactual: both arms see the same
+        exogenous noise and the same sequence of regimes, so they differ only
+        through the intervention. Without it the two calls draw their noise step
+        by step from their ``generator`` and their regime paths from numpy's
+        global generator. A hard or time-varying intervention then skips the noise
+        draw of the treated variable, which shifts every later draw of that arm,
+        so reseeding alone cannot align the arms.
+
+        The regime path is drawn from a private ``numpy`` generator that is seeded
+        from ``generator``. A frozen pair is therefore a function of ``generator``
+        alone and neither reads nor changes numpy's global state.
+
+        Parameters
+        ----------
+        total_T : int
+            Number of simulated steps including burn-in. Later ``sample_*`` calls
+            must use the same ``T + burn_in``. Unlike ``TemporalSCM``, which then
+            falls back to fresh noise, they raise on a mismatch, because a silent
+            fallback would turn a counterfactual pair into independent draws.
+        generator : torch.Generator, optional
+            RNG for both draws. ``None`` uses the global torch RNG.
+
+        Returns
+        -------
+        dict[str, torch.Tensor]
+            The frozen ``{variable: (total_T,) tensor}`` noise.
+
+        Raises
+        ------
+        ValueError
+            If ``total_T`` is not positive.
+        """
+        if total_T <= 0:
+            raise ValueError(f"total_T must be positive, got {total_T}")
+        noise = {
+            v: self.noise[v].sample_shape((total_T,), generator=generator)
+            for v in self.dags[0].topo_order
+        }
+        # A legacy RandomState, like the global generator it replaces, so that
+        # randint and choice keep the semantics of the unfrozen path.
+        path_seed = int(torch.randint(0, 2**31 - 1, (1,), generator=generator).item())
+        rng = np.random.RandomState(path_seed)
+        regimes = np.zeros(total_T, dtype=np.int32)
+        regime = rng.randint(0, self.num_regimes)
+        for t in range(total_T):
+            if t > 0:
+                regime = rng.choice(self.num_regimes, p=self.transition_matrix[regime])
+            regimes[t] = regime
+        self._frozen = {"noise": noise, "regimes": regimes}
+        return noise
+
+    def clear_noise(self) -> None:
+        """Drop a frozen realisation so later simulations draw fresh noise and regime paths."""
+        self._frozen = None
+
+    def frozen_regime_path(self, burn_in: int = 0) -> np.ndarray | None:
+        """Return the frozen regime of every step after the burn-in.
+
+        Parameters
+        ----------
+        burn_in : int
+            Number of leading steps to drop, the ``burn_in`` of the ``sample_*`` calls.
+
+        Returns
+        -------
+        np.ndarray or None
+            Copy of the regime indices, shape ``(total_T - burn_in,)``. ``None``
+            when nothing is frozen.
+        """
+        frozen = getattr(self, "_frozen", None)
+        return None if frozen is None else frozen["regimes"][burn_in:].copy()
+
+    def _frozen_for(self, total_T: int) -> dict[str, Any] | None:
+        """Return the frozen realisation for a simulation of ``total_T`` steps.
+
+        Parameters
+        ----------
+        total_T : int
+            Number of steps the caller is about to simulate, burn-in included.
+
+        Returns
+        -------
+        dict or None
+            The frozen noise and regime path, or ``None`` when nothing is frozen.
+
+        Raises
+        ------
+        ValueError
+            If a realisation is frozen for another number of steps.
+        """
+        # getattr, because an SCM unpickled from before this attribute existed has none.
+        frozen = getattr(self, "_frozen", None)
+        if frozen is not None and frozen["regimes"].shape[0] != total_T:
+            raise ValueError(
+                f"noise is frozen for {frozen['regimes'].shape[0]} steps, but the simulation "
+                f"has {total_T}. Call freeze_noise({total_T}) or clear_noise() first"
+            )
+        return frozen
+
+    def _noise_at(
+        self,
+        v: str,
+        t: int,
+        generator: torch.Generator | None,
+        frozen: dict[str, Any] | None,
+    ) -> torch.Tensor:
+        """Return the noise of variable ``v`` at step ``t`` as a one-element tensor.
+
+        Parameters
+        ----------
+        v : str
+            Variable name.
+        t : int
+            Step index in the simulated buffer, burn-in included.
+        generator : torch.Generator, optional
+            RNG of the step-by-step draw. Unused when ``frozen`` is given.
+        frozen : dict, optional
+            The realisation from :meth:`_frozen_for`.
+
+        Returns
+        -------
+        torch.Tensor
+            Shape ``(1,)``, on the SCM's device and dtype.
+        """
+        if frozen is None:
+            # Exactly the two statements of v1.0.0, so the default stream is unchanged.
+            eps = self.noise[v].sample(generator=generator)
+            return torch.tensor([eps], device=self.device, dtype=self.dtype)
+        return frozen["noise"][v][t].reshape(1).to(device=self.device, dtype=self.dtype)
 
     def _diverged(self, buffer: torch.Tensor) -> bool:
         """Decide whether a finished simulation counts as diverged.
@@ -151,6 +291,9 @@ class RegimeSwitchingTemporalSCM:
         """
         Sample observational data with regime switching.
 
+        After :meth:`freeze_noise` the noise and the regime path are the frozen
+        ones, and ``generator`` and numpy's global generator are not used.
+
         Parameters
         ----------
         return_regimes : bool
@@ -160,19 +303,27 @@ class RegimeSwitchingTemporalSCM:
         -------
         torch.Tensor or Tuple[torch.Tensor, np.ndarray]
             Time series (T, N), or (time series, regimes) if return_regimes=True.
+
+        Raises
+        ------
+        ValueError
+            If a realisation is frozen for another ``T + burn_in``.
         """
         total_T = T + burn_in
         N = len(self.dags[0].topo_order)
 
         buffer = torch.zeros(total_T, N, device=self.device, dtype=self.dtype)
         regimes = np.zeros(total_T, dtype=np.int32)
+        frozen = self._frozen_for(total_T)
 
         # Initialize regime
-        regime = np.random.randint(0, self.num_regimes)
+        regime = 0 if frozen is not None else np.random.randint(0, self.num_regimes)
 
         for t in range(total_T):
             # Sample regime transition
-            if t > 0:
+            if frozen is not None:
+                regime = int(frozen["regimes"][t])
+            elif t > 0:
                 regime = np.random.choice(self.num_regimes, p=self.transition_matrix[regime])
             regimes[t] = regime
 
@@ -198,8 +349,7 @@ class RegimeSwitchingTemporalSCM:
                         parent_values_k = {}
                     parent_values_lagged.append(parent_values_k)
 
-                eps = self.noise[v].sample(generator=generator)
-                eps_tensor = torch.tensor([eps], device=self.device, dtype=self.dtype)
+                eps_tensor = self._noise_at(v, t, generator, frozen)
 
                 value = mechs[v](parent_values_instant, parent_values_lagged, eps_tensor)
                 value = clip_values(value)
@@ -229,6 +379,11 @@ class RegimeSwitchingTemporalSCM:
         """
         Sample interventional data with regime switching.
 
+        After :meth:`freeze_noise` the noise and the regime path are the frozen
+        ones, and ``generator`` and numpy's global generator are not used. The
+        noise of a variable under a hard or time-varying intervention is then
+        left unread instead of undrawn, which keeps the arms aligned.
+
         Parameters
         ----------
         return_regimes : bool
@@ -238,17 +393,25 @@ class RegimeSwitchingTemporalSCM:
         -------
         torch.Tensor or Tuple[torch.Tensor, np.ndarray]
             Time series (T, N), or (time series, regimes) if return_regimes=True.
+
+        Raises
+        ------
+        ValueError
+            If a realisation is frozen for another ``T + burn_in``.
         """
         total_T = T + burn_in
         N = len(self.dags[0].topo_order)
 
         buffer = torch.zeros(total_T, N, device=self.device, dtype=self.dtype)
         regimes = np.zeros(total_T, dtype=np.int32)
+        frozen = self._frozen_for(total_T)
 
-        regime = np.random.randint(0, self.num_regimes)
+        regime = 0 if frozen is not None else np.random.randint(0, self.num_regimes)
 
         for t in range(total_T):
-            if t > 0:
+            if frozen is not None:
+                regime = int(frozen["regimes"][t])
+            elif t > 0:
                 regime = np.random.choice(self.num_regimes, p=self.transition_matrix[regime])
             regimes[t] = regime
 
@@ -281,8 +444,7 @@ class RegimeSwitchingTemporalSCM:
                                 parent_values_k = {}
                             parent_values_lagged.append(parent_values_k)
 
-                        eps = self.noise[v].sample(generator=generator)
-                        eps_tensor = torch.tensor([eps], device=self.device, dtype=self.dtype)
+                        eps_tensor = self._noise_at(v, t, generator, frozen)
 
                         value = mechs[v](parent_values_instant, parent_values_lagged, eps_tensor)
                         value = value + intervention.values
@@ -304,8 +466,7 @@ class RegimeSwitchingTemporalSCM:
                             parent_values_k = {}
                         parent_values_lagged.append(parent_values_k)
 
-                    eps = self.noise[v].sample(generator=generator)
-                    eps_tensor = torch.tensor([eps], device=self.device, dtype=self.dtype)
+                    eps_tensor = self._noise_at(v, t, generator, frozen)
 
                     value = mechs[v](parent_values_instant, parent_values_lagged, eps_tensor)
                     value = clip_values(value)
