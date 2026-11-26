@@ -29,6 +29,7 @@ _OPT_IN_SPEC_KEYS = (
     "query_row",
     "schedules",
     "record_obs_times",
+    "amplitude_limit",
 )
 
 
@@ -77,6 +78,20 @@ def arms_zeroed(*arms) -> bool:
         ``True`` if at least one arm has no nonzero entry.
     """
     return any(float(arm.abs().max()) == 0.0 for arm in arms)
+
+
+def exceeds_amplitude(limit: float | None, *arms) -> bool:
+    """Whether any value of a generated pair exceeds an amplitude limit.
+
+    Args:
+        limit: The suite's ``amplitude_limit``, or ``None`` for no limit.
+        *arms: The episode's trajectory tensors, e.g. ``(x_obs, x_int)``.
+
+    Returns:
+        ``True`` if a limit is set and the largest magnitude of an arm is above
+        it. ``False`` without a limit.
+    """
+    return limit is not None and any(float(arm.abs().max()) > limit for arm in arms)
 
 
 def _with_graph(spec: dict, ep, source, columns=None):
@@ -474,6 +489,10 @@ def episode_specs(cfg: dict, suite_seed: int, scale: float) -> list[dict]:
                 )
     else:
         raise ValueError(f"unknown generator {gen!r}")
+    if "amplitude_limit" in cfg and gen != "regime":
+        # The key is forwarded into the specs of any suite, and only the
+        # configured regime builder acts on it.
+        raise ValueError("amplitude_limit only applies to generator: regime")
     return _expand_observation_cells(cfg, _forward_opt_in(cfg, specs))
 
 
@@ -513,7 +532,7 @@ _EXTRA_PRIOR_CONFIG_KEYS = ("N_min", "hardening", "regime_canonical_weights")
 # suite to the "regime_configured" spec kind, and so does pair_mode:
 # counterfactual. Without them the specs and the episodes stay those of the
 # released dot-RegimeSwitch-v1 1.0.0.
-_REGIME_PRIOR_KEYS = ("prior_config", "query_row")
+_REGIME_PRIOR_KEYS = ("prior_config", "query_row", "amplitude_limit")
 # Options that only the generic builder reads. episode_specs forwards them into
 # the specs of any suite, so a regime suite that set one would have it ignored.
 _GENERIC_ONLY_KEYS = ("chain_prob", "regime_switching_prob", "latent", "tier_n_edges")
@@ -676,17 +695,17 @@ def _regime_spec_kind(cfg: dict) -> str:
         cfg: The config of a suite with ``generator: regime``.
 
     Returns:
-        ``"regime_configured"`` when ``cfg`` sets ``prior_config`` or
-        ``query_row``, or ``pair_mode: counterfactual``, which
-        :func:`make_episode` builds with
+        ``"regime_configured"`` when ``cfg`` sets ``prior_config``,
+        ``query_row`` or ``amplitude_limit``, or ``pair_mode: counterfactual``,
+        which :func:`make_episode` builds with
         :func:`_make_configured_regime_episode`. Otherwise ``"regime"``, the
         legacy path of the released dot-RegimeSwitch-v1 1.0.0.
 
     Raises:
         ValueError: If ``cfg`` sets an option that only generic suites read, if
             ``pair_mode`` is unknown, if ``prior_config`` is not a mapping or
-            sets a key the prior does not read, or if ``query_row`` is not
-            ``"window_end"``.
+            sets a key the prior does not read, if ``query_row`` is not
+            ``"window_end"``, or if ``amplitude_limit`` is not a positive number.
     """
     ignored = [k for k in _GENERIC_ONLY_KEYS if k in cfg]
     if ignored:
@@ -700,6 +719,10 @@ def _regime_spec_kind(cfg: dict) -> str:
     _check_prior_config(cfg.get("prior_config", {}))
     if cfg.get("query_row", "window_end") not in _QUERY_ROWS:
         raise ValueError(f"query_row must be one of {_QUERY_ROWS}, got {cfg['query_row']!r}")
+    limit = cfg.get("amplitude_limit", 1.0)
+    # A bool is an int in Python, so it is refused instead of being read as 0 or 1.
+    if isinstance(limit, bool) or not isinstance(limit, (int, float)) or not limit > 0:
+        raise ValueError(f"amplitude_limit must be a positive number, got {limit!r}")
     return "regime_configured"
 
 
@@ -708,7 +731,11 @@ def _make_configured_regime_episode(spec: dict):
 
     The retry rule is the legacy regime branch's: attempt ``a > 0`` reseeds with
     ``seed * 100003 + a``, and an episode is resampled while either arm is
-    zeroed. Unlike the legacy branch, every attempt also seeds numpy's global
+    zeroed. With ``amplitude_limit`` it is also resampled while a value of
+    either arm exceeds the limit in magnitude. Each regime is stabilised on its
+    own, which does not bound a system that switches between regimes, so a few
+    trajectories grow far beyond the others without reaching the divergence
+    threshold. Unlike the legacy branch, every attempt also seeds numpy's global
     generator, which draws the regime path of each arm of an interventional
     pair. With ``pair_mode: counterfactual`` both arms share one noise
     realisation and one regime path, which the prior draws from its own
@@ -722,8 +749,10 @@ def _make_configured_regime_episode(spec: dict):
     Returns:
         The :class:`~dotime.benchmarks.Episode`, labelled ``regime_<d>``. Its
         metadata holds ``tier``, ``n_regimes``, ``diverged``, ``pair_mode`` and,
-        when the suite sets it, ``query_row``. A counterfactual episode with
-        ``record_graph`` also records the shared regime of every step as
+        when the suite sets them, ``query_row`` and ``amplitude_limit`` with
+        ``over_amplitude_limit``, which is true only if the last attempt still
+        exceeds the limit. A counterfactual episode with ``record_graph`` also
+        records the shared regime of every step as
         ``metadata["graph"]["regime_path"]``.
 
     Raises:
@@ -740,6 +769,7 @@ def _make_configured_regime_episode(spec: dict):
     seed, t_len, d = spec["seed"], spec["T"], spec["num_regimes"]
     retries = int(spec.get("stability_retries", 0))
     pair_mode = spec.get("pair_mode", "interventional")
+    limit = spec.get("amplitude_limit")
     for attempt in range(retries + 1):
         s = seed if attempt == 0 else seed * 100003 + attempt
         _torch.manual_seed(s)
@@ -756,7 +786,8 @@ def _make_configured_regime_episode(spec: dict):
         x_obs, x_int, iv, scm = prior.generate_regime_pair(
             T=t_len, num_regimes=d, pair_mode=pair_mode
         )
-        if attempt == retries or not arms_zeroed(x_obs, x_int):
+        failed = arms_zeroed(x_obs, x_int) or exceeds_amplitude(limit, x_obs, x_int)
+        if attempt == retries or not failed:
             break
     metadata: dict = {
         "tier": spec["tier"],
@@ -764,6 +795,9 @@ def _make_configured_regime_episode(spec: dict):
         "diverged": arms_zeroed(x_obs, x_int),
         "pair_mode": pair_mode,
     }
+    if limit is not None:
+        metadata["amplitude_limit"] = float(limit)
+        metadata["over_amplitude_limit"] = exceeds_amplitude(limit, x_obs, x_int)
     query_row = None
     if spec.get("query_row") == "window_end":
         # Stabilised dynamics are contractive, so an effect has decayed by the

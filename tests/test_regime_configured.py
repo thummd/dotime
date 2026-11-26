@@ -107,6 +107,12 @@ def test_configured_regime_specs_forward_the_options():
     shared = episode_specs({**_SMALL, "pair_mode": "counterfactual"}, 11, 1.0)
     assert {s["kind"] for s in shared} == {"regime_configured"}
     assert all(s["pair_mode"] == "counterfactual" for s in shared)
+    limited = episode_specs({**_SMALL, "amplitude_limit": 50}, 11, 1.0)
+    assert {s["kind"] for s in limited} == {"regime_configured"}
+    assert all(s["amplitude_limit"] == 50 for s in limited)
+    # Only the regime builder acts on the limit, so another generator must not carry it.
+    with pytest.raises(ValueError, match="amplitude_limit"):
+        episode_specs({"generator": "generic", "n_episodes": 2, "amplitude_limit": 50}, 11, 1.0)
 
 
 @pytest.mark.parametrize(
@@ -116,6 +122,9 @@ def test_configured_regime_specs_forward_the_options():
         {"prior_config": [("N_max", 5)]},
         {"query_row": "last"},
         {"pair_mode": "shared"},
+        {"amplitude_limit": 0},
+        {"amplitude_limit": True},
+        {"amplitude_limit": "50"},
         {"chain_prob": 0.0},
         {"regime_switching_prob": 1.0},
         {"latent": "drop"},
@@ -258,6 +267,45 @@ def test_counterfactual_regime_episodes_share_noise_and_regime_path():
         again = make_episode(spec)
     assert torch.equal(again.x_obs, shared[2].x_obs)
     assert torch.equal(again.x_int, shared[2].x_int)
+
+
+def test_amplitude_limit_resamples_large_episodes():
+    """An episode with a value above ``amplitude_limit`` is resampled like a diverged one."""
+
+    def peak(ep) -> float:
+        """Largest magnitude in either arm of an episode.
+
+        Args:
+            ep: The episode.
+
+        Returns:
+            The peak absolute value.
+        """
+        return max(float(ep.x_obs.abs().max()), float(ep.x_int.abs().max()))
+
+    cfg = {
+        **_SMALL,
+        "T": 160,
+        "prior_config": {**_REPAIRED, "N_max": 5},
+        "pair_mode": "counterfactual",
+    }
+    free = _build(cfg)
+    peaks = [peak(ep) for ep in free]
+    # The median of the first attempts, so that half of them exceed the limit.
+    limit = sorted(peaks)[len(peaks) // 2]
+    flagged = _build({**cfg, "amplitude_limit": limit})
+    resampled = _build({**cfg, "amplitude_limit": limit, "stability_retries": 40})
+    assert sum(p > limit for p in peaks) >= 4
+    assert "amplitude_limit" not in free[0].metadata
+    for first, kept, redrawn in zip(free, flagged, resampled, strict=True):
+        assert kept.metadata["amplitude_limit"] == redrawn.metadata["amplitude_limit"] == limit
+        # Without retries the first attempt stays and is flagged.
+        assert torch.equal(first.x_int, kept.x_int)
+        assert kept.metadata["over_amplitude_limit"] is (peak(first) > limit)
+        # With retries no episode exceeds the limit, and the others keep their first attempt.
+        assert peak(redrawn) <= limit
+        assert redrawn.metadata["over_amplitude_limit"] is False
+        assert torch.equal(first.x_int, redrawn.x_int) is (peak(first) <= limit)
 
 
 def test_retries_resample_zeroed_episodes():
