@@ -276,8 +276,8 @@ _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
     "dot-RegimeSwitch-v1": SuiteMetadata(
         name="dot-RegimeSwitch-v1",
         version="1.1.0",
-        hf_repo_id="",  # set with the 1.1.0 record id when the version is minted
-        zenodo_record_id="LOCAL",  # 1.1.0 is built locally until it is minted
+        hf_repo_id="thummd/dot-RegimeSwitch-v1",
+        zenodo_record_id="24570950",
         doi="10.5281/zenodo.20846073",  # concept DOI (resolves to latest version)
         description=(
             "Regime-switching SCMs (ITS generalization) with 2, 3 or 5 regimes and exact "

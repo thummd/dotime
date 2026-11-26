@@ -29,9 +29,7 @@ RELEASED = {
     "release_config_wide.yaml": "9caa04a69e4c1f3b",  # dot-Wide-v1, 23095148
     "release_config_observed_v1.yaml": "f497c6cfe3d0ce10",  # dot-Observed-v1, 23095117
     "release_config_continuous_irregular.yaml": "b9cbbb1ef0b8d1dc",  # 23095097
-    # dot-RegimeSwitch-v1 1.1.0: the hash of the release build made with package
-    # 0.3.0. Its Zenodo record id follows the mint.
-    "release_config_regime_v1_1.yaml": "e39f9a5a3d61643a",
+    "release_config_regime_v1_1.yaml": "e39f9a5a3d61643a",  # dot-RegimeSwitch-v1 1.1.0, 24570950
 }
 
 
