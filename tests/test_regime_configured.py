@@ -285,13 +285,16 @@ def test_release_config_header_quotes_its_measurements():
     assert (summary["n_episodes"], summary["n_contrast"]) == (600, 600)
     assert summary["n_diverged"] == 0
     assert summary["n_reads_parents"] == 600
-    assert "In a pilot of 600 episodes" in header
     median = summary["steps_after_window_median"]
-    assert f"window closes a median {median:.1f} steps before T-1" in header
+    assert (
+        f"In a pilot of 600 episodes the window closes a median {median:.1f} steps before T-1"
+        in header
+    )
     at_last = 100 * pooled["query_at_last_step_share"]
     at_end = 100 * pooled["query_at_window_end_share"]
     assert (
-        f"{at_last:.1f}% of the episodes at T-1 and in {at_end:.1f}% at the window's end" in header
+        f"least 0.1 in {at_last:.1f}% of the episodes at T-1 and in {at_end:.1f}% at the window's end"
+        in header
     )
     most = 100 * pooled["query_is_most_affected_share"]
     assert f"most affected variable in {most:.1f}% of the episodes" in header

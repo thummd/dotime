@@ -20,12 +20,12 @@
 #                                 the suite holds no diverged episode
 #   query_row: window_end      -> the query sits at the last step of the
 #                                 intervention window, not at T-1. The
-#                                 stabilised dynamics are contractive and the
-#                                 window closes a median 30.5 steps before T-1.
-#                                 In a pilot of 600 episodes the intervention
-#                                 moves the queried variable by at least 0.1 in
-#                                 6.0% of the episodes at T-1 and in 47.7% at
-#                                 the window's end
+#                                 stabilised dynamics are contractive. In a
+#                                 pilot of 600 episodes the window closes a
+#                                 median 30.5 steps before T-1, and the
+#                                 intervention moves the queried variable by at
+#                                 least 0.1 in 6.0% of the episodes at T-1 and
+#                                 in 47.7% at the window's end
 #                                 (results/reference/regime_v1_1/design_pilot.json)
 #
 # The build seeds numpy's global generator per episode, which draws the regime
