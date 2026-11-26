@@ -440,6 +440,116 @@ class BackDoorOLSBaseline:
         return torch.tensor(preds, dtype=torch.float32)
 
 
+@register("LaggedBackDoorOLS")
+class LaggedBackDoorOLSBaseline(BackDoorOLSBaseline):
+    """Back-door adjustment with the lagged adjustment set of the unrolled graph.
+
+    :class:`BackDoorOLSBaseline` conditions on the contemporaneous back-door set
+    ``X_t`` and on ``Y_{t-1}``. Every variable of the released suites carries an
+    autoregressive self-edge and the confounder drives ``Y`` at lag one as well,
+    so the unrolled graph contains ``A_t <- A_{t-1} <- X_{t-1} -> Y_t``, a
+    back-door path that ``X_t`` leaves open. The detection-power study of
+    October 2026 recorded the consequence as its prediction E3: on
+    ``observed_confounder``, where ``A`` has no effect on ``Y``, BackDoorOLS
+    moved its prediction with the do-value in 0.479 of the episodes. This
+    estimator adds the first ``lag`` lags of the treatment, of the adjustment
+    set and of the outcome to the design::
+
+        Y_t ~ 1 + A_t + X_t + sum_{k=1..lag} (A_{t-k} + X_{t-k} + Y_{t-k})
+
+    which blocks every back-door path of a TSCM of Markov order ``lag`` whose
+    confounders are observed. The fit on the pre-intervention rows, the plug-in
+    of the do-value into ``A_t``, the average over the observed rows of every
+    other regressor, the applicability rule and the mean fallback are the
+    parent's. ``lag = 1`` is the order of the released identification suites.
+    ``lag = 3`` is registered as ``LaggedBackDoorOLS-L3`` for the comparison
+    with do-SVAR, which conditions on three lags.
+    """
+
+    name = "LaggedBackDoorOLS"
+
+    def __init__(self, lag: int = 1) -> None:
+        """Set the number of lags in the adjustment set.
+
+        Args:
+            lag: Lags of the treatment, the adjustment set and the outcome to
+                condition on.
+
+        Raises:
+            ValueError: If ``lag`` is smaller than one.
+        """
+        if int(lag) < 1:
+            raise ValueError(f"LaggedBackDoorOLS needs lag >= 1, got {lag}")
+        self.lag = int(lag)
+        self.name = "LaggedBackDoorOLS" if self.lag == 1 else f"LaggedBackDoorOLS-L{self.lag}"
+
+    def predict(self, episode: Episode) -> torch.Tensor:
+        """Predict each query's interventional level by lagged back-door adjustment.
+
+        Args:
+            episode: Episode to predict. Back-door-family episodes must use the
+                canonical column layout of the released suites.
+
+        Returns:
+            1-D float tensor with one prediction per query.
+
+        Raises:
+            ValueError: If a back-door-family episode does not match its
+                structure's canonical column layout.
+        """
+        x = episode.x_obs.detach().cpu().numpy()
+        t_len, n = x.shape
+        a = episode.intervention.targets[0] if episode.intervention.targets else 0
+        onset = min(episode.intervention.times) if episode.intervention.times else t_len
+        lag = self.lag
+        preds = []
+        for q in range(episode.query_target.numel()):
+            y = int(episode.query_target[q])
+            fit_end = max(2, min(onset, t_len))
+            if episode.structure is None or not self._adjusts(episode.structure):
+                preds.append(float(x[:fit_end, y].mean()))
+                continue
+            adj = self._adjustment_set(episode.structure, n, a, y)
+            # One fitted row per t in [lag, fit_end). With fewer rows than
+            # coefficients the fit would rest on the ridge term alone, so such
+            # an episode takes the parent's fallback instead of a guess.
+            n_coef = (lag + 1) * (2 + len(adj)) + 1
+            if fit_end - lag < n_coef + 1:
+                preds.append(float(x[:fit_end, y].mean()))
+                continue
+            rows = np.arange(lag, fit_end)
+            cols = [a, *adj, y]
+            a_t = x[rows, a]
+            x_t = x[rows][:, adj]
+            lagged = np.column_stack([x[rows - k][:, cols] for k in range(1, lag + 1)])
+            design = np.column_stack([a_t, x_t, lagged])
+            coef = _ols_fit(design, x[rows, y])
+            a_val = (
+                float(episode.intervention.values)
+                if isinstance(episode.intervention.values, (int, float))
+                else float(a_t.mean())
+            )
+            # The do-value replaces A_t only. An intervention at t changes
+            # nothing before t, so the lagged regressors keep their observed
+            # values, and the row average is the g-formula estimate
+            # E_H[ E[Y_t | A_t = v, H] ] over the observed histories H.
+            design_do = design.copy()
+            design_do[:, 0] = a_val
+            yhat = coef[0] + design_do @ coef[1:]
+            preds.append(float(np.mean(yhat)))
+        return torch.tensor(preds, dtype=torch.float32)
+
+
+@register("LaggedBackDoorOLS-L3")
+def _lagged_back_door_l3() -> LaggedBackDoorOLSBaseline:
+    """The three-lag variant of :class:`LaggedBackDoorOLSBaseline`.
+
+    Returns:
+        A ``LaggedBackDoorOLSBaseline`` with ``lag = 3``, the order do-SVAR uses.
+    """
+    return LaggedBackDoorOLSBaseline(lag=3)
+
+
 @register("IV2SLS")
 class IV2SLSBaseline:
     """Two-stage least squares for the instrumental-variable structure.

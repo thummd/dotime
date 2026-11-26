@@ -2165,7 +2165,12 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument(
         "--suite-dir", type=Path, default=None, help="local build of an unregistered version"
     )
-    ap.add_argument("--estimators", nargs="+", default=list(est.ESTIMATOR_ORDER))
+    ap.add_argument(
+        "--estimators",
+        nargs="+",
+        default=list(est.DEFAULT_ESTIMATORS),
+        help="rows to score; the registered default leaves out est.EXTENSIONS",
+    )
     ap.add_argument("--compare-to", type=Path, default=None, help="1.1.0 table for gate 3")
     ap.add_argument(
         "--limit-per-structure",

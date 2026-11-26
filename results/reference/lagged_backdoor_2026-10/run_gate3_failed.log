@@ -1,0 +1,72 @@
+[dot-Identifiability-v1 1.2.0] 12150 episodes loaded in 6.8s
+[target QA] pooled                   y_obs_level n=12150 nonfinite=0 nonzero_frac=1.0000 mean=0.1056 var=0.3592 abs_max=8.4439
+[target QA] pooled                   y_int_level n=12150 nonfinite=0 nonzero_frac=1.0000 mean=0.1332 var=0.5557 abs_max=9.1882
+[target QA] pooled                   effect      n=12150 nonfinite=0 nonzero_frac=0.5886 mean=0.0276 var=0.2414 abs_max=7.3534
+[target QA] pooled                   2700 of 12150 queries cannot carry an effect by structure (exempt from the effect check)
+[target QA] pooled                   effect over the 9450 queries that can carry one: nonzero_frac=0.7568
+[target QA] back_door                y_obs_level n=1350 nonfinite=0 nonzero_frac=1.0000 mean=0.1250 var=0.4558 abs_max=7.0170
+[target QA] back_door                y_int_level n=1350 nonfinite=0 nonzero_frac=1.0000 mean=0.1657 var=1.0138 abs_max=9.1882
+[target QA] back_door                effect      n=1350 nonfinite=0 nonzero_frac=0.8081 mean=0.0407 var=0.5866 abs_max=7.3534
+[target QA] back_door                effect over the 1350 queries that can carry one: nonzero_frac=0.8081
+[target QA] bi_variate               y_obs_level n=1350 nonfinite=0 nonzero_frac=1.0000 mean=0.0821 var=0.3752 abs_max=5.8050
+[target QA] bi_variate               y_int_level n=1350 nonfinite=0 nonzero_frac=1.0000 mean=0.1458 var=0.7761 abs_max=6.1864
+[target QA] bi_variate               effect      n=1350 nonfinite=0 nonzero_frac=0.8489 mean=0.0637 var=0.5024 abs_max=6.0437
+[target QA] bi_variate               effect over the 1350 queries that can carry one: nonzero_frac=0.8489
+[target QA] bow_graph                y_obs_level n=1350 nonfinite=0 nonzero_frac=1.0000 mean=0.1075 var=0.4046 abs_max=8.4439
+[target QA] bow_graph                y_int_level n=1350 nonfinite=0 nonzero_frac=1.0000 mean=0.1466 var=0.6873 abs_max=8.4415
+[target QA] bow_graph                effect      n=1350 nonfinite=0 nonzero_frac=0.8304 mean=0.0391 var=0.3817 abs_max=3.9247
+[target QA] bow_graph                effect over the 1350 queries that can carry one: nonzero_frac=0.8304
+[target QA] confounder_mediator      y_obs_level n=1350 nonfinite=0 nonzero_frac=1.0000 mean=0.1120 var=0.3514 abs_max=5.9493
+[target QA] confounder_mediator      y_int_level n=1350 nonfinite=0 nonzero_frac=1.0000 mean=0.1258 var=0.4209 abs_max=7.1062
+[target QA] confounder_mediator      effect      n=1350 nonfinite=0 nonzero_frac=0.6600 mean=0.0138 var=0.0808 abs_max=6.5998
+[target QA] confounder_mediator      effect over the 1350 queries that can carry one: nonzero_frac=0.6600
+[target QA] front_door               y_obs_level n=1350 nonfinite=0 nonzero_frac=1.0000 mean=0.1327 var=0.3661 abs_max=4.6168
+[target QA] front_door               y_int_level n=1350 nonfinite=0 nonzero_frac=1.0000 mean=0.1451 var=0.3944 abs_max=4.5816
+[target QA] front_door               effect      n=1350 nonfinite=0 nonzero_frac=0.6652 mean=0.0124 var=0.0616 abs_max=2.4162
+[target QA] front_door               effect over the 1350 queries that can carry one: nonzero_frac=0.6652
+[target QA] instrumental_variable    y_obs_level n=1350 nonfinite=0 nonzero_frac=1.0000 mean=0.1234 var=0.3917 abs_max=5.2349
+[target QA] instrumental_variable    y_int_level n=1350 nonfinite=0 nonzero_frac=1.0000 mean=0.1950 var=0.7693 abs_max=5.3189
+[target QA] instrumental_variable    effect      n=1350 nonfinite=0 nonzero_frac=0.8437 mean=0.0715 var=0.4935 abs_max=5.3988
+[target QA] instrumental_variable    effect over the 1350 queries that can carry one: nonzero_frac=0.8437
+[target QA] mediator                 y_obs_level n=1350 nonfinite=0 nonzero_frac=1.0000 mean=0.0928 var=0.3239 abs_max=6.6478
+[target QA] mediator                 y_int_level n=1350 nonfinite=0 nonzero_frac=1.0000 mean=0.1002 var=0.3677 abs_max=6.6484
+[target QA] mediator                 effect      n=1350 nonfinite=0 nonzero_frac=0.6415 mean=0.0074 var=0.0604 abs_max=3.0966
+[target QA] mediator                 effect over the 1350 queries that can carry one: nonzero_frac=0.6415
+[target QA] observed_confounder      y_obs_level n=1350 nonfinite=0 nonzero_frac=1.0000 mean=0.0884 var=0.3138 abs_max=7.3722
+[target QA] observed_confounder      y_int_level n=1350 nonfinite=0 nonzero_frac=1.0000 mean=0.0884 var=0.3138 abs_max=7.3722
+[target QA] observed_confounder      effect      n=1350 nonfinite=0 nonzero_frac=0.0000 mean=0.0000 var=0.0000 abs_max=0.0000
+[target QA] observed_confounder      1350 of 1350 queries cannot carry an effect by structure (exempt from the effect check)
+[target QA] observed_confounder      effect over the 0 queries that can carry one: nonzero_frac=n/a
+[target QA] unobserved_confounder    y_obs_level n=1350 nonfinite=0 nonzero_frac=1.0000 mean=0.0865 var=0.2476 abs_max=3.6601
+[target QA] unobserved_confounder    y_int_level n=1350 nonfinite=0 nonzero_frac=1.0000 mean=0.0865 var=0.2476 abs_max=3.6601
+[target QA] unobserved_confounder    effect      n=1350 nonfinite=0 nonzero_frac=0.0000 mean=0.0000 var=0.0000 abs_max=0.0000
+[target QA] unobserved_confounder    1350 of 1350 queries cannot carry an effect by structure (exempt from the effect check)
+[target QA] unobserved_confounder    effect over the 0 queries that can carry one: nonzero_frac=n/a
+[target QA] passed (dir_target=effect, effect checked=True, 9 of 9 groups asserted)
+[structure QA] bi_variate             n=1350 y_obs_level:nz=1.000,mean=0.082,var=0.375 y_int_level:nz=1.000,mean=0.146,var=0.776 effect:nz=0.849,mean=0.064,var=0.502 zero_effect=0.151 offsets=[0]
+[structure QA] back_door              n=1350 y_obs_level:nz=1.000,mean=0.125,var=0.456 y_int_level:nz=1.000,mean=0.166,var=1.014 effect:nz=0.808,mean=0.041,var=0.587 zero_effect=0.192 offsets=[0]
+[structure QA] observed_confounder    n=1350 y_obs_level:nz=1.000,mean=0.088,var=0.314 y_int_level:nz=1.000,mean=0.088,var=0.314 effect:nz=0.000,mean=0.000,var=0.000 zero_effect=1.000 offsets=[0]
+[structure QA] mediator               n=1350 y_obs_level:nz=1.000,mean=0.093,var=0.324 y_int_level:nz=1.000,mean=0.100,var=0.368 effect:nz=0.641,mean=0.007,var=0.060 zero_effect=0.359 offsets=[1]
+[structure QA] front_door             n=1350 y_obs_level:nz=1.000,mean=0.133,var=0.366 y_int_level:nz=1.000,mean=0.145,var=0.394 effect:nz=0.665,mean=0.012,var=0.062 zero_effect=0.335 offsets=[0]
+[structure QA] confounder_mediator    n=1350 y_obs_level:nz=1.000,mean=0.112,var=0.351 y_int_level:nz=1.000,mean=0.126,var=0.421 effect:nz=0.660,mean=0.014,var=0.081 zero_effect=0.340 offsets=[0]
+[structure QA] instrumental_variable  n=1350 y_obs_level:nz=1.000,mean=0.123,var=0.392 y_int_level:nz=1.000,mean=0.195,var=0.769 effect:nz=0.844,mean=0.072,var=0.493 zero_effect=0.156 offsets=[0]
+[structure QA] unobserved_confounder  n=1350 y_obs_level:nz=1.000,mean=0.086,var=0.248 y_int_level:nz=1.000,mean=0.086,var=0.248 effect:nz=0.000,mean=0.000,var=0.000 zero_effect=1.000 offsets=[0]
+[structure QA] bow_graph              n=1350 y_obs_level:nz=1.000,mean=0.107,var=0.405 y_int_level:nz=1.000,mean=0.147,var=0.687 effect:nz=0.830,mean=0.039,var=0.382 zero_effect=0.170 offsets=[0]
+predicted 13 estimators in 20.8s with 8 workers
+[pre-registered] P1: confirmed
+[pre-registered] P2: confirmed
+[pre-registered] P3: not confirmed
+[pre-registered] P4: confirmed
+[pre-registered] P5: confirmed
+[pre-registered] E1: confirmed
+[pre-registered] E2: confirmed
+[pre-registered] E3: not confirmed
+[pre-registered] S1: confirmed
+[pre-registered] O1: confirmed
+wrote /home/dennis/repos/dotime-phase2/results/reference/lagged_backdoor_2026-10/ident_v1_2_gate.json
+Traceback (most recent call last):
+  File "/home/dennis/repos/dotime-phase2/results/reference/detection_power_2026-10/scripts/detection_power.py", line 2309, in <module>
+    main()
+  File "/home/dennis/repos/dotime-phase2/results/reference/detection_power_2026-10/scripts/detection_power.py", line 2285, in main
+    raise AssertionError(f"gate {gate['gate']} failed; see {out_dir / f'{tag}_gate.json'}")
+AssertionError: gate 3 failed; see /home/dennis/repos/dotime-phase2/results/reference/lagged_backdoor_2026-10/ident_v1_2_gate.json

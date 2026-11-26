@@ -126,3 +126,100 @@ def test_back_door_columns_leave_global_rng_untouched() -> None:
     assert torch.equal(torch_state, torch.get_rng_state())
     assert np.array_equal(np_keys, keys_after)
     assert np_pos == pos_after
+
+
+# --------------------------------------------------------------------------- #
+# LaggedBackDoorOLS: the lag-one adjustment set of the unrolled graph
+# --------------------------------------------------------------------------- #
+
+
+def _order_one_scm(effect: float, x_inst: float, seed: int = 0, t_len: int = 4000) -> np.ndarray:
+    """Linear order-one SCM in the canonical columns ``[A, X, Y]`` of the back-door family.
+
+    ``X`` is autoregressive, ``A`` depends on ``X_t`` and on ``A_{t-1}``, and
+    ``Y`` depends on ``A_t`` (by ``effect``), ``X_t`` (by ``x_inst``),
+    ``X_{t-1}`` and ``Y_{t-1}``. With ``effect = x_inst = 0`` it is the
+    ``observed_confounder`` structure, otherwise ``back_door``. Either way the
+    unrolled graph holds the path ``A_t <- A_{t-1} <- X_{t-1} -> Y_t``, which
+    the contemporaneous set ``{X_t, Y_{t-1}}`` leaves open.
+
+    Args:
+        effect: Coefficient of ``A_t`` in ``Y_t``.
+        x_inst: Coefficient of ``X_t`` in ``Y_t``.
+        seed: Seed of the noise.
+        t_len: Number of rows.
+
+    Returns:
+        Trajectory of shape ``(t_len, 3)``.
+    """
+    rng = np.random.default_rng(seed)
+    x = np.zeros((t_len, 3))
+    for t in range(1, t_len):
+        x_t = 0.5 * x[t - 1, 1] + rng.normal()
+        a_t = 0.8 * x_t + 0.6 * x[t - 1, 0] + rng.normal()
+        y_t = effect * a_t + x_inst * x_t + 0.7 * x[t - 1, 1] + 0.5 * x[t - 1, 2] + 0.3 * rng.normal()
+        x[t] = (a_t, x_t, y_t)
+    return x
+
+
+def _unit_step(name: str, x: np.ndarray, structure: str) -> float:
+    """The change of a baseline's prediction over a unit step of the do-value.
+
+    Args:
+        name: A registered baseline.
+        x: Trajectory in canonical columns.
+        structure: Structure label of the episode.
+
+    Returns:
+        ``pred(do 1) - pred(do 0)`` queried at the last row, i.e. the fitted
+        treatment coefficient of an estimator that is affine in the do-value.
+    """
+    model = baselines.get(name)
+    onset = x.shape[0] - 1
+    lo = model.predict(_episode(x, structure, onset, 0.0))
+    hi = model.predict(_episode(x, structure, onset, 1.0))
+    return float(hi - lo)
+
+
+def test_lagged_back_door_closes_the_lag_one_path() -> None:
+    """On the null structure the contemporaneous set reports an effect and the lagged set does not."""
+    x = _order_one_scm(effect=0.0, x_inst=0.0)
+    assert abs(_unit_step("BackDoorOLS", x, "observed_confounder")) > 0.1
+    assert abs(_unit_step("LaggedBackDoorOLS", x, "observed_confounder")) < 0.05
+    assert abs(_unit_step("LaggedBackDoorOLS-L3", x, "observed_confounder")) < 0.05
+
+
+def test_lagged_back_door_recovers_the_effect_under_autoregression() -> None:
+    """With a unit effect the lagged set recovers it, the contemporaneous set overshoots."""
+    x = _order_one_scm(effect=1.0, x_inst=0.5)
+    assert _unit_step("LaggedBackDoorOLS", x, "back_door") == pytest.approx(1.0, abs=0.05)
+    assert _unit_step("BackDoorOLS", x, "back_door") - 1.0 > 0.03
+
+
+def test_lagged_back_door_declines_like_its_parent() -> None:
+    """Outside the back-door family both variants predict the pre-onset mean, whatever the do-value."""
+    x = np.random.default_rng(1).normal(size=(300, 4))  # front_door columns [A, U, M, Y]
+    for name in ("LaggedBackDoorOLS", "LaggedBackDoorOLS-L3"):
+        model = baselines.get(name)
+        lo = float(model.predict(_episode(x, "front_door", 250, 0.0)))
+        hi = float(model.predict(_episode(x, "front_door", 250, 1.0)))
+        assert lo == hi
+        assert lo == pytest.approx(x[:250, 3].mean(), abs=1e-4)
+
+
+def test_lagged_back_door_falls_back_on_short_windows() -> None:
+    """With fewer rows than coefficients the estimator predicts the mean instead of a ridge guess."""
+    x = _order_one_scm(effect=1.0, x_inst=0.5, t_len=12)
+    # Three lags on [A, X, Y] need 13 coefficients, and an onset at 10 leaves 7 rows.
+    pred = baselines.get("LaggedBackDoorOLS-L3").predict(_episode(x, "back_door", 10, 5.0))
+    assert float(pred) == pytest.approx(x[:10, 2].mean(), abs=1e-4)
+
+
+def test_lagged_back_door_registry_names_and_lags() -> None:
+    """Both variants are registered, carry their lag, and reject a lag below one."""
+    assert {"LaggedBackDoorOLS", "LaggedBackDoorOLS-L3"} <= set(baselines.available())
+    assert baselines.get("LaggedBackDoorOLS").lag == 1
+    three = baselines.get("LaggedBackDoorOLS-L3")
+    assert (three.lag, three.name) == (3, "LaggedBackDoorOLS-L3")
+    with pytest.raises(ValueError, match="lag >= 1"):
+        baselines.LaggedBackDoorOLSBaseline(lag=0)
