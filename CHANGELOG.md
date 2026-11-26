@@ -56,6 +56,11 @@ All notable changes to `dotime` are documented here. The format follows
   with the hardening (1 of 600 episodes diverges, against 387 of 600 without it).
 
 ### Changed
+- `scripts/release_2026_10.sh` stops before any upload when the registry of the interpreter
+  in `PY` does not name a version in the run directory, and prints the title and the
+  description that Zenodo will publish. The upload scripts take that text and the choice
+  between a new version and a new record from the registry, and the read-only plan of
+  `--check` printed the same lines for a registry that still named the previous version.
 - `load_dotpfn` refuses a checkpoint whose weights do not match its config instead of
   loading it partially. Every checkpoint behind a published number (the s9 series of
   Tables 3 and 4, s10, s11, the nine pre-registered s13 runs) loads completely; only

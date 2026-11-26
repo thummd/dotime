@@ -153,13 +153,17 @@ Two things follow, and both limit what the suite shows today.
 2. Name the new version in the registry before the upload: the registry description is the
    text that `scripts/upload_zenodo.py` sends to Zenodo. Until the mint its record id is the
    sentinel `LOCAL`.
-3. Upload with the tokens, from the repository root. `scripts/zenodo_update.py` adds the version
-   to the existing record `20919599`, and `scripts/upload_huggingface.py` tags it `v1.1.0`:
+3. Upload with the tokens, from the repository root, with `PY` set to the interpreter that has
+   this checkout installed. `scripts/zenodo_update.py` adds the version to the existing record
+   `20919599`. `scripts/upload_huggingface.py` moves `main` of the mirror to the new files and
+   tags them `v1.1.0`, and version 1.0.0 stays at its tag `v1.0.0`. The script stops before any
+   upload if the registry of that interpreter does not name version 1.1.0, and `--check` prints
+   the title and the description that Zenodo will publish:
 
    ```bash
    set -a; . ./.env; set +a
-   bash scripts/release_2026_10.sh --check output/regime_v1_1/release_0.3.0
-   bash scripts/release_2026_10.sh output/regime_v1_1/release_0.3.0
+   PY=<python> bash scripts/release_2026_10.sh --check output/regime_v1_1/release_0.3.0
+   PY=<python> bash scripts/release_2026_10.sh output/regime_v1_1/release_0.3.0
    ```
 
 4. After the mint: the record id and the Hugging Face repository in the registry, the changelog

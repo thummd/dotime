@@ -8,8 +8,10 @@
 #   set -a; . ./.env; set +a; bash scripts/release_2026_10.sh --check <run-dir> [<s13-checkpoint-dir>]
 #   set -a; . ./.env; set +a; bash scripts/release_2026_10.sh <run-dir> [<s13-checkpoint-dir>]
 #
-# --check finds the tokens, verifies every digest and asks Zenodo (read-only) what a
-# run would skip, resume or create, then stops before any upload.
+# --check finds the tokens, verifies every digest, checks that the registry names every
+# version in the run directory, prints the text Zenodo would get and asks Zenodo
+# (read-only) what a run would skip, resume or create, then stops before any upload.
+# Set PY to the interpreter that has this checkout installed (default: python).
 # --zenodo-only skips the Hugging Face uploads, e.g. to resume after a Zenodo failure.
 # A rerun is safe: versions already published on Zenodo are skipped by title, an
 # unpublished draft of a suite is resumed and files already in it are not sent again.
@@ -91,6 +93,43 @@ if bad:
     sys.exit(f"[release] {bad} problem(s); nothing uploaded")
 PYEOF
 
+# 1a. Registry check. The upload scripts read the suite registry of the interpreter in
+#     $PY: its description is the text Zenodo publishes, and its record ids decide
+#     between a new version of a concept record and a new record. An interpreter with
+#     another dotime install, or a checkout that does not name the version yet, would
+#     publish the wrong text or mint a second concept record, and a published record
+#     cannot be deleted. The plan below prints the same lines for a stale registry that
+#     still knows the record, so the versions are compared here.
+"$PY" - "$RUN_DIR" <<'PYEOF'
+import json, sys
+from pathlib import Path
+
+sys.path.insert(0, "scripts")
+try:
+    import dotime
+    from dotime.benchmarks import _SUITE_REGISTRY
+except ImportError as exc:
+    sys.exit(f"[release] the interpreter in $PY cannot import dotime ({exc}); nothing uploaded")
+from upload_zenodo import _metadata
+
+print(f"[release] registry: dotime {dotime.__version__} from {Path(dotime.__file__).parent}")
+bad = 0
+for suite_dir in sorted(Path(sys.argv[1]).glob("dot-*")):
+    manifest = json.loads((suite_dir / "manifest.json").read_text())
+    name, version = manifest["name"], manifest["version"]
+    meta = _SUITE_REGISTRY.get(name)
+    if meta is None or meta.version != version:
+        named = "no such suite" if meta is None else f"version {meta.version}"
+        print(f"[release] {suite_dir.name}: the registry names {named}, not version {version}")
+        bad += 1
+        continue
+    md = _metadata(manifest)["metadata"]
+    print(f"[release] {suite_dir.name}: Zenodo title: {md['title']}")
+    print(f"[release] {suite_dir.name}: Zenodo description: {md['description']}")
+if bad:
+    sys.exit(f"[release] {bad} problem(s): name the version in the registry first; nothing uploaded")
+PYEOF
+
 # 1b. The s13 folder: every file in MANIFEST.sha256 present and matching.
 if [ -n "$S13_DIR" ]; then
     (cd "$S13_DIR" && sha256sum --quiet -c MANIFEST.sha256) \
@@ -102,7 +141,7 @@ if [ "$CHECK" = 1 ]; then
     echo "[release] Zenodo plan (read-only):"
     "$PY" scripts/zenodo_update.py --run-dir "$RUN_DIR" --plan
     "$PY" scripts/upload_zenodo.py --run-dir "$RUN_DIR" --plan
-    echo "[release] --check passed: tokens found, digests verified. Nothing was uploaded."
+    echo "[release] --check passed: tokens found, digests verified, registry checked. Nothing was uploaded."
     exit 0
 fi
 
