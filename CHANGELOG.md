@@ -6,6 +6,21 @@ All notable changes to `dotime` are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- `docs/benchmarks.md` has a datasheet section after Gebru et al. (motivation, composition,
+  collection, labelling, uses, distribution, maintenance) with the current version, the
+  episode count and the pairing of every suite.
+- `results/reference/audit_2026-11/zero_effect_by_activation.json` with its script: on 9,991
+  new shared-noise pairs of the seven structures with a path from the treatment to the
+  outcome, 2,502 of the 2,504 exactly-zero effects occur where a rectified activation, ReLU
+  or tanh(ReLU), lies on that path.
+
+### Changed
+- `docs/benchmarks.md` notes that the released manifest of `dot-ContinuousIrregular-v1`
+  1.0.0 records `pair_mode: interventional` although the arms of the suite share their
+  noise. The field is the default of the build script, the continuous-time generator does
+  not read it, and the evaluation scripts measure the pairing on the episodes.
+
 ## [0.3.0] - 2026-11-26
 
 ### Added

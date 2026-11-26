@@ -1,6 +1,6 @@
 # Frozen Benchmark Suites
 
-DoTime ships eight versioned, immutable suites for reproducible evaluation. Each has a Zenodo DOI and Croissant metadata. The four v1 suites come first. `dot-Wide-v1`, `dot-SeasonalTrend-v1`, `dot-Observed-v1` and `dot-ContinuousIrregular-v1`, released with 0.2.0, have their own sections below.
+DoTime ships eight versioned, immutable suites for reproducible evaluation. Each has a Zenodo DOI and Croissant metadata. The four v1 suites come first. `dot-Wide-v1`, `dot-SeasonalTrend-v1`, `dot-Observed-v1` and `dot-ContinuousIrregular-v1`, released with 0.2.0, have their own sections below. A datasheet closes the page.
 
 ## Suites
 
@@ -557,6 +557,16 @@ structures, `T = 200`, episode count (9,999) and suite seed of
 `max_gap = 4`, 4 sub-steps). Its regular third reproduces the
 `dot-Continuous-v1` rows with the same index bit for bit.
 
+**Pairing in the manifest.** The released manifest of `dot-ContinuousIrregular-v1`
+1.0.0 records `pair_mode: interventional`. The build script writes that default
+whenever a config sets no `pair_mode`, and the continuous-time generator does not
+read the key: it always shares one noise realisation across the two arms. The
+targets of the suite are therefore counterfactuals. The arms agree before the onset
+in all 9,999 episodes (`results/reference/audit_2026-09/suite_invariants_2026_10.json`).
+The evaluation scripts do not read the manifest field either. They measure the
+pairing on the loaded episodes (`dotime.evaluation.check_shared_noise`). The
+manifest belongs to an immutable release and stays as it is.
+
 On 300 episodes per structure and schedule, every value stays finite and no
 episode of the irregular schedules exceeds |x| = 10. Without sub-steps, 30% of
 the jittered and 83% of the poisson episodes do
@@ -664,3 +674,62 @@ exactly, and `latent_row` points each row at its latent episode. Built from
 this config, the suite has 9.9% (`mcar10`), 6.5% (`block`) and 12.7% (`mnar`)
 of the cells of its observed columns missing, and realized signal-to-noise
 ratios of 10.0 (`snr10`) and 3.0 (`snr3`).
+
+## Datasheet
+
+This section follows the questions of *Datasheets for Datasets* (Gebru et al., 2021). The
+sections above hold the details, and this one points to them.
+
+**Motivation.** The suites exist to score estimators of interventional and counterfactual
+outcomes in multivariate time series against exact ground truth, which observational
+benchmarks cannot provide. They were created by the authors of the DoTime paper (see
+`CITATION.cff`).
+
+**Composition.** An instance is an episode: an observational and an interventional
+trajectory of one sampled temporal structural causal model, the intervention (target,
+window, type and value), a query (variable and time) and the exact interventional outcome
+at the query, with metadata. The data are synthetic. They contain no data about people and
+nothing confidential. There are no train and test splits. Every suite is an evaluation set,
+and `dot-Generic-100k` has training scale.
+
+| Suite | Current version | Episodes | Arms |
+|---|---|---|---|
+| `dot-Identifiability-v1` | 1.2.0 | 12,150 | Shared noise |
+| `dot-RegimeSwitch-v1` | 1.1.0 | 9,999 | Shared noise |
+| `dot-Continuous-v1` | 1.0.0 | 9,999 | Shared noise |
+| `dot-Generic-100k` | 1.0.0 | 100,000 | Independent noise |
+| `dot-SeasonalTrend-v1` | 1.0.0 | 10,000 | Shared noise |
+| `dot-Wide-v1` | 1.0.0 | 10,000 | Shared noise |
+| `dot-Observed-v1` | 1.0.0 | 10,800 | Shared noise |
+| `dot-ContinuousIrregular-v1` | 1.0.0 | 9,999 | Shared noise |
+
+Under shared noise the difference of the two arms at the query is a counterfactual effect
+of the episode. Under independent noise the arms are interventional twins, and their
+difference is not such an effect. The known errors of the first release are listed under
+*v1.0.0 field semantics and known issues* above.
+
+**Collection process.** `scripts/build_release.py` generates every suite from a release
+config under `scripts/`, with one deterministic seed per episode and without an
+accelerator. The manifest of a suite records the hash of its config and the package version
+of the build. The builds date from June to November 2026.
+
+**Preprocessing and labelling.** There is none beyond generation. Values are on the raw
+scale. The label is the simulated interventional outcome, and no person annotated it. A
+diverged episode is zeroed without a flag in the suites of the first release and resampled
+in every version released since. Builds and benchmark runs assert the statistics of their
+targets (*Target QA* above).
+
+**Uses.** The suites are meant for the training and evaluation of models that estimate
+interventional or counterfactual outcomes, and `results/reference/` holds reference rows
+for them. They are no basis for clinical or other real-world decisions. The transfer probes
+of the paper are proofs of concept and give no guarantee for real data.
+
+**Distribution.** Each suite is archived on Zenodo under a concept DOI with immutable
+versions and mirrored on the Hugging Face Hub (`thummd/dot-*`) with one tag per version,
+under CC-BY-4.0. `load_benchmark` downloads a suite and verifies its checksums. The package
+is on PyPI under Apache-2.0.
+
+**Maintenance.** The suites are maintained in this repository, and its issue tracker is the
+contact. A released version never changes. A correction ships as a new version, is listed in
+the changelog and in the erratum section above, and leaves the older versions loadable
+through `version=`.
