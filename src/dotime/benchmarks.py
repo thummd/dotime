@@ -275,13 +275,21 @@ _SUITE_REGISTRY: dict[str, SuiteMetadata] = {
     ),
     "dot-RegimeSwitch-v1": SuiteMetadata(
         name="dot-RegimeSwitch-v1",
-        version="1.0.0",
-        hf_repo_id="thummd/dot-RegimeSwitch-v1",
-        zenodo_record_id="20919599",
+        version="1.1.0",
+        hf_repo_id="",  # set with the 1.1.0 record id when the version is minted
+        zenodo_record_id="LOCAL",  # 1.1.0 is built locally until it is minted
         doi="10.5281/zenodo.20846073",  # concept DOI (resolves to latest version)
-        description="Regime-switching SCMs (ITS generalization), break density in {2,3,5}.",
+        description=(
+            "Regime-switching SCMs (ITS generalization) with 2, 3 or 5 regimes and exact "
+            "shared-noise counterfactual targets. Version 1.1.0 repairs the mechanisms, "
+            "which read no parents in 1.0.0, pairs the two arms under one noise "
+            "realisation and one regime path, and queries the end of the intervention "
+            "window. Version 1.0.0 is independent noise in every variable."
+        ),
         n_episodes=9_999,
-        query_time_encoding="step",
+        # 1.0.0 stays loadable via load_benchmark(..., version="1.0.0").
+        prior_versions=(("1.0.0", "20919599"),),
+        query_time_encoding="step",  # both versions store the query row itself
     ),
     "dot-Continuous-v1": SuiteMetadata(
         name="dot-Continuous-v1",

@@ -94,9 +94,11 @@ level and the effect can be scored.
 
 ## Repaired regime switching (dot-RegimeSwitch-v1 1.1.0, prepared)
 
-**Status: prepared, not released.** The registry and `load_benchmark` still serve
-version 1.0.0, in which every variable is independent noise (see the erratum
-below).
+**Status: built for release with package 0.3.0, not minted yet.** The registry names
+version 1.1.0 with the sentinel `LOCAL` in place of a Zenodo record. Until the mint
+`load_benchmark("dot-RegimeSwitch-v1")` reads a local build from the cache, and
+`version="1.0.0"` loads the released files, in which every variable is independent
+noise (see the erratum below).
 
 Version 1.1.0 is the recipe of version 1.0.0 with mechanisms that read their
 parents and with arms that share their noise. It keeps the suite seed, the
@@ -155,7 +157,7 @@ With `record_graph` every episode records its regime graphs and, as
 `metadata["graph"]["regime_path"]`, the regime of each step, which both arms
 share.
 
-A candidate build of the 9 999 episodes passes
+The release build of the 9 999 episodes passes
 `results/reference/regime_v1_1/scripts/validate_build.py`. No episode has a
 zeroed arm or a value above the limit, every episode reads its parents, the two
 arms agree exactly before the onset, and 300 sampled episodes regenerate exactly
@@ -165,7 +167,7 @@ not reach the query from the treatment (215 episodes), the effect is exactly
 zero.
 
 **Reference rows.** The estimators of the package do not separate on the
-candidate (`results/reference/regime_v1_1/regime_v1_1_cpu.json`). On the 7 876
+suite (`results/reference/regime_v1_1/regime_v1_1_cpu.json`). On the 7 876
 queries with an absolute effect of at least 0.1 the pre-onset mean predicts the
 sign of the effect in 62.0%, VAR-OLS in 60.6% and NaiveOLS, which reads the
 intervention value, in 62.8%. Split by the shortest lag from the treatment to

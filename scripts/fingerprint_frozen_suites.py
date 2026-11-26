@@ -70,6 +70,7 @@ VERSIONS = (
     ("dot-Wide-v1", "1.0.0", "release_config_wide.yaml"),
     ("dot-Observed-v1", "1.0.0", "release_config_observed_v1.yaml"),
     ("dot-ContinuousIrregular-v1", "1.0.0", "release_config_continuous_irregular.yaml"),
+    ("dot-RegimeSwitch-v1", "1.1.0", "release_config_regime_v1_1.yaml"),
 )
 FULL_VERSIONS = ("dot-Continuous-v1-1.0.0", "dot-Identifiability-v1-1.1.0")
 IDENT_V1_0 = "dot-Identifiability-v1-1.0.0"

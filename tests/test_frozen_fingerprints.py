@@ -86,6 +86,7 @@ def test_fingerprints_cover_every_released_version() -> None:
         "dot-Identifiability-v1-1.2.0",
         "dot-Observed-v1-1.0.0",
         "dot-RegimeSwitch-v1-1.0.0",
+        "dot-RegimeSwitch-v1-1.1.0",
         "dot-SeasonalTrend-v1-1.0.0",
         "dot-Wide-v1-1.0.0",
     ]
