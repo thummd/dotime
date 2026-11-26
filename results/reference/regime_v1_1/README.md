@@ -1,7 +1,7 @@
 # dot-RegimeSwitch-v1 version 1.1.0 (built for release, not minted yet)
 
-Status on 2026-11-27: the release build is made with package 0.3.0 and validated. It is not on
-Zenodo or the Hugging Face Hub yet, and the public registry still serves version 1.0.0.
+Status on 2026-11-27 SGT: the release build is made with package 0.3.0 and validated. It is not
+on Zenodo or the Hugging Face Hub yet, and the public registry still serves version 1.0.0.
 
 Version 1.1.0 repairs the two defects of version 1.0.0. Its regime-switching mechanisms read no
 parents, so every variable of the released suite is independent noise, and its two arms are

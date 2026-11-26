@@ -1,8 +1,8 @@
 # The repair with independent arms (superseded, never released)
 
 These files record the first candidate of dot-RegimeSwitch-v1 version 1.1.0, built on
-2026-11-27. It repaired the mechanisms of version 1.0.0 and kept its pairing: the two arms of an
-episode were independent draws. The candidate was valid and did not separate estimators, which
+2026-11-27 SGT. It repaired the mechanisms of version 1.0.0 and kept its pairing: the two arms of
+an episode were independent draws. The candidate was valid and did not separate estimators, which
 is why version 1.1.0 pairs its arms under shared noise instead (`../README.md`). Nothing here
 was released.
 
