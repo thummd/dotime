@@ -451,7 +451,10 @@ class LaggedBackDoorOLSBaseline(BackDoorOLSBaseline):
     back-door path that ``X_t`` leaves open. The detection-power study of
     October 2026 recorded the consequence as its prediction E3: on
     ``observed_confounder``, where ``A`` has no effect on ``Y``, BackDoorOLS
-    moved its prediction with the do-value in 0.479 of the episodes. This
+    moved its prediction with the do-value in 0.479 of the episodes. The
+    registered test of this estimator did not confirm that the lagged set
+    lowers that rate: it measured 0.464
+    (``results/reference/lagged_backdoor_2026-10``). This
     estimator adds the first ``lag`` lags of the treatment, of the adjustment
     set and of the outcome to the design::
 

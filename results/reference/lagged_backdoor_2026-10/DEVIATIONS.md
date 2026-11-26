@@ -15,3 +15,11 @@ and a reason, in the order it happened.
    when it added `DEFAULT_ESTIMATORS` and `EXTENSIONS`; the repository's lint rule (RUF022) wants the
    isort order, and the list was reordered accordingly. No behaviour, number or output changes;
    `code_manifest.sha256` keeps the digests of the registering commit, as PREREG.md says.
+
+3. **2026-11-27 SGT, after publication, edits that change no number.** The registering commit was
+   formatted with an older ruff than the one CI pins (0.16.7). (a) The pinned formatter wraps one
+   expression of `tests/test_baselines.py`, and the file is reformatted accordingly. (b) One sentence
+   in the docstring of `LaggedBackDoorOLSBaseline` (`src/dotime/baselines.py`) now states the outcome
+   of L1, so that the API documentation does not suggest the opposite. (c) `scripts/grade_lagged.py`
+   fails the same format check and is left as registered: `pyproject.toml` exempts it from ruff by
+   path. `code_manifest.sha256` keeps the digests of the registering commit.

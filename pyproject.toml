@@ -211,6 +211,7 @@ extend-exclude = [
     # run with, so a later lint rule or formatter release must not rewrite them.
     # List a file here only if a registration names it and the pinned ruff rejects it.
     "results/reference/prereg_2026-10_s15/scripts/strata_and_series.py",
+    "results/reference/lagged_backdoor_2026-10/scripts/grade_lagged.py",
 ]
 
 [tool.ruff.lint]

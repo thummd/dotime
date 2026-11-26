@@ -157,7 +157,9 @@ def _order_one_scm(effect: float, x_inst: float, seed: int = 0, t_len: int = 400
     for t in range(1, t_len):
         x_t = 0.5 * x[t - 1, 1] + rng.normal()
         a_t = 0.8 * x_t + 0.6 * x[t - 1, 0] + rng.normal()
-        y_t = effect * a_t + x_inst * x_t + 0.7 * x[t - 1, 1] + 0.5 * x[t - 1, 2] + 0.3 * rng.normal()
+        y_t = (
+            effect * a_t + x_inst * x_t + 0.7 * x[t - 1, 1] + 0.5 * x[t - 1, 2] + 0.3 * rng.normal()
+        )
         x[t] = (a_t, x_t, y_t)
     return x
 
