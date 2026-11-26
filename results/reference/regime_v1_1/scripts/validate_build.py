@@ -8,15 +8,19 @@ claims of the release config, one by one, and fails on the first that does not
 hold.
 
 1. Files: every shard matches its md5, and the manifest names this config
-   (``config_hash``), the repaired prior, the query rule and a passed target QA.
-2. Targets: per-arm statistics of the stored episodes, logged and asserted
-   (``dotime.qa.target_qa``).
-3. Episodes: none has a zeroed arm, all read their parents, every query sits at
-   the last step of its intervention window on an untreated variable, and
-   ``y_true`` is the interventional value there.
+   (``config_hash``), the repaired prior, the shared-noise pairing, the query
+   rule and a passed target QA.
+2. Targets: per-arm statistics of the stored episodes, the effect included,
+   logged and asserted (``dotime.qa.target_qa``).
+3. Episodes: none has a zeroed arm, all read their parents, and the two arms of
+   every episode agree exactly before the onset. Every query sits at the last
+   step of its intervention window on the untreated variable that the
+   intervention moves most, and ``y_true`` is the interventional value there.
+   A query that the recorded graph cannot reach from the treatment has an
+   effect of exactly zero.
 4. Regeneration: a random sample of stored episodes equals the episodes that
-   the config and the seeds rebuild in this process. The build used many
-   workers, so this is the check that the regime paths are seeded.
+   the config and the seeds rebuild in this process, the recorded regime path
+   included. The build used many workers.
 5. Repair: the observational arms have lag structure, which white noise lacks,
    and a sampled episode keeps the regime graphs and the intervention of the
    version 1.0.0 episode with the same seed unless it was resampled.
@@ -92,19 +96,20 @@ def check_files(suite_dir: Path, config_text: str, cfg: dict[str, Any]) -> dict[
     config_hash = hashlib.sha256(config_text.encode()).hexdigest()[:16]
     assert manifest["config_hash"] == config_hash, "the build is not from this config"
     assert manifest["seed"] == cfg["seed"]
-    for key in ("prior_config", "query_row", "record_graph", "stability_retries"):
+    assert cfg["pair_mode"] == "counterfactual", "this validation is for shared-noise arms"
+    for key in ("prior_config", "pair_mode", "query_row", "record_graph", "stability_retries"):
         assert manifest[key] == cfg[key], f"manifest {key} differs from the config"
-    assert manifest["pair_mode"] == "interventional"
     assert manifest["target_qa"]["passed"] is True, "the build's target QA did not pass"
     return manifest
 
 
-def check_episodes(episodes: list, cfg: dict[str, Any]) -> dict[str, Any]:
+def check_episodes(episodes: list, cfg: dict[str, Any], threshold: float) -> dict[str, Any]:
     """Check the claims that hold for every stored episode.
 
     Args:
         episodes: The stored episodes in suite order.
         cfg: The suite config.
+        threshold: Effect threshold of the benchmark.
 
     Returns:
         Counts and summary statistics of the suite.
@@ -118,16 +123,18 @@ def check_episodes(episodes: list, cfg: dict[str, Any]) -> dict[str, Any]:
     labels = Counter(ep.structure for ep in episodes)
     assert labels == {f"regime_{d}": per for d in densities}, labels
     types: Counter = Counter()
-    reachable = 0
     lags: Counter = Counter()
     n_vars: Counter = Counter()
-    gaps = []
+    gaps, effects, switches = [], [], []
+    effect_by_type: dict[str, list[float]] = {}
+    reachable = unreachable_with_effect = 0
     acf_above = acf_total = 0
     for row, ep in enumerate(episodes):
         d = int(ep.structure.split("_")[1])
         meta = ep.metadata
         assert meta["n_regimes"] == d, row
         assert meta["tier"] == densities[d], row
+        assert meta["pair_mode"] == "counterfactual", row
         assert meta["diverged"] is False, f"episode {row} is flagged as diverged"
         assert float(ep.x_obs.abs().max()) > 0, f"episode {row} has a zeroed observational arm"
         assert float(ep.x_int.abs().max()) > 0, f"episode {row} has a zeroed interventional arm"
@@ -136,31 +143,68 @@ def check_episodes(episodes: list, cfg: dict[str, Any]) -> dict[str, Any]:
         assert ep.x_obs.shape == ep.x_int.shape, row
         assert ep.x_obs.shape[0] == cfg["T"], row
         assert meta["graph"]["reads_parents"] is True, f"episode {row} does not read its parents"
-        end = max(ep.intervention.times)
+        onset, end = min(ep.intervention.times), max(ep.intervention.times)
+        assert torch.equal(ep.x_obs[:onset], ep.x_int[:onset]), (
+            f"the arms of episode {row} differ before the onset"
+        )
+        path = np.asarray(meta["graph"]["regime_path"])
+        assert path.shape == (cfg["T"],), row
+        assert set(path.tolist()) <= set(range(d)), row
         assert meta["query_row"] == "window_end", row
         assert meta["query_time_idx"] == [end], row
         q = int(ep.query_target[0])
         assert q not in ep.intervention.targets, row
         assert float(ep.y_true[0]) == float(ep.x_int[end, q]), row
-        types[ep.intervention.intervention_type.name] += 1
-        path = meta["graph"]["path"][0]
-        reachable += bool(path["reachable"])
-        lags["unreachable" if path["min_lag"] is None else str(min(path["min_lag"], 4))] += 1
+        # With shared noise the gap between the arms is the effect, so the
+        # query must be the untreated variable with the largest gap.
+        gap = (ep.x_int[end] - ep.x_obs[end]).abs()
+        gap[list(ep.intervention.targets)] = -1.0
+        assert q == int(gap.argmax()), f"episode {row} does not query its most affected variable"
+        effect = float(gap[q])
+        graph_path = meta["graph"]["path"][0]
+        if graph_path["reachable"]:
+            reachable += 1
+        else:
+            # The recorded graph, the simulator and the pairing have to agree:
+            # what the treatment cannot reach, it cannot move.
+            unreachable_with_effect += effect != 0.0
+        lags[
+            "unreachable" if graph_path["min_lag"] is None else str(min(graph_path["min_lag"], 4))
+        ] += 1
+        kind = ep.intervention.intervention_type.name
+        types[kind] += 1
+        effect_by_type.setdefault(kind, []).append(effect)
+        effects.append(effect)
         n_vars[int(ep.x_obs.shape[1])] += 1
         gaps.append(cfg["T"] - 1 - end)
+        switches.append(int((np.diff(path) != 0).sum()))
         acf = abs_acf1(ep.x_obs)
         acf_above += int(np.nansum(acf > ACF_LEVEL))
         acf_total += int(np.isfinite(acf).sum())
+    assert unreachable_with_effect == 0, (
+        f"{unreachable_with_effect} queries move although the graph cannot reach them"
+    )
     share = acf_above / acf_total
     assert share > ACF_SHARE_FLOOR, f"only {share:.3f} of the variables have lag structure"
+    values = np.asarray(effects)
     return {
         "n_episodes": len(episodes),
         "per_density": dict(labels),
         "intervention_types": dict(types),
         "n_vars": {str(k): v for k, v in sorted(n_vars.items())},
+        "n_arms_equal_before_onset": len(episodes),
         "query_reachable_share": reachable / len(episodes),
         "query_min_lag": {k: lags[k] for k in sorted(lags)},
         "steps_after_window_median": float(np.median(gaps)),
+        "regime_switches_median": float(np.median(switches)),
+        "no_regime_switch_share": float(np.mean(np.asarray(switches) == 0)),
+        "effect_threshold": threshold,
+        "effect_share_at_or_above_threshold": float(np.mean(values >= threshold)),
+        "effect_median": float(np.median(values)),
+        "effect_zero_share": float(np.mean(values == 0.0)),
+        "effect_share_by_type": {
+            k: float(np.mean(np.asarray(v) >= threshold)) for k, v in sorted(effect_by_type.items())
+        },
         "acf1_above_level_share": share,
         "acf1_level": ACF_LEVEL,
     }
@@ -202,6 +246,9 @@ def check_regeneration(
         assert torch.equal(stored.x_int, rebuilt.x_int.to(stored.x_int.dtype)), row
         assert torch.equal(stored.y_true, rebuilt.y_true.to(stored.y_true.dtype)), row
         assert int(stored.query_target[0]) == int(rebuilt.query_target[0]), row
+        assert (
+            stored.metadata["graph"]["regime_path"] == rebuilt.metadata["graph"]["regime_path"]
+        ), row
         # First attempt or resample? Rebuild without retries and compare.
         first = make_episode({**specs[row], "stability_retries": 0})
         if not torch.equal(first.x_int, rebuilt.x_int):
@@ -242,7 +289,7 @@ def main(argv: list[str] | None = None) -> None:
     args = ap.parse_args(argv)
 
     import dotime
-    from dotime import _release_io, benchmarks
+    from dotime import _release_io, benchmarks, evaluation
     from dotime.qa import target_qa
 
     warnings.simplefilter("ignore", RuntimeWarning)
@@ -256,12 +303,19 @@ def main(argv: list[str] | None = None) -> None:
         benchmarks._SUITE_REGISTRY[SUITE], version=cfg["version"], zenodo_record_id="LOCAL"
     )
     episodes = list(_release_io.read_suite(meta, suite_dir))
-    qa = target_qa(episodes, dir_target="level", group_by="structure").to_dict()
-    summary = check_episodes(episodes, cfg)
+    noise = evaluation.check_shared_noise(episodes)
+    assert noise.n_shared == noise.n_checked == len(episodes), noise
+    qa = target_qa(episodes, dir_target="effect", group_by="structure").to_dict()
+    summary = check_episodes(episodes, cfg, float(evaluation.DIR_ACC_EPS))
     print(
-        f"[validate] {summary['n_episodes']} episodes: no zeroed arm, all read their parents, "
-        f"all queried at the window's end; acf1 > {ACF_LEVEL} in "
-        f"{summary['acf1_above_level_share']:.3f} of the variables"
+        f"[validate] {summary['n_episodes']} episodes: no zeroed arm, all read their parents, arms "
+        f"equal before the onset, most affected variable queried at the window's end"
+    )
+    print(
+        f"[validate] effect >= {summary['effect_threshold']} in "
+        f"{summary['effect_share_at_or_above_threshold']:.3f} of the queries (median "
+        f"{summary['effect_median']:.3f}, exactly zero in {summary['effect_zero_share']:.3f}); "
+        f"acf1 > {ACF_LEVEL} in {summary['acf1_above_level_share']:.3f} of the variables"
     )
     regeneration = check_regeneration(episodes, cfg, args.n_regenerate, args.sample_seed)
     print(
@@ -283,6 +337,7 @@ def main(argv: list[str] | None = None) -> None:
             "config_hash": manifest["config_hash"],
             "package_version": manifest["package_version"],
             "seed": manifest["seed"],
+            "pair_mode": manifest["pair_mode"],
             "shards": [{"file": s["file"], "md5": s["md5"]} for s in manifest["shards"]],
             "target_qa_passed": manifest["target_qa"]["passed"],
         },

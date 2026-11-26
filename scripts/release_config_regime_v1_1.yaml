@@ -1,12 +1,12 @@
 # dot-RegimeSwitch-v1 version 1.1.0: the regime-switching suite with mechanisms
-# that read their parents.
+# that read their parents and with arms that share their noise.
 #
 # In version 1.0.0 a renaming step left every regime-switching mechanism without
 # parents, so each variable of the released suite is independent noise and no
-# intervention reaches another variable. This version switches on the repair
-# and the three settings that the repair needs. Graphs, noise models,
-# interventions and episode seeds are those of version 1.0.0, except in the few
-# episodes that are resampled.
+# intervention reaches another variable. Its two arms are also independent
+# draws. This version repairs the mechanisms and pairs the arms. Graphs, noise
+# models, interventions and episode seeds are those of version 1.0.0, except in
+# the few episodes that are resampled.
 #
 #   prior_config.regime_canonical_weights: true
 #                              -> the mechanisms read their parents
@@ -18,27 +18,29 @@
 #                                 are dotime.hardening.RECOMMENDED_HARDENING
 #   stability_retries: 10      -> an episode with a zeroed arm is resampled, so
 #                                 the suite holds no diverged episode
+#   pair_mode: counterfactual  -> one noise realisation and one regime path per
+#                                 episode are shared by both arms, so they agree
+#                                 exactly before the onset and y_true - y_obs is
+#                                 a per-episode counterfactual effect. With
+#                                 independent arms no reference estimator beat
+#                                 the pre-onset mean on a build of this recipe
+#                                 (results/reference/regime_v1_1/independent_arms/)
 #   query_row: window_end      -> the query sits at the last step of the
 #                                 intervention window, not at T-1. The
 #                                 stabilised dynamics are contractive. In a
 #                                 pilot of 600 episodes the window closes a
-#                                 median 30.5 steps before T-1, and the
-#                                 intervention moves the queried variable by at
-#                                 least 0.1 in 6.0% of the episodes at T-1 and
-#                                 in 47.7% at the window's end
+#                                 median 30.5 steps before T-1, and 9.2% of
+#                                 the counterfactual effects reach 0.1 in size
+#                                 at T-1, against 77.8% at the window's end
 #                                 (results/reference/regime_v1_1/design_pilot.json)
+#   record_graph: true         -> metadata["graph"] holds the lagged graph of
+#                                 every regime (dotime.graph_meta) and the
+#                                 regime of every step, which both arms share
 #
-# The build seeds numpy's global generator per episode, which draws the regime
-# path of each arm (the regime_configured spec kind of dotime._build). Version
-# 1.0.0 never seeded it, which was harmless only because its mechanisms ignored
-# the path.
-#
-# What stays as in version 1.0.0: the two arms are independent draws. They share
-# neither noise nor regime path, because the regime simulator skips the noise
-# draw of a variable under a hard intervention. The suite therefore holds
-# interventional twins and not counterfactual pairs, and the queried variable is
-# the one with the largest gap between the two arms, which in the pilot is the
-# most affected variable in 29.0% of the episodes.
+# The build goes through the regime_configured spec kind of dotime._build. The
+# shared noise and the shared regime path come from the prior's counterfactual
+# generator, which is seeded from the episode seed, so an episode does not
+# depend on numpy's global generator or on the number of workers.
 #
 # The suite sets its own seed, the suite seed of version 1.0.0 (top-level seed
 # + 2000), so it keeps that seed whether it is built alone or next to other
@@ -57,6 +59,7 @@ suites:
     densities: {2: 1, 3: 2, 5: 3}
     n_episodes: 10000
     stability_retries: 10
+    pair_mode: counterfactual
     prior_config:
       regime_canonical_weights: true
       hardening:
@@ -64,4 +67,4 @@ suites:
         spectral_rho: 0.9
         bounded_square: true
     query_row: window_end
-    record_graph: true   # ground-truth lagged graph in metadata["graph"] (dotime.graph_meta)
+    record_graph: true
