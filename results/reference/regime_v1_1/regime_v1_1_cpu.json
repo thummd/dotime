@@ -362,8 +362,8 @@
  "build": {
   "suite_dir": "dot-RegimeSwitch-v1-1.1.0",
   "version": "1.1.0",
-  "config_hash": "31e2b45b66f4f63f",
-  "package_version": "0.2.0",
+  "config_hash": "e39f9a5a3d61643a",
+  "package_version": "0.3.0",
   "shards_md5": [
    "28249c5b9e4c27e2cc7a5a0dfc29eebd",
    "4c09485d68c27c158d6a26f184ea19d9"

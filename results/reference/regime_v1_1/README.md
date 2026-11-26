@@ -1,7 +1,7 @@
-# dot-RegimeSwitch-v1 version 1.1.0 (prepared, not released)
+# dot-RegimeSwitch-v1 version 1.1.0 (built for release, not minted yet)
 
-Status on 2026-11-27: a candidate is built and validated. Nothing is minted, and the registry
-still serves version 1.0.0.
+Status on 2026-11-27: the release build is made with package 0.3.0 and validated. It is not on
+Zenodo or the Hugging Face Hub yet, and the public registry still serves version 1.0.0.
 
 Version 1.1.0 repairs the two defects of version 1.0.0. Its regime-switching mechanisms read no
 parents, so every variable of the released suite is independent noise, and its two arms are
@@ -31,17 +31,18 @@ and the shared regime path come from the prior's counterfactual generator
 |---|---|
 | `design_pilot.json` | `scripts/effect_persistence.py` on the first 200 episodes of each regime density, from a clean checkout of `e3b9375`. The header of the release config quotes its numbers, and `tests/test_regime_configured.py` asserts that it does |
 | `amplitude_tail.json` | `scripts/amplitude_tail.py` on a build of the same recipe without the amplitude limit (config of `bbccbf2`) |
-| `build_validation.json` | `scripts/validate_build.py` on the candidate build |
-| `regime_v1_1_cpu.json` | Reference rows of the candidate, from `scripts/reference_rows.py` |
+| `build_validation.json` | `scripts/validate_build.py` on the release build |
+| `regime_v1_1_cpu.json` | Reference rows of the release build, from `scripts/reference_rows.py` |
 | `regime_v1_1_per_lag.json` | The same rows split by the shortest lag from the treatment to the query |
 | `independent_arms/` | The first candidate, which repaired the mechanisms and kept independent arms. Superseded, never released |
 | `scripts/` | The four scripts |
 
-The candidate is not in the repository (158 MB). It was built from a clean checkout of
-`7c55f59` with 13 workers, has the config hash `31e2b45b66f4f63f` and the shard digests
-`28249c5b9e4c27e2cc7a5a0dfc29eebd` and `4c09485d68c27c158d6a26f184ea19d9`. Its manifest names
-package version 0.2.0, which does not contain the build path, so a release build has to follow
-a version bump.
+The release build is not in the repository (158 MB). It was built from a clean checkout of
+`deba4d8` with package version 0.3.0 and 13 workers, has the config hash `e39f9a5a3d61643a` and
+the shard digests `28249c5b9e4c27e2cc7a5a0dfc29eebd` and `4c09485d68c27c158d6a26f184ea19d9`.
+An earlier build of the same recipe with package 0.2.0 (`7c55f59`) has the same two digests.
+The three result files below were written from the release build and are equal, number for
+number, to the ones of that earlier build.
 
 ```bash
 python scripts/build_release.py --config scripts/release_config_regime_v1_1.yaml \
@@ -57,7 +58,7 @@ python results/reference/regime_v1_1/scripts/effect_persistence.py --per-block 2
     --workers 10 --out results/reference/regime_v1_1/design_pilot.json
 ```
 
-## What holds for the candidate
+## What holds for the release build
 
 All of this is asserted by `validate_build.py` on the 9,999 stored episodes.
 
@@ -140,16 +141,22 @@ Two things follow, and both limit what the suite shows today.
   fills it. A contemporaneous linear regression is a weak model of an effect that builds up over
   a window of at least ten steps in a nonlinear system that switches regimes.
 
-## Before a release
+## Release steps
 
-1. Decide whether the suite is released with these reference rows.
-2. Bump the package version, because the manifest records it, and rebuild from a clean
-   checkout. The shards must keep their digests.
-3. Run `validate_build.py` and `reference_rows.py` on the release build, and
-   `effect_persistence.py` without `--per-block` on the whole suite.
-4. Name the new version in the registry before the upload: the registry description is the
-   text that `scripts/upload_zenodo.py` sends to Zenodo. `scripts/zenodo_update.py` then adds
-   the version to the existing record `20919599`.
-5. After the mint: the record id in the registry, the config hash in
-   `tests/test_release_config_provenance.py`, the fingerprints of the new version, the docs and
-   the paper.
+1. Done: package version 0.3.0 (`deba4d8`), release build from a clean checkout,
+   `validate_build.py` and `reference_rows.py` on it.
+2. Name the new version in the registry before the upload: the registry description is the
+   text that `scripts/upload_zenodo.py` sends to Zenodo. Until the mint its record id is the
+   sentinel `LOCAL`.
+3. Upload with the tokens, from the repository root. `scripts/zenodo_update.py` adds the version
+   to the existing record `20919599`, and `scripts/upload_huggingface.py` tags it `v1.1.0`:
+
+   ```bash
+   set -a; . ./.env; set +a
+   bash scripts/release_2026_10.sh --check output/regime_v1_1/release_0.3.0
+   bash scripts/release_2026_10.sh output/regime_v1_1/release_0.3.0
+   ```
+
+4. After the mint: the record id and the Hugging Face repository in the registry, the changelog
+   heading and the date in `CITATION.cff`, the released wording in `docs/benchmarks.md`, then the
+   tag `v0.3.0`, which publishes the package.

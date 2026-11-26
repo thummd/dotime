@@ -1,14 +1,14 @@
 {
- "created_utc": "2026-11-26T19:28:30Z",
- "git_head": "6e4b0571fe19d614ec32824e3969eda2d35d0240",
+ "created_utc": "2026-11-26T19:56:19Z",
+ "git_head": "deba4d83105739b7cce42ce985c60e381d7122c0",
  "src_dirty": false,
  "dotime_file": "src/dotime/__init__.py",
  "suite": "dot-RegimeSwitch-v1",
  "version": "1.1.0",
  "build": {
   "suite_dir": "dot-RegimeSwitch-v1-1.1.0",
-  "config_hash": "31e2b45b66f4f63f",
-  "package_version": "0.2.0",
+  "config_hash": "e39f9a5a3d61643a",
+  "package_version": "0.3.0",
   "seed": 20262719,
   "pair_mode": "counterfactual",
   "shards": [
