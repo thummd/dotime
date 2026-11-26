@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 """Score the reference baselines on a local build of dot-RegimeSwitch-v1 1.1.0.
 
-``dotime-eval-reference`` loads a suite through the registry, which names the
-released version only. This wrapper points the registry of the running process
-at a local build directory and then calls the same harness, so the rows are the
-ones the command line tool will print once the version is registered. Nothing
-is downloaded and the installed registry is not changed.
+``dotime-eval-reference`` loads a suite through the registry, which serves the
+released files. This wrapper points the registry of the running process at a
+local build directory and then calls the same harness. It scored version 1.1.0
+before the registry named it, and it scores a rebuild of a registered version
+without touching the cache. Nothing is downloaded and the installed registry is
+not changed. On the released files the command line tool prints the same rows:
+
+    dotime-eval-reference --suite dot-RegimeSwitch-v1 --version 1.1.0 --out rows.json
 
     python results/reference/regime_v1_1/scripts/reference_rows.py \\
         --suite-dir output/regime_v1_1/<run>/dot-RegimeSwitch-v1-1.1.0 \\
@@ -71,23 +74,28 @@ def registered_locally(suite_dir: Path, manifest: dict) -> Iterator[tuple[str, s
         ``(name, version)`` of the build, loadable for the duration of the block.
 
     Raises:
-        SystemExit: If the build is not a newer version of a registered suite.
+        SystemExit: If the registry does not know the suite.
     """
     from dotime import benchmarks
 
     name, version = manifest["name"], manifest["version"]
     released = benchmarks._SUITE_REGISTRY.get(name)
-    if released is None or released.version == version:
-        raise SystemExit(f"{name} {version} is not a new version of a registered suite")
+    if released is None:
+        raise SystemExit(f"{name} is not a registered suite")
+    # A build of the version the registry names keeps the registered history. A
+    # newer build puts the registered version in front of it, as a release does.
+    prior_versions = released.prior_versions
+    if released.version != version:
+        prior_versions = ((released.version, released.zenodo_record_id), *prior_versions)
     # hf_repo_id is cleared so that a missing cache entry can never turn into a
-    # download of the released version under the new version's name.
+    # download of the released files in place of the local build.
     local = dataclasses.replace(
         released,
         version=version,
         zenodo_record_id="LOCAL",
         hf_repo_id="",
         n_episodes=int(manifest["n_episodes"]),
-        prior_versions=((released.version, released.zenodo_record_id), *released.prior_versions),
+        prior_versions=prior_versions,
     )
     previous_cache = os.environ.get("DOTIME_CACHE")
     benchmarks._SUITE_REGISTRY[name] = local
