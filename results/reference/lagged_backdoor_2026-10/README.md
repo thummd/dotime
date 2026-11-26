@@ -9,6 +9,14 @@ named in its prediction E3, removes the false effects of BackDoorOLS on `observe
 (L1) without costing effect-sign accuracy where the contemporaneous set already identifies the
 sign (L2, L3).
 
+**Public push, added 2026-11-27 SGT.** The branch `phase2-pfnref-mirror` and the tags
+`lagged-backdoor-prereg` and `lagged-backdoor-scored` were first pushed on 2026-11-26 17:06:07 UTC
+with their original hashes (`push_event.json`), after the KDD notification, and merged into
+`main` by `f751f00`. Until then the registration existed only in the local repository. The push
+therefore dates the publication, 29 days after the run, and does not show that the registration
+preceded the run. That order rests on the commit chain (`e1e0b6c` before `44c785e`), on the two
+tag objects and on `code_manifest.sha256`.
+
 ## Graded predictions (`grade.md`, written by `scripts/grade_lagged.py`)
 
 Differences are a minus b, paired over the same episodes, percentile bootstrap with 2,000
@@ -71,3 +79,7 @@ naive one would be +0.271 [+0.236, +0.299] on `back_door` against the study's +0
   cores. Its outputs are `ident_v1_2.json`, `ident_v1_2.md`, `ident_v1_2_predictions.parquet`
   (157,950 rows) and, from the grader, `grade.json`, `grade.md` and `grade.log`.
 - DEVIATIONS.md records the fallback.
+- `ident_v1_2_predictions.parquet` (SHA-256 `6d0dc69d7cb2ed7f54d07a45d5e4593e4046050a23bccdcbab38728dfd391ed3`)
+  was held back from the scoring commit by the repository's `*.parquet` ignore rule and was added on
+  2026-11-27, as the other registrations keep theirs. Regrading from it with
+  `scripts/grade_lagged.py` reproduces `grade.json` and `grade.md` byte for byte.

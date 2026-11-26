@@ -296,6 +296,11 @@ Graded outcomes on 1.2.0:
 - **E3 is not confirmed.** On `observed_confounder`, BackDoorOLS's false-effect rate
   (47.9%) is not below unadjusted NaiveOLS's (45.0% ± 1.4%). The contemporaneous
   back-door set does not remove confounding that runs through `A_{t-1}`.
+  *Note added 2026-11-27.* A later test with registered predictions does not support that
+  last sentence. Conditioning on the lag-one set, which blocks the path through `A_{t-1}`,
+  moves the rate from 0.479 to 0.464, a paired difference of -0.014 [-0.034, +0.007]. See
+  `../lagged_backdoor_2026-10/README.md`. The same note applies to the reading of E3 under
+  1.1.0 above.
 
 Effect-sign accuracy of the estimators that were missing or new:
 

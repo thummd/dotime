@@ -18,6 +18,12 @@ All notable changes to `dotime` are documented here. The format follows
 - `episode_to_batch_interp` (`dotime.reference.pfn`) builds the do-value under the
   checkpoint's own convention, read from its `data` block (`model.input_convention`):
   the legacy `v / sd` or the centred `(v - mu) / sd`, and always emits `a_ref_norm`.
+- `LaggedBackDoorOLS` and `LaggedBackDoorOLS-L3` (`dotime.baselines.LaggedBackDoorOLSBaseline`):
+  the back-door regression with one or three lags of the treatment, the adjustment set and the
+  outcome in its design. Both are opt-in by name and are not part of the default reference
+  table. The registered test in `results/reference/lagged_backdoor_2026-10/` did not confirm
+  that the lagged set lowers the false-effect rate on `observed_confounder` (0.464 against
+  0.479 for `BackDoorOLS`).
 
 ### Changed
 - `load_dotpfn` refuses a checkpoint whose weights do not match its config instead of
