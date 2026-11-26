@@ -52,9 +52,9 @@
 # depend on numpy's global generator or on the number of workers.
 #
 # The suite sets its own seed, the suite seed of version 1.0.0 (top-level seed
-# + 2000), so it keeps that seed whether it is built alone or next to other
-# suites.
-seed: 20260719
+# + 1000 here, as in the other single-suite configs), so it keeps that seed
+# whether it is built alone or next to other suites.
+seed: 20261719
 T: 200
 
 suites:

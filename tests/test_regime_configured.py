@@ -353,6 +353,9 @@ def test_regime_v1_1_release_config():
     # build_release.py seeds the n-th suite of a config with base + 1000 n.
     position = list(released["suites"]).index(_SUITE) + 1
     assert cfg["seed"] == released["seed"] + 1000 * position == _SUITE_SEED
+    # The explicit seed also equals the derived one, as the fingerprint tests
+    # expect of every release config.
+    assert cfg["seed"] == config["seed"] + 1000
     for key in ("generator", "T", "densities", "n_episodes"):
         assert cfg[key] == old[key]
     assert cfg["prior_config"] == _REPAIRED
