@@ -1,12 +1,12 @@
 {
- "created_utc": "2026-11-26T19:01:18Z",
- "git_head": "5e10e0096d8e6bca05eedb1988f37b5252a8ddb6",
+ "created_utc": "2026-11-26T19:15:24Z",
+ "git_head": "e3b9375d19fca424d952ec3502a4a1c2c6d9a2fd",
  "src_dirty": false,
  "dotime_file": "src/dotime/__init__.py",
  "suite": "dot-RegimeSwitch-v1",
  "version": "1.1.0",
  "config": "scripts/release_config_regime_v1_1.yaml",
- "config_keys_sha256": "f5c50b00c868ea2e",
+ "config_keys_sha256": "ae3c394b6387e24e",
  "suite_seed": 20262719,
  "per_block": 200,
  "target_qa": {
