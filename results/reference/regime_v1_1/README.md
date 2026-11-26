@@ -30,6 +30,7 @@ and the shared regime path come from the prior's counterfactual generator
 | File | Content |
 |---|---|
 | `design_pilot.json` | `scripts/effect_persistence.py` on the first 200 episodes of each regime density, from a clean checkout of `e3b9375`. The header of the release config quotes its numbers, and `tests/test_regime_configured.py` asserts that it does |
+| `effect_persistence_full.json` | The same script on all 9,999 episodes, from a clean checkout of `deba4d8` |
 | `amplitude_tail.json` | `scripts/amplitude_tail.py` on a build of the same recipe without the amplitude limit (config of `bbccbf2`) |
 | `build_validation.json` | `scripts/validate_build.py` on the release build |
 | `regime_v1_1_cpu.json` | Reference rows of the release build, from `scripts/reference_rows.py` |
@@ -99,6 +100,10 @@ diverged, arms equal before the onset in all of them) and compares the two query
 The window closes a median 30.5 steps before the last step in the pilot, and the contractive
 dynamics let the effect decay in that time. The config therefore queries the window's end, as
 dot-Wide-v1 does.
+
+On all 9,999 episodes (`effect_persistence_full.json`) the shares are 8.5% at the last step and
+78.8% at the window's end. 23 episodes are resampled, for a zeroed arm or a value above the
+amplitude limit, and none stays diverged.
 
 ## Reference rows
 
