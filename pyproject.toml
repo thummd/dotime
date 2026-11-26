@@ -204,7 +204,14 @@ exclude = [
 line-length    = 100
 target-version = "py310"
 src            = ["src", "tests"]
-extend-exclude = ["docs/_build", "src/dotime/_vendor"]
+extend-exclude = [
+    "docs/_build",
+    "src/dotime/_vendor",
+    # Scripts frozen by a pre-registration keep the bytes they were registered and
+    # run with, so a later lint rule or formatter release must not rewrite them.
+    # List a file here only if a registration names it and the pinned ruff rejects it.
+    "results/reference/prereg_2026-10_s15/scripts/strata_and_series.py",
+]
 
 [tool.ruff.lint]
 select = [
