@@ -10,7 +10,9 @@ is opt-in.
 
 from __future__ import annotations
 
+import hashlib
 import json
+import re
 import warnings
 from pathlib import Path
 
@@ -26,6 +28,7 @@ from dotime.hardening import RECOMMENDED_HARDENING
 _ROOT = Path(__file__).resolve().parents[1]
 _CONFIG = _ROOT / "scripts" / "release_config_regime_v1_1.yaml"
 _V1_CONFIG = _ROOT / "scripts" / "release_config.yaml"
+_REFERENCE = _ROOT / "results" / "reference"
 _SUITE = "dot-RegimeSwitch-v1"
 _SUITE_SEED = 20262719
 
@@ -259,3 +262,46 @@ def test_regime_v1_1_release_config():
     assert {s["kind"] for s in new_specs} == {"regime_configured"}
     block = lambda specs: [(s["seed"], s["num_regimes"], s["tier"]) for s in specs]  # noqa: E731
     assert block(new_specs) == block(old_specs)
+
+
+def test_release_config_header_quotes_its_measurements():
+    """Every number in the config's header comment is the number of an artifact.
+
+    The header is hashed into the manifest of the released suite, so it cannot
+    be corrected later. The design pilot must also belong to this config.
+    """
+    text = _CONFIG.read_text()
+    header = re.sub(
+        r"\s+",
+        " ",
+        " ".join(line.lstrip("# ") for line in text.splitlines() if line.startswith("#")),
+    )
+    cfg = yaml.safe_load(text)["suites"][_SUITE]
+    pilot = json.loads((_REFERENCE / "regime_v1_1" / "design_pilot.json").read_text())
+    keys_hash = hashlib.sha256(json.dumps(cfg, sort_keys=True).encode()).hexdigest()[:16]
+    assert pilot["config_keys_sha256"] == keys_hash
+    assert pilot["src_dirty"] is False
+    summary, pooled = pilot["summary"], pilot["summary"]["pooled"]
+    assert (summary["n_episodes"], summary["n_contrast"]) == (600, 600)
+    assert summary["n_diverged"] == 0
+    assert summary["n_reads_parents"] == 600
+    assert "In a pilot of 600 episodes" in header
+    median = summary["steps_after_window_median"]
+    assert f"window closes a median {median:.1f} steps before T-1" in header
+    at_last = 100 * pooled["query_at_last_step_share"]
+    at_end = 100 * pooled["query_at_window_end_share"]
+    assert (
+        f"{at_last:.1f}% of the episodes at T-1 and in {at_end:.1f}% at the window's end" in header
+    )
+    most = 100 * pooled["query_is_most_affected_share"]
+    assert f"most affected variable in {most:.1f}% of the episodes" in header
+    weights = json.loads(
+        (_REFERENCE / "regime_weights" / "regime_weights_measurement.json").read_text()
+    )
+    group = weights["configs"][0]["groups"]["regime_all"]
+    assert group["on"]["n_episodes"] == group["on_hardened"]["n_episodes"] == 600
+    zeroed = {k: round(group[k]["diverged_frac"] * 600) for k in ("on", "on_hardened")}
+    assert (
+        f"{zeroed['on']} of 600 measured episodes diverge without it and "
+        f"{zeroed['on_hardened']} of 600 with it" in header
+    )
