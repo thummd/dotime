@@ -6,7 +6,12 @@ All notable changes to `dotime` are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-26
+
 ### Added
+- Suite released with this version:
+  - `dot-RegimeSwitch-v1` 1.1.0: Zenodo `10.5281/zenodo.24570950`, a new version under the
+    concept DOI `10.5281/zenodo.20846073`, Hugging Face tag `v1.1.0`.
 - The vendored Do-Over-Time-PFN (`dotime.models`) mirrors the options the training
   repository added in its October 2026 recovery program, so pilot and future
   pre-registered checkpoints load here: `query_a_ref` (the treatment's normalised
@@ -45,13 +50,11 @@ All notable changes to `dotime` are documented here. The format follows
   and the episodes of `dot-RegimeSwitch-v1` 1.0.0. Options that only generic suites read
   (`chain_prob`, `regime_switching_prob`, `latent`, `tier_n_edges`) are now refused on a
   regime suite. They were forwarded into its specs and ignored.
-- `dot-RegimeSwitch-v1` 1.1.0, released on 2026-11-26 as Zenodo record 24570950 under the
-  concept DOI `10.5281/zenodo.20846073` and under the tag `v1.1.0` on the Hugging Face
-  Hub. `scripts/release_config_regime_v1_1.yaml` builds it: the recipe and seeds of 1.0.0
-  with `regime_canonical_weights` (in the package since 0.2.0), the recommended hardening,
-  ten stability retries, an amplitude limit of 50, shared noise and the query at the end
-  of the intervention window. `results/reference/regime_v1_1/` holds its design pilot,
-  the validation of the release build and its reference rows, and its folder
+- `scripts/release_config_regime_v1_1.yaml` builds `dot-RegimeSwitch-v1` 1.1.0: the recipe
+  and seeds of 1.0.0 with `regime_canonical_weights` (in the package since 0.2.0), the
+  recommended hardening, ten stability retries, an amplitude limit of 50, shared noise and
+  the query at the end of the intervention window. `results/reference/regime_v1_1/` holds
+  its design pilot, the validation of the release build and its reference rows, and its folder
   `independent_arms/` the first candidate, on which no reference estimator beat the
   pre-onset mean. On the released suite the reference estimators do not separate either:
   the pre-onset mean scores 0.620 and `NaiveOLS` 0.628 in effect-sign accuracy.
