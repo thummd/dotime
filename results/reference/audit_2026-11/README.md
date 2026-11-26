@@ -60,3 +60,22 @@ By schedule, without self-queries, NaiveOLS scores 0.612 on the jittered grid,
 `../continuous_irregular/continuous_irregular_per_schedule.json` include
 self-queries and read 0.811, 0.829 and 0.733. Effect-sign rows of the
 continuous-time suites should be quoted without self-queries.
+
+## Exactly-zero effects and rectified activations
+
+`zero_effect_by_activation.json`, from `scripts/zero_effect_by_activation.py` on a clean
+checkout of `d633a66`. Under shared noise the effect on the queried outcome is exactly zero
+in 15% to 36% of the episodes of the structures that have a path from the treatment to the
+outcome (`../detection_power_2026-10/ident_v1_2.json`). Two of the four activations of the
+named-structure sampler, ReLU and tanh(ReLU), return zero on every negative input. The script
+samples 1,500 new shared-noise pairs of each of the seven structures with a path, drops the
+diverged ones, reads the effect at the query step of version 1.2.0 and counts the zero
+effects by whether such an activation lies on the path.
+
+Of the 9,991 pairs, 2,504 have an effect of exactly zero. 2,502 of them have a rectified
+activation on the path. The other two are `mediator` pairs, out of 3,843 pairs without one.
+The zero shares per structure are close to those of the released suite (0.17 to 0.21 for the
+four structures with a direct edge, 0.33 to 0.35 for the three mediated ones). The pairs are
+new draws and not the released episodes, so this explains the mechanism and does not
+reproduce the suite's counts.
+

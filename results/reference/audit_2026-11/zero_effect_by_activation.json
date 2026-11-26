@@ -1,0 +1,257 @@
+{
+ "question": "does an exactly-zero effect under shared noise need a rectified activation on the path from the treatment to the outcome?",
+ "generator": "dotime.extended.TSCMPrior(pair_mode='counterfactual'), new draws, not released episodes",
+ "git_head": "d633a66e14cadcefe66821d50a26b257a557ea08",
+ "src_dirty": false,
+ "activations": [
+  "Identity",
+  "ReLU",
+  "Tanh",
+  "TanhReLU"
+ ],
+ "rectified": [
+  "ReLU",
+  "TanhReLU"
+ ],
+ "n_pairs_requested": 1500,
+ "seed0": 20261126,
+ "t_len": 200,
+ "structures": {
+  "bi_variate": {
+   "path_after_treatment": [
+    "Y"
+   ],
+   "query_offset": 0,
+   "n_pairs": 1452,
+   "n_diverged_dropped": 48,
+   "n_query_outside_dropped": 0,
+   "n_zero_effect": 251,
+   "zero_effect_share": 0.17286501377410468,
+   "rectified_on_path": {
+    "n_pairs": 738,
+    "n_zero_effect": 251
+   },
+   "no_rectified_on_path": {
+    "n_pairs": 714,
+    "n_zero_effect": 0
+   },
+   "target_stats": {
+    "y_obs": {
+     "n": 1452,
+     "nonzero_frac": 1.0,
+     "mean": 0.07651178202878545,
+     "var": 0.7904484940013983
+    },
+    "y_int": {
+     "n": 1452,
+     "nonzero_frac": 1.0,
+     "mean": 0.1394674197816997,
+     "var": 1.1946343603644969
+    }
+   }
+  },
+  "back_door": {
+   "path_after_treatment": [
+    "Y"
+   ],
+   "query_offset": 0,
+   "n_pairs": 1433,
+   "n_diverged_dropped": 67,
+   "n_query_outside_dropped": 0,
+   "n_zero_effect": 242,
+   "zero_effect_share": 0.1688764829030007,
+   "rectified_on_path": {
+    "n_pairs": 740,
+    "n_zero_effect": 242
+   },
+   "no_rectified_on_path": {
+    "n_pairs": 693,
+    "n_zero_effect": 0
+   },
+   "target_stats": {
+    "y_obs": {
+     "n": 1433,
+     "nonzero_frac": 1.0,
+     "mean": 0.14922905816988719,
+     "var": 1.7610532932221832
+    },
+    "y_int": {
+     "n": 1433,
+     "nonzero_frac": 1.0,
+     "mean": 0.21979533514285438,
+     "var": 3.8825780197793827
+    }
+   }
+  },
+  "bow_graph": {
+   "path_after_treatment": [
+    "Y"
+   ],
+   "query_offset": 0,
+   "n_pairs": 1423,
+   "n_diverged_dropped": 77,
+   "n_query_outside_dropped": 0,
+   "n_zero_effect": 255,
+   "zero_effect_share": 0.1791988756148981,
+   "rectified_on_path": {
+    "n_pairs": 717,
+    "n_zero_effect": 255
+   },
+   "no_rectified_on_path": {
+    "n_pairs": 706,
+    "n_zero_effect": 0
+   },
+   "target_stats": {
+    "y_obs": {
+     "n": 1423,
+     "nonzero_frac": 1.0,
+     "mean": 0.10548883832060578,
+     "var": 1.0862843862987503
+    },
+    "y_int": {
+     "n": 1423,
+     "nonzero_frac": 1.0,
+     "mean": 0.19473417192697404,
+     "var": 1.475591626911752
+    }
+   }
+  },
+  "instrumental_variable": {
+   "path_after_treatment": [
+    "Y"
+   ],
+   "query_offset": 0,
+   "n_pairs": 1410,
+   "n_diverged_dropped": 90,
+   "n_query_outside_dropped": 0,
+   "n_zero_effect": 290,
+   "zero_effect_share": 0.20567375886524822,
+   "rectified_on_path": {
+    "n_pairs": 737,
+    "n_zero_effect": 290
+   },
+   "no_rectified_on_path": {
+    "n_pairs": 673,
+    "n_zero_effect": 0
+   },
+   "target_stats": {
+    "y_obs": {
+     "n": 1410,
+     "nonzero_frac": 1.0,
+     "mean": -0.08608974661140996,
+     "var": 28.804637179666518
+    },
+    "y_int": {
+     "n": 1410,
+     "nonzero_frac": 1.0,
+     "mean": -0.002851512408584145,
+     "var": 22.928019874170893
+    }
+   }
+  },
+  "front_door": {
+   "path_after_treatment": [
+    "M",
+    "Y"
+   ],
+   "query_offset": 0,
+   "n_pairs": 1410,
+   "n_diverged_dropped": 90,
+   "n_query_outside_dropped": 0,
+   "n_zero_effect": 468,
+   "zero_effect_share": 0.33191489361702126,
+   "rectified_on_path": {
+    "n_pairs": 1057,
+    "n_zero_effect": 468
+   },
+   "no_rectified_on_path": {
+    "n_pairs": 353,
+    "n_zero_effect": 0
+   },
+   "target_stats": {
+    "y_obs": {
+     "n": 1410,
+     "nonzero_frac": 1.0,
+     "mean": 0.44253334105328546,
+     "var": 73.62195058379857
+    },
+    "y_int": {
+     "n": 1410,
+     "nonzero_frac": 1.0,
+     "mean": 0.42938399676909317,
+     "var": 73.64917770358863
+    }
+   }
+  },
+  "confounder_mediator": {
+   "path_after_treatment": [
+    "M",
+    "Y"
+   ],
+   "query_offset": 0,
+   "n_pairs": 1426,
+   "n_diverged_dropped": 74,
+   "n_query_outside_dropped": 0,
+   "n_zero_effect": 501,
+   "zero_effect_share": 0.35133239831697055,
+   "rectified_on_path": {
+    "n_pairs": 1065,
+    "n_zero_effect": 501
+   },
+   "no_rectified_on_path": {
+    "n_pairs": 361,
+    "n_zero_effect": 0
+   },
+   "target_stats": {
+    "y_obs": {
+     "n": 1426,
+     "nonzero_frac": 1.0,
+     "mean": -0.15472078946569925,
+     "var": 89.00347913009574
+    },
+    "y_int": {
+     "n": 1426,
+     "nonzero_frac": 1.0,
+     "mean": -0.14585495696041922,
+     "var": 89.05896382141472
+    }
+   }
+  },
+  "mediator": {
+   "path_after_treatment": [
+    "M",
+    "Y"
+   ],
+   "query_offset": 1,
+   "n_pairs": 1437,
+   "n_diverged_dropped": 63,
+   "n_query_outside_dropped": 0,
+   "n_zero_effect": 497,
+   "zero_effect_share": 0.34585942936673625,
+   "rectified_on_path": {
+    "n_pairs": 1094,
+    "n_zero_effect": 495
+   },
+   "no_rectified_on_path": {
+    "n_pairs": 343,
+    "n_zero_effect": 2
+   },
+   "target_stats": {
+    "y_obs": {
+     "n": 1437,
+     "nonzero_frac": 1.0,
+     "mean": -0.005132537802155392,
+     "var": 69.02692734245004
+    },
+    "y_int": {
+     "n": 1437,
+     "nonzero_frac": 1.0,
+     "mean": 0.004719796416613162,
+     "var": 69.05198265032533
+    }
+   }
+  }
+ },
+ "n_zero_effect_without_rectified": 2,
+ "n_pairs_without_rectified": 3843
+}
