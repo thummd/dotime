@@ -5,7 +5,7 @@ DoTime ships eight versioned, immutable suites for reproducible evaluation. Each
 ## Suites
 
 - **`dot-Identifiability-v1`** — ~10.8k trajectories across **eight** named structures: `back_door`, `observed_confounder`, `confounder_mediator` (back-door family); `front_door`, `mediator` (front-door family); `instrumental_variable` (IV); `bi_variate` (trivially identified); `unobserved_confounder` (null-effect control: a hidden U drives A and Y, and there is no A→Y edge at any lag, so the effect is identified and equals zero). Targets are exact interventional outcomes. In v1.0.0 the two arms are independent noise draws from the same SCM (interventional twins, so `y_int - y_obs` is not a per-episode counterfactual effect). From v1.1.0 one pre-drawn noise stream is shared across arms and the pair is a true counterfactual.
-- **`dot-RegimeSwitch-v1`** — regime-switching trajectories with controllable break density. In v1.0.0 no regime mechanism reads its parents, so every variable is independent noise. See the erratum below. Version 1.1.0 with repaired mechanisms is prepared and not released yet (see *Repaired regime switching* below).
+- **`dot-RegimeSwitch-v1`** — regime-switching trajectories with controllable break density. In v1.0.0 no regime mechanism reads its parents, so every variable is independent noise. See the erratum below. Version 1.1.0, with repaired mechanisms and arms that share their noise, is prepared and not released yet (see *Repaired regime switching* below).
 - **`dot-Continuous-v1`** — continuous-time intervention windows, multiple query offsets.
 - **`dot-Generic-100k`** — 100 000 trajectories from the full diverse prior. Training-scale.
 
@@ -70,7 +70,7 @@ builds exactly as before.
 | Key | Effect |
 |---|---|
 | `prior_config` | Passed to `DoTime(config=...)`. `dot-Wide-v1` sets `N_min: 12`, `N_max: 40`, `K_max: 8` and the recommended `hardening`. |
-| `pair_mode` | `counterfactual` shares the noise across arms (`DoTime.generate_pair(pair_mode=...)`). It needs `regime_switching_prob: 0`, since regime-switching SCMs draw their noise step by step. |
+| `pair_mode` | `counterfactual` shares the noise across arms (`DoTime.generate_pair(pair_mode=...)`). A generic suite needs `regime_switching_prob: 0` for it, because `generate_pair` shares noise only for the other SCMs. A regime suite shares it through `generate_regime_pair` (see *Repaired regime switching* below). |
 | `chain_prob`, `regime_switching_prob` | Shares of chain and regime-switching SCMs. `dot-Wide-v1` sets both to 0. Chain SCMs have 3 to 7 variables whatever `N_min` is. |
 | `latent` | `drop` removes the hidden variables before the query is chosen. |
 | `tier_n_edges` | The tier is 1 plus the number of these edges below the simulated variable count, counted before latents are dropped. `[20, 30]` gives tier 1 for 12 to 20 variables, 2 for 21 to 30 and 3 for 31 to 40. |
@@ -99,31 +99,34 @@ version 1.0.0, in which every variable is independent noise (see the erratum
 below).
 
 Version 1.1.0 is the recipe of version 1.0.0 with mechanisms that read their
-parents. It keeps the suite seed, the episode seeds, the three regime densities
-and the 9 999 episodes. An episode therefore has the regime graphs, the noise
-models and the intervention of the 1.0.0 episode with the same index, unless it
-is resampled. Its release config is `scripts/release_config_regime_v1_1.yaml`:
+parents and with arms that share their noise. It keeps the suite seed, the
+episode seeds, the three regime densities and the 9 999 episodes. An episode
+therefore has the regime graphs, the noise models and the intervention of the
+1.0.0 episode with the same index, unless it is resampled. Its release config is
+`scripts/release_config_regime_v1_1.yaml`:
 
 ```bash
 python scripts/build_release.py --config scripts/release_config_regime_v1_1.yaml
 ```
 
-A `regime` suite accepts these opt-in keys. A suite that sets neither builds
-exactly as before.
+A `regime` suite accepts these opt-in keys. A suite that sets none of them
+builds exactly as before.
 
 | Key | Effect |
 |---|---|
 | `prior_config` | Passed to `DoTime(config=...)`. Version 1.1.0 sets `regime_canonical_weights: true` and the recommended `hardening`. |
+| `pair_mode` | `counterfactual` shares one noise realisation and one regime path across the two arms (`DoTime.generate_regime_pair(pair_mode=...)`, `RegimeSwitchingTemporalSCM.freeze_noise`). The arms then agree exactly before the onset. |
 | `query_row` | `window_end` moves the query from the last step to the last step of the intervention window, recorded as `metadata["query_row"]`. |
+| `amplitude_limit` | An episode is resampled while a value of either arm exceeds the limit in magnitude, under the retry rule of `stability_retries`. Recorded as `metadata["amplitude_limit"]`. |
 
-Either key switches the suite to the `regime_configured` build path. That path
-also seeds numpy's global generator for every episode. The generator draws the
-regime path of each arm, and with repaired mechanisms the trajectories depend on
-it. Keys that only the generic builder reads (`chain_prob`,
-`regime_switching_prob`, `latent`, `tier_n_edges`, `pair_mode: counterfactual`)
-are refused on a regime suite.
+Any of them (for `pair_mode` only the value `counterfactual`) switches the suite
+to the `regime_configured` build path. That path also seeds numpy's global
+generator for every episode, which draws the regime path of each arm of an
+interventional pair. A counterfactual pair draws its noise and its path from the
+prior's own generator. Keys that only the generic builder reads (`chain_prob`,
+`regime_switching_prob`, `latent`, `tier_n_edges`) are refused on a regime suite.
 
-Four settings differ from 1.0.0, each for a measured reason.
+Six settings differ from 1.0.0, each for a measured reason.
 
 - **Repair** (`regime_canonical_weights`). The mechanisms read their parents.
 - **Stabilisation** (`hardening`). With the repair alone 387 of 600 measured
@@ -131,44 +134,47 @@ Four settings differ from 1.0.0, each for a measured reason.
   (`results/reference/regime_weights/`).
 - **Retries** (`stability_retries: 10`). A remaining diverged episode is
   resampled, so no episode has a zeroed arm.
+- **Amplitude limit** (`amplitude_limit: 50`). The hardening stabilises each
+  regime on its own, which does not bound a system that switches between
+  regimes. In a build without the limit 8 of 9 999 episodes exceed 50 in
+  magnitude, up to 322.8, and one target of 236.4 carries most of the variance
+  of the level target (`results/reference/regime_v1_1/amplitude_tail.json`).
+- **Shared noise** (`pair_mode: counterfactual`). With independent arms the
+  observational history says nothing about the noise of the interventional arm,
+  and on a build of that recipe no reference estimator beat the pre-onset mean
+  (`results/reference/regime_v1_1/independent_arms/`). With shared noise
+  `y_true - y_obs` is a per-episode counterfactual effect, and the query is the
+  untreated variable that the intervention moves most.
 - **Query at the window's end** (`query_row: window_end`). The hardened dynamics
-  are contractive, and the window closes a median 30.5 steps before the last
-  step. In a pilot of 600 episodes the intervention moves the queried variable by
-  at least 0.1 in 6.0% of the episodes at the last step and in 47.7% at the
-  window's end (`results/reference/regime_v1_1/design_pilot.json`).
+  are contractive, and in a pilot of 600 episodes the window closes a median
+  30.5 steps before the last step. The effect on the query reaches 0.1 in 9.2%
+  of the pilot episodes at the last step and in 77.8% at the window's end
+  (`results/reference/regime_v1_1/design_pilot.json`).
 
-One property stays as in 1.0.0: **the two arms are independent draws.** They
-share neither noise nor regime path, because the regime simulator skips the
-noise draw of a variable under a hard intervention. The suite holds
-interventional twins, `y_true - y_obs` is not a per-episode effect, and the
-effect sign is not scored. The queried variable is the one with the largest gap
-between the two arms, which is the most affected variable in 29.0% of the pilot
-episodes. The recorded graph (`metadata["graph"]`) says whether and at which lag
-the treatment reaches the query.
-
-The pilot measures what the released pair cannot show.
-`results/reference/regime_v1_1/scripts/effect_persistence.py` rebuilds the SCM
-and the intervention of each episode and simulates the interventional arm twice
-under common random numbers, which gives both runs the same noise and the same
-regime path. A soft intervention is contrasted with the observational run. A
-hard or time-varying intervention is contrasted with a hard intervention at the
-treated variable's pre-onset mean, because both then skip the same noise draws.
+With `record_graph` every episode records its regime graphs and, as
+`metadata["graph"]["regime_path"]`, the regime of each step, which both arms
+share.
 
 A candidate build of the 9 999 episodes passes
-`results/reference/regime_v1_1/scripts/validate_build.py`: no episode has a
-zeroed arm, every episode reads its parents, 31.2% of the variables have a
-lag-one autocorrelation above 0.3, and 300 sampled episodes regenerate exactly
-from the config and the seeds.
+`results/reference/regime_v1_1/scripts/validate_build.py`. No episode has a
+zeroed arm or a value above the limit, every episode reads its parents, the two
+arms agree exactly before the onset, and 300 sampled episodes regenerate exactly
+from the config and the seeds. The absolute effect on the query is at least 0.1
+in 78.8% of the episodes, with a median of 0.46. Where the recorded graph does
+not reach the query from the treatment (215 episodes), the effect is exactly
+zero.
 
-**Limitation.** No reference estimator beats the pre-onset mean on the candidate.
-Its level RMSE is 2.28, against 2.46 for VAR-OLS, 2.85 for AR1 and 3.07 for
-NaiveOLS (`results/reference/regime_v1_1/regime_v1_1_cpu.json`). With independent
-arms the observational history says nothing about the noise of the
-interventional arm, so only the interventional mean can be predicted, and the
-intervention shifts it by little against the spread of the target. The repair
-gives the levels structure. It does not make the suite separate estimators,
-which would need arms that share their noise.
-`results/reference/regime_v1_1/README.md` lays out the options before a release.
+**Reference rows.** The estimators of the package do not separate on the
+candidate (`results/reference/regime_v1_1/regime_v1_1_cpu.json`). On the 7 876
+queries with an absolute effect of at least 0.1 the pre-onset mean predicts the
+sign of the effect in 62.0%, VAR-OLS in 60.6% and NaiveOLS, which reads the
+intervention value, in 62.8%. Split by the shortest lag from the treatment to
+the query, NaiveOLS leads the mean by 1.3 points at lag zero and not at lag one.
+The oracle scores 1.0, so the room is real, but a contemporaneous linear
+regression is a weak model of an effect that builds up over a window in a
+nonlinear system that switches regimes.
+`results/reference/regime_v1_1/README.md` has the tables and the steps before a
+release.
 
 ## v1.0.0 field semantics and known issues (erratum)
 
@@ -221,8 +227,8 @@ episodes and 62.7% of the Generic regime share diverge, and at `N_max=60, K_max=
 and 97% do (`results/reference/regime_weights/`). Together with the recommended
 hardening the same measurement finds 1 diverged episode in 600 and 1 in 300 at the
 default prior, and none in 150 and in 90 at `N_max=60, K_max=8`. Version 1.1.0 of
-`dot-RegimeSwitch-v1` is prepared with both settings (see *Repaired regime switching*
-above). The regime share of `dot-Generic-100k` has no repaired version.
+`dot-RegimeSwitch-v1` is prepared with both settings and with shared noise (see
+*Repaired regime switching* above). The regime share of `dot-Generic-100k` has no repaired version.
 
 ## Ground-truth graphs
 
@@ -251,6 +257,7 @@ example a copy of `scripts/release_config.yaml`, and every episode gains
 | `k_eff` | The largest lag in `edges`, self-edges included, or 0 |
 | `reads_parents` | Whether every sampled parent is read by its child's mechanism |
 | `regime_edges` | Regime-switching SCMs only: the edges each regime sampled, read or not. Otherwise `null` |
+| `regime_path` | Regime suites with `pair_mode: counterfactual` only: the regime of every released step, an index into `regime_edges`. Both arms share it. Absent otherwise, because independent arms follow two paths |
 | `time` | `"discrete"`, or `"continuous"` for the continuous prior, whose edges all have lag 1 in observation steps |
 | `path` | One entry per query, from the intervention targets to the query column: `target`, `reachable`, `min_lag` (smallest summed lag), `min_hops` (fewest edges) and `direct_lags` |
 
