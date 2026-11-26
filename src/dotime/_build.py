@@ -328,6 +328,8 @@ def _simulate_episode(spec: dict):
         return _with_graph(spec, ep, ("continuous", spec["structure"]))
     if kind == "generic_configured":
         return _make_configured_generic_episode(spec)
+    if kind == "regime_configured":
+        return _make_configured_regime_episode(spec)
     raise ValueError(f"unknown spec kind {kind!r}")
 
 
@@ -418,6 +420,7 @@ def episode_specs(cfg: dict, suite_seed: int, scale: float) -> list[dict]:
                 }
             )
     elif gen == "regime":
+        kind = _regime_spec_kind(cfg)
         densities = {int(k): int(v) for k, v in cfg["densities"].items()}
         per = max(1, scaled(cfg["n_episodes"], scale) // len(densities))
         for density, tier in densities.items():
@@ -425,7 +428,7 @@ def episode_specs(cfg: dict, suite_seed: int, scale: float) -> list[dict]:
                 i = len(specs)
                 specs.append(
                     {
-                        "kind": "regime",
+                        "kind": kind,
                         "idx": i,
                         "seed": episode_seed(suite_seed, i),
                         "T": t_len,
@@ -506,6 +509,36 @@ _GENERIC_PRIOR_KEYS = (
 _QUERY_ROWS = ("window_end",)
 # Options DoTime reads from its config on top of the DEFAULT_CONFIG keys.
 _EXTRA_PRIOR_CONFIG_KEYS = ("N_min", "hardening", "regime_canonical_weights")
+# The opt-in keys that reconfigure a regime suite. Setting any of them moves the
+# suite to the "regime_configured" spec kind. Without them the specs and the
+# episodes stay those of the released dot-RegimeSwitch-v1 1.0.0.
+_REGIME_PRIOR_KEYS = ("prior_config", "query_row")
+# Options that only the generic builder reads. episode_specs forwards them into
+# the specs of any suite, so a regime suite that set one would have it ignored.
+_GENERIC_ONLY_KEYS = ("chain_prob", "regime_switching_prob", "latent", "tier_n_edges")
+
+
+def _check_prior_config(prior_config: object) -> None:
+    """Refuse a ``prior_config`` that the prior would not read as written.
+
+    Args:
+        prior_config: The ``prior_config`` entry of a suite config.
+
+    Raises:
+        ValueError: If it is not a mapping, or if it sets a key that
+            :class:`~dotime.prior.DoTime` does not read.
+    """
+    from dotime.utils import DEFAULT_CONFIG
+
+    if not isinstance(prior_config, dict):
+        raise ValueError(f"prior_config must be a mapping, got {type(prior_config).__name__}")
+    # A misspelt key would otherwise be merged into the config and ignored.
+    unknown = set(prior_config) - set(DEFAULT_CONFIG) - set(_EXTRA_PRIOR_CONFIG_KEYS)
+    if unknown:
+        raise ValueError(
+            f"unknown prior_config keys {sorted(map(str, unknown))}; valid keys are "
+            f"{sorted([*DEFAULT_CONFIG, *_EXTRA_PRIOR_CONFIG_KEYS])}"
+        )
 
 
 def _generic_spec_kind(cfg: dict) -> str:
@@ -533,20 +566,9 @@ def _generic_spec_kind(cfg: dict) -> str:
     """
     from itertools import pairwise
 
-    from dotime.utils import DEFAULT_CONFIG
-
     if not any(k in cfg for k in _GENERIC_PRIOR_KEYS):
         return "generic"
-    prior_config = cfg.get("prior_config", {})
-    if not isinstance(prior_config, dict):
-        raise ValueError(f"prior_config must be a mapping, got {type(prior_config).__name__}")
-    # A misspelt key would otherwise be merged into the config and ignored.
-    unknown = set(prior_config) - set(DEFAULT_CONFIG) - set(_EXTRA_PRIOR_CONFIG_KEYS)
-    if unknown:
-        raise ValueError(
-            f"unknown prior_config keys {sorted(map(str, unknown))}; valid keys are "
-            f"{sorted([*DEFAULT_CONFIG, *_EXTRA_PRIOR_CONFIG_KEYS])}"
-        )
+    _check_prior_config(cfg.get("prior_config", {}))
     for key in ("chain_prob", "regime_switching_prob"):
         p = cfg.get(key, 0.0)
         if isinstance(p, bool) or not isinstance(p, (int, float)) or not 0.0 <= p <= 1.0:
@@ -641,6 +663,112 @@ def _make_configured_generic_episode(spec: dict):
     # path_lag still counts paths that run through dropped latent nodes.
     columns = metadata["latent"]["columns"] if "latent" in metadata else None
     return _with_graph(spec, ep, scm, columns=columns)
+
+
+def _regime_spec_kind(cfg: dict) -> str:
+    """Validate the opt-in options of a regime suite and pick its spec kind.
+
+    The checks run while the specs are built, so a bad release config fails
+    before any worker starts.
+
+    Args:
+        cfg: The config of a suite with ``generator: regime``.
+
+    Returns:
+        ``"regime_configured"`` when ``cfg`` sets ``prior_config`` or
+        ``query_row``, which :func:`make_episode` builds with
+        :func:`_make_configured_regime_episode`. Otherwise ``"regime"``, the
+        legacy path of the released dot-RegimeSwitch-v1 1.0.0.
+
+    Raises:
+        ValueError: If ``cfg`` sets an option that only generic suites read, if
+            ``pair_mode`` is not ``"interventional"``, if ``prior_config`` is not
+            a mapping or sets a key the prior does not read, or if ``query_row``
+            is not ``"window_end"``.
+    """
+    ignored = [k for k in _GENERIC_ONLY_KEYS if k in cfg]
+    if ignored:
+        raise ValueError(f"{ignored} only apply to generator: generic, not to a regime suite")
+    # The regime simulator draws its noise step by step and skips the draw of a
+    # variable under a hard intervention, so the two arms cannot share noise.
+    if cfg.get("pair_mode", "interventional") != "interventional":
+        raise ValueError(
+            f"a regime suite pairs independent draws, got pair_mode {cfg['pair_mode']!r}"
+        )
+    if not any(k in cfg for k in _REGIME_PRIOR_KEYS):
+        return "regime"
+    _check_prior_config(cfg.get("prior_config", {}))
+    if cfg.get("query_row", "window_end") not in _QUERY_ROWS:
+        raise ValueError(f"query_row must be one of {_QUERY_ROWS}, got {cfg['query_row']!r}")
+    return "regime_configured"
+
+
+def _make_configured_regime_episode(spec: dict):
+    """Build one episode of a regime-switching suite that configures the prior.
+
+    The retry rule is the legacy regime branch's: attempt ``a > 0`` reseeds with
+    ``seed * 100003 + a``, and an episode is resampled while either arm is
+    zeroed. Unlike the legacy branch, every attempt also seeds numpy's global
+    generator, which draws the regime path of each arm. Options the spec does
+    not set keep the defaults of :class:`~dotime.prior.DoTime`.
+
+    Args:
+        spec: A ``"regime_configured"`` spec from :func:`episode_specs`, with
+            the opt-in keys the suite sets.
+
+    Returns:
+        The :class:`~dotime.benchmarks.Episode`, labelled ``regime_<d>``. Its
+        metadata holds ``tier``, ``n_regimes``, ``diverged`` and, when the
+        suite sets it, ``query_row``.
+
+    Raises:
+        TypeError: If ``prior_config`` holds a value of the wrong type (see
+            :class:`~dotime.prior.DoTime`).
+        ValueError: If ``prior_config`` holds an invalid value.
+    """
+    import numpy as _np
+    import torch as _torch
+
+    from dotime import DoTime
+    from dotime.benchmarks import episode_from_pair
+
+    seed, t_len, d = spec["seed"], spec["T"], spec["num_regimes"]
+    retries = int(spec.get("stability_retries", 0))
+    for attempt in range(retries + 1):
+        s = seed if attempt == 0 else seed * 100003 + attempt
+        _torch.manual_seed(s)
+        # dotime.regime_switching draws each arm's regime path from numpy's
+        # global generator. The legacy branch never seeds it, which is harmless
+        # there because v1.0.0 mechanisms ignore the path. With
+        # regime_canonical_weights the trajectories depend on it, so an unseeded
+        # build would change with the worker count and from run to run. The
+        # mask keeps a retry seed inside the 32 bits numpy accepts.
+        _np.random.seed(s & 0xFFFFFFFF)
+        prior = DoTime(config=spec.get("prior_config"), seed=s)
+        x_obs, x_int, iv, scm = prior.generate_regime_pair(T=t_len, num_regimes=d)
+        if attempt == retries or not arms_zeroed(x_obs, x_int):
+            break
+    metadata: dict = {
+        "tier": spec["tier"],
+        "n_regimes": d,
+        "diverged": arms_zeroed(x_obs, x_int),
+    }
+    query_row = None
+    if spec.get("query_row") == "window_end":
+        # Stabilised dynamics are contractive, so an effect has decayed by the
+        # last step when the window closes long before it (see dot-Wide-v1).
+        query_row = max(int(t) for t in iv.times)
+        metadata["query_row"] = "window_end"
+    ep = episode_from_pair(
+        x_obs,
+        x_int,
+        iv,
+        structure=f"regime_{d}",
+        scm_id=spec["idx"],
+        metadata=metadata,
+        query_row=query_row,
+    )
+    return _with_graph(spec, ep, scm)
 
 
 def _drop_latent_columns(x_obs, x_int, intervention, names: list[str]) -> tuple:
