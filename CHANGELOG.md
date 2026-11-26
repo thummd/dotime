@@ -24,6 +24,20 @@ All notable changes to `dotime` are documented here. The format follows
   table. The registered test in `results/reference/lagged_backdoor_2026-10/` did not confirm
   that the lagged set lowers the false-effect rate on `observed_confounder` (0.464 against
   0.479 for `BackDoorOLS`).
+- A `generator: regime` suite accepts `prior_config` and `query_row: window_end`. Setting
+  either builds through the new `regime_configured` spec kind of `dotime._build`, which
+  passes the config to the prior and seeds numpy's global generator for every episode.
+  That generator draws the regime path of each arm, and no build path seeded it before.
+  A suite that sets neither key keeps the specs and the episodes of `dot-RegimeSwitch-v1`
+  1.0.0. Options that only generic suites read (`chain_prob`, `regime_switching_prob`,
+  `latent`, `tier_n_edges`, `pair_mode: counterfactual`) are now refused on a regime suite.
+  They were forwarded into its specs and ignored.
+- `scripts/release_config_regime_v1_1.yaml` prepares `dot-RegimeSwitch-v1` 1.1.0, which is
+  not released yet: the recipe and seeds of 1.0.0 with `regime_canonical_weights` (in the
+  package since 0.2.0), the recommended hardening, ten stability retries and the query at
+  the end of the intervention window. `results/reference/regime_v1_1/` holds its design
+  pilot, and `results/reference/regime_weights/` now measures the repair together with
+  the hardening (1 of 600 episodes diverges, against 387 of 600 without it).
 
 ### Changed
 - `load_dotpfn` refuses a checkpoint whose weights do not match its config instead of

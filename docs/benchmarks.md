@@ -5,7 +5,7 @@ DoTime ships eight versioned, immutable suites for reproducible evaluation. Each
 ## Suites
 
 - **`dot-Identifiability-v1`** — ~10.8k trajectories across **eight** named structures: `back_door`, `observed_confounder`, `confounder_mediator` (back-door family); `front_door`, `mediator` (front-door family); `instrumental_variable` (IV); `bi_variate` (trivially identified); `unobserved_confounder` (null-effect control: a hidden U drives A and Y, and there is no A→Y edge at any lag, so the effect is identified and equals zero). Targets are exact interventional outcomes. In v1.0.0 the two arms are independent noise draws from the same SCM (interventional twins, so `y_int - y_obs` is not a per-episode counterfactual effect). From v1.1.0 one pre-drawn noise stream is shared across arms and the pair is a true counterfactual.
-- **`dot-RegimeSwitch-v1`** — regime-switching trajectories with controllable break density. In v1.0.0 no regime mechanism reads its parents, so every variable is independent noise. See the erratum below.
+- **`dot-RegimeSwitch-v1`** — regime-switching trajectories with controllable break density. In v1.0.0 no regime mechanism reads its parents, so every variable is independent noise. See the erratum below. Version 1.1.0 with repaired mechanisms is prepared and not released yet (see *Repaired regime switching* below).
 - **`dot-Continuous-v1`** — continuous-time intervention windows, multiple query offsets.
 - **`dot-Generic-100k`** — 100 000 trajectories from the full diverse prior. Training-scale.
 
@@ -92,6 +92,84 @@ carry an effect of at least 0.1. At the window's last step the median effect is
 0.48 and 88.5% of the queries carry an effect of at least 0.1, so both the
 level and the effect can be scored.
 
+## Repaired regime switching (dot-RegimeSwitch-v1 1.1.0, prepared)
+
+**Status: prepared, not released.** The registry and `load_benchmark` still serve
+version 1.0.0, in which every variable is independent noise (see the erratum
+below).
+
+Version 1.1.0 is the recipe of version 1.0.0 with mechanisms that read their
+parents. It keeps the suite seed, the episode seeds, the three regime densities
+and the 9 999 episodes. An episode therefore has the regime graphs, the noise
+models and the intervention of the 1.0.0 episode with the same index, unless it
+is resampled. Its release config is `scripts/release_config_regime_v1_1.yaml`:
+
+```bash
+python scripts/build_release.py --config scripts/release_config_regime_v1_1.yaml
+```
+
+A `regime` suite accepts these opt-in keys. A suite that sets neither builds
+exactly as before.
+
+| Key | Effect |
+|---|---|
+| `prior_config` | Passed to `DoTime(config=...)`. Version 1.1.0 sets `regime_canonical_weights: true` and the recommended `hardening`. |
+| `query_row` | `window_end` moves the query from the last step to the last step of the intervention window, recorded as `metadata["query_row"]`. |
+
+Either key switches the suite to the `regime_configured` build path. That path
+also seeds numpy's global generator for every episode. The generator draws the
+regime path of each arm, and with repaired mechanisms the trajectories depend on
+it. Keys that only the generic builder reads (`chain_prob`,
+`regime_switching_prob`, `latent`, `tier_n_edges`, `pair_mode: counterfactual`)
+are refused on a regime suite.
+
+Four settings differ from 1.0.0, each for a measured reason.
+
+- **Repair** (`regime_canonical_weights`). The mechanisms read their parents.
+- **Stabilisation** (`hardening`). With the repair alone 387 of 600 measured
+  episodes diverge, and with the recommended hardening 1 of 600 does
+  (`results/reference/regime_weights/`).
+- **Retries** (`stability_retries: 10`). A remaining diverged episode is
+  resampled, so no episode has a zeroed arm.
+- **Query at the window's end** (`query_row: window_end`). The hardened dynamics
+  are contractive, and the window closes a median 30.5 steps before the last
+  step. In a pilot of 600 episodes the intervention moves the queried variable by
+  at least 0.1 in 6.0% of the episodes at the last step and in 47.7% at the
+  window's end (`results/reference/regime_v1_1/design_pilot.json`).
+
+One property stays as in 1.0.0: **the two arms are independent draws.** They
+share neither noise nor regime path, because the regime simulator skips the
+noise draw of a variable under a hard intervention. The suite holds
+interventional twins, `y_true - y_obs` is not a per-episode effect, and the
+effect sign is not scored. The queried variable is the one with the largest gap
+between the two arms, which is the most affected variable in 29.0% of the pilot
+episodes. The recorded graph (`metadata["graph"]`) says whether and at which lag
+the treatment reaches the query.
+
+The pilot measures what the released pair cannot show.
+`results/reference/regime_v1_1/scripts/effect_persistence.py` rebuilds the SCM
+and the intervention of each episode and simulates the interventional arm twice
+under common random numbers, which gives both runs the same noise and the same
+regime path. A soft intervention is contrasted with the observational run. A
+hard or time-varying intervention is contrasted with a hard intervention at the
+treated variable's pre-onset mean, because both then skip the same noise draws.
+
+A candidate build of the 9 999 episodes passes
+`results/reference/regime_v1_1/scripts/validate_build.py`: no episode has a
+zeroed arm, every episode reads its parents, 31.2% of the variables have a
+lag-one autocorrelation above 0.3, and 300 sampled episodes regenerate exactly
+from the config and the seeds.
+
+**Limitation.** No reference estimator beats the pre-onset mean on the candidate.
+Its level RMSE is 2.28, against 2.46 for VAR-OLS, 2.85 for AR1 and 3.07 for
+NaiveOLS (`results/reference/regime_v1_1/regime_v1_1_cpu.json`). With independent
+arms the observational history says nothing about the noise of the
+interventional arm, so only the interventional mean can be predicted, and the
+intervention shifts it by little against the spread of the target. The repair
+gives the levels structure. It does not make the suite separate estimators,
+which would need arms that share their noise.
+`results/reference/regime_v1_1/README.md` lays out the options before a release.
+
 ## v1.0.0 field semantics and known issues (erratum)
 
 The archived v1.0.0 files are frozen; the issues below are **documented, not
@@ -134,13 +212,17 @@ def in_regime_share(scm_id: int) -> bool:
     return 0.15 <= torch.rand(1, generator=g).item() < 0.30
 ```
 
-The unreleased opt-in `DoTime(config={"regime_canonical_weights": True})` re-keys
-the weights and zeroes any arm whose values exceed 500, as for the other SCMs. It
-draws the same random numbers as the default, and the default stays byte-identical,
-so the v1.0.0 files still regenerate. With live weights most regime SCMs of the
-current prior are unstable. At the default prior 64.5% of RegimeSwitch episodes and
-62.7% of the Generic regime share diverge, and at `N_max=60, K_max=8` 94% and 97%
-do (`results/reference/regime_weights/`). No suite has been rebuilt with the flag.
+The opt-in `DoTime(config={"regime_canonical_weights": True})`, in the package since
+0.2.0, re-keys the weights and zeroes any arm whose values exceed 500, as for the other
+SCMs. It draws the same random numbers as the default, and the default stays
+byte-identical, so the v1.0.0 files still regenerate. With live weights most regime
+SCMs of the current prior are unstable. At the default prior 64.5% of RegimeSwitch
+episodes and 62.7% of the Generic regime share diverge, and at `N_max=60, K_max=8` 94%
+and 97% do (`results/reference/regime_weights/`). Together with the recommended
+hardening the same measurement finds 1 diverged episode in 600 and 1 in 300 at the
+default prior, and none in 150 and in 90 at `N_max=60, K_max=8`. Version 1.1.0 of
+`dot-RegimeSwitch-v1` is prepared with both settings (see *Repaired regime switching*
+above). The regime share of `dot-Generic-100k` has no repaired version.
 
 ## Ground-truth graphs
 
