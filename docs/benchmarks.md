@@ -5,7 +5,7 @@ DoTime ships eight versioned, immutable suites for reproducible evaluation. Each
 ## Suites
 
 - **`dot-Identifiability-v1`** — ~10.8k trajectories across **eight** named structures: `back_door`, `observed_confounder`, `confounder_mediator` (back-door family); `front_door`, `mediator` (front-door family); `instrumental_variable` (IV); `bi_variate` (trivially identified); `unobserved_confounder` (null-effect control: a hidden U drives A and Y, and there is no A→Y edge at any lag, so the effect is identified and equals zero). Targets are exact interventional outcomes. In v1.0.0 the two arms are independent noise draws from the same SCM (interventional twins, so `y_int - y_obs` is not a per-episode counterfactual effect). From v1.1.0 one pre-drawn noise stream is shared across arms and the pair is a true counterfactual.
-- **`dot-RegimeSwitch-v1`** — regime-switching trajectories with controllable break density. In v1.0.0 no regime mechanism reads its parents, so every variable is independent noise. See the erratum below. Version 1.1.0, with repaired mechanisms and arms that share their noise, is prepared and not released yet (see *Repaired regime switching* below).
+- **`dot-RegimeSwitch-v1`** — regime-switching trajectories with controllable break density. In v1.0.0 no regime mechanism reads its parents, so every variable is independent noise. See the erratum below. Version 1.1.0 (2026-11) repairs the mechanisms and pairs the arms under shared noise. `load_benchmark` returns it from package 0.3.0 on, and `version="1.0.0"` loads the first release (see *Repaired regime switching* below).
 - **`dot-Continuous-v1`** — continuous-time intervention windows, multiple query offsets.
 - **`dot-Generic-100k`** — 100 000 trajectories from the full diverse prior. Training-scale.
 
@@ -92,13 +92,15 @@ carry an effect of at least 0.1. At the window's last step the median effect is
 0.48 and 88.5% of the queries carry an effect of at least 0.1, so both the
 level and the effect can be scored.
 
-## Repaired regime switching (dot-RegimeSwitch-v1 1.1.0, prepared)
+## Repaired regime switching (dot-RegimeSwitch-v1 1.1.0)
 
-**Status: built for release with package 0.3.0, not minted yet.** The registry names
-version 1.1.0 with the sentinel `LOCAL` in place of a Zenodo record. Until the mint
-`load_benchmark("dot-RegimeSwitch-v1")` reads a local build from the cache, and
-`version="1.0.0"` loads the released files, in which every variable is independent
-noise (see the erratum below).
+**Released on 2026-11-26** as Zenodo record `24570950` (`10.5281/zenodo.24570950`), a
+new version under the suite's concept DOI `10.5281/zenodo.20846073`, and on the
+Hugging Face Hub under the tag `v1.1.0`. From package 0.3.0 on
+`load_benchmark("dot-RegimeSwitch-v1")` returns this version, and
+`version="1.0.0"` loads the first release, in which every variable is independent
+noise (see the erratum below). The two versions hold different trajectories, targets
+and query rows, so their numbers are not comparable.
 
 Version 1.1.0 is the recipe of version 1.0.0 with mechanisms that read their
 parents and with arms that share their noise. It keeps the suite seed, the
@@ -175,7 +177,7 @@ the query, NaiveOLS leads the mean by 1.3 points at lag zero and not at lag one.
 The oracle scores 1.0, so the room is real, but a contemporaneous linear
 regression is a weak model of an effect that builds up over a window in a
 nonlinear system that switches regimes.
-`results/reference/regime_v1_1/README.md` has the tables and the steps before a
+`results/reference/regime_v1_1/README.md` has the tables and the record of the
 release.
 
 ## v1.0.0 field semantics and known issues (erratum)
@@ -194,8 +196,8 @@ silently patched**. They are fixed in the generator for any v1.1+ build.
 | Continuous (harness, fixed) | `query_time` is normalized time, `index / (T - 1)`, while Identifiability stores `index / T`; `evaluation.query_obs_levels` and `dotime-eval-chronos` decoded every fraction as `index / T` | the effect-scored `y_obs` (and the Chronos forecast horizon) sat one step past the query on **92.5%** of episodes, every query at index 100 to 198; level-scored rows of the other baselines are unaffected | each suite declares its encoding (`SuiteMetadata.query_time_encoding`) and consumers read `Episode.query_time_idx` |
 | Continuous (1.0.0) | the query target is drawn uniformly over the three observable variables, treatment included, so **34.0%** of episodes are **self-queries** (query on the intervened variable); **16.6%** of all episodes are in-window self-queries whose target equals the do-value (the suite is hard-intervention only) and 17.4% are post-window self-queries (relaxation after release); 33.7% of in-window queries are self-queries | the published Continuous rows **include** them, which favours any model that receives the intervention value as input on the in-window subset | `Episode.is_self_query`; `--exclude-self-queries` on the eval harness; per-episode `self_query` / `in_window` / `window_end_idx` in `results/reference/dot-Continuous-v1.0.0_query_sidecar.jsonl`; 1.1.0+ builds tag them in metadata |
 | Identifiability (1.0.0 and 1.1.0) | every episode is queried at **offset 0** (the onset step); the paper's per-structure offset protocol was used by the model's loaders, not by the release build | with true counterfactuals (1.1.0) the effect at the query is exactly 0 for `mediator`, `observed_confounder`, `unobserved_confounder` and ~1/3 of `front_door`/`confounder_mediator` episodes, so the effect metric is defined only for structures with an instantaneous A→Y edge | filter `|effect| >= 0.1` (done by `direction_accuracy`); a 1.2.0 protocol with path-length offsets is prepared |
-| Identifiability / RegimeSwitch / Generic (1.0.0) | the two arms are **independent noise draws** from the same SCM (interventional twins), so `y_int - y_obs` is not a per-episode counterfactual effect | effect-based analyses on these files score a noisy twin difference | Identifiability 1.1.0 shares the noise across arms; the continuous suite always did |
-| RegimeSwitch, Generic-100k (1.0.0) | every regime-switching SCM is **per-variable independent noise**. The builder renamed each regime's nodes to `X0..X{N-1}` but kept the mechanism weights under the old names, so no mechanism reads its parents. This is all 9,999 RegimeSwitch episodes and the 15,041 regime-switching episodes (15.0%) of Generic-100k. In the released RegimeSwitch `x_obs` the median absolute lag-1 autocorrelation is 0.048, 1 of 64,830 variables exceeds 0.3, and the median cross-correlation is 0.048 | these episodes have no temporal or causal structure. An intervention changes only the treated variable, so every other variable, the query target included, has the same distribution in both arms and a true effect of 0 | nothing to recover from v1 data. Drop the regime share of Generic-100k with the recipe below. New builds can opt into the fix |
+| Identifiability / RegimeSwitch / Generic (1.0.0) | the two arms are **independent noise draws** from the same SCM (interventional twins), so `y_int - y_obs` is not a per-episode counterfactual effect | effect-based analyses on these files score a noisy twin difference | Identifiability and RegimeSwitch share the noise across arms from 1.1.0 on, and the continuous suite always did |
+| RegimeSwitch, Generic-100k (1.0.0) | every regime-switching SCM is **per-variable independent noise**. The builder renamed each regime's nodes to `X0..X{N-1}` but kept the mechanism weights under the old names, so no mechanism reads its parents. This is all 9,999 RegimeSwitch episodes and the 15,041 regime-switching episodes (15.0%) of Generic-100k. In the released RegimeSwitch `x_obs` the median absolute lag-1 autocorrelation is 0.048, 1 of 64,830 variables exceeds 0.3, and the median cross-correlation is 0.048 | these episodes have no temporal or causal structure. An intervention changes only the treated variable, so every other variable, the query target included, has the same distribution in both arms and a true effect of 0 | nothing to recover from v1 data. RegimeSwitch 1.1.0 is rebuilt with the fix. Drop the regime share of Generic-100k with the recipe below. New builds can opt into the fix |
 
 `x_int`, `y_true`, `query_target`, and `intervention_*` are correct and mutually
 consistent in all four v1 suites, apart from the zeroed (diverged) episodes in the
@@ -229,7 +231,7 @@ episodes and 62.7% of the Generic regime share diverge, and at `N_max=60, K_max=
 and 97% do (`results/reference/regime_weights/`). Together with the recommended
 hardening the same measurement finds 1 diverged episode in 600 and 1 in 300 at the
 default prior, and none in 150 and in 90 at `N_max=60, K_max=8`. Version 1.1.0 of
-`dot-RegimeSwitch-v1` is prepared with both settings and with shared noise (see
+`dot-RegimeSwitch-v1` is built with both settings and with shared noise (see
 *Repaired regime switching* above). The regime share of `dot-Generic-100k` has no repaired version.
 
 ## Ground-truth graphs

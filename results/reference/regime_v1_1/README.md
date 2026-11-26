@@ -1,7 +1,10 @@
-# dot-RegimeSwitch-v1 version 1.1.0 (built for release, not minted yet)
+# dot-RegimeSwitch-v1 version 1.1.0
 
-Status on 2026-11-27 SGT: the release build is made with package 0.3.0 and validated. It is not
-on Zenodo or the Hugging Face Hub yet, and the public registry still serves version 1.0.0.
+Released on 2026-11-26 (UTC). The Zenodo record is `24570950` (DOI `10.5281/zenodo.24570950`),
+a new version under the concept DOI `10.5281/zenodo.20846073` of the suite. The Hugging Face
+mirror is `thummd/dot-RegimeSwitch-v1` at the tag `v1.1.0`. From package 0.3.0 on the registry
+serves this version, and `load_benchmark("dot-RegimeSwitch-v1", version="1.0.0")` loads the
+first release.
 
 Version 1.1.0 repairs the two defects of version 1.0.0. Its regime-switching mechanisms read no
 parents, so every variable of the released suite is independent noise, and its two arms are
@@ -43,7 +46,8 @@ The release build is not in the repository (158 MB). It was built from a clean c
 the shard digests `28249c5b9e4c27e2cc7a5a0dfc29eebd` and `4c09485d68c27c158d6a26f184ea19d9`.
 An earlier build of the same recipe with package 0.2.0 (`7c55f59`) has the same two digests.
 The three result files below were written from the release build and are equal, number for
-number, to the ones of that earlier build.
+number, to the ones of that earlier build. The public files are this build, byte for byte
+(release record below).
 
 ```bash
 python scripts/build_release.py --config scripts/release_config_regime_v1_1.yaml \
@@ -57,6 +61,14 @@ python results/reference/regime_v1_1/scripts/reference_rows.py \
     --per-lag-out results/reference/regime_v1_1/regime_v1_1_per_lag.json
 python results/reference/regime_v1_1/scripts/effect_persistence.py --per-block 200 \
     --workers 10 --out results/reference/regime_v1_1/design_pilot.json
+```
+
+`reference_rows.py` scores a local build without touching the cache. It did so before the
+registry named the version, and it does so for a rebuild now. On the released files the
+console script of the package prints the same rows:
+
+```bash
+dotime-eval-reference --suite dot-RegimeSwitch-v1 --version 1.1.0 --out rows.json
 ```
 
 ## What holds for the release build
@@ -146,26 +158,29 @@ Two things follow, and both limit what the suite shows today.
   fills it. A contemporaneous linear regression is a weak model of an effect that builds up over
   a window of at least ten steps in a nonlinear system that switches regimes.
 
-## Release steps
+## Release record
 
-1. Done: package version 0.3.0 (`deba4d8`), release build from a clean checkout,
+1. Package version 0.3.0 (`deba4d8`), then the release build from a clean checkout, with
    `validate_build.py` and `reference_rows.py` on it.
-2. Name the new version in the registry before the upload: the registry description is the
-   text that `scripts/upload_zenodo.py` sends to Zenodo. Until the mint its record id is the
-   sentinel `LOCAL`.
-3. Upload with the tokens, from the repository root, with `PY` set to the interpreter that has
-   this checkout installed. `scripts/zenodo_update.py` adds the version to the existing record
-   `20919599`. `scripts/upload_huggingface.py` moves `main` of the mirror to the new files and
-   tags them `v1.1.0`, and version 1.0.0 stays at its tag `v1.0.0`. The script stops before any
-   upload if the registry of that interpreter does not name version 1.1.0, and `--check` prints
-   the title and the description that Zenodo will publish:
-
-   ```bash
-   set -a; . ./.env; set +a
-   PY=<python> bash scripts/release_2026_10.sh --check output/regime_v1_1/release_0.3.0
-   PY=<python> bash scripts/release_2026_10.sh output/regime_v1_1/release_0.3.0
-   ```
-
-4. After the mint: the record id and the Hugging Face repository in the registry, the changelog
-   heading and the date in `CITATION.cff`, the released wording in `docs/benchmarks.md`, then the
-   tag `v0.3.0`, which publishes the package.
+2. The registry named version 1.1.0 with the sentinel `LOCAL` before the upload (`385d9f7`),
+   because its description is the text that `scripts/upload_zenodo.py` sends to Zenodo.
+   `scripts/release_2026_10.sh` refuses a registry that does not name the version it uploads.
+3. Upload on 2026-11-26 (UTC) with `scripts/release_2026_10.sh`, first with `--check`.
+   `scripts/zenodo_update.py` added the version to the concept of record `20919599`, which is
+   version 1.0.0. `scripts/upload_huggingface.py` moved `main` of the mirror to the new files
+   and tagged them `v1.1.0`. It also wrote the dataset card `README.md` into the suite
+   directory, so both hosts hold five files. Version 1.0.0 stays at record `20919599` and at
+   the tag `v1.0.0`.
+4. The registry then got the record id and the mirror. Checks on the public copies with that
+   registry, each from an empty cache and from a clean checkout:
+   - The five files of record `24570950` and of the tag `v1.1.0` are equal, byte for byte, to
+     the release build (`manifest.json` has the md5 `066a821ee81642e5cc65e0de1540c41a`).
+   - `load_benchmark("dot-RegimeSwitch-v1")` downloads the tag and returns the 9,999 episodes
+     of version 1.1.0. The download of the Zenodo record parses to the same 9,999 episodes.
+     `version="1.0.0"` returns the 9,999 episodes of the first release, from files that are
+     equal to the copy downloaded before the upload.
+   - `dotime-eval-reference` on the downloaded tag gives `regime_v1_1_cpu.json` without its
+     `build` block, number for number. `reference_rows.py` on the release build writes both
+     result files again, apart from the file name that the per-lag file records for its
+     reference.
+5. Package 0.3.0 is the first package version whose registry serves 1.1.0.

@@ -21,7 +21,10 @@ script (ships with the package), pinning both, e.g.
 `dotime-eval-reference --suite dot-Continuous-v1 --version 1.0.0 --dir-target level`.
 Since 0.2.0 the default direction target is `auto`, which scores the sign of the
 effect on suites whose arms share their noise, and `dot-Identifiability-v1`
-loads 1.2.0 by default. The backing JSONs (with 95% episode-cluster
+loads 1.2.0 by default. From 0.3.0 on `dot-RegimeSwitch-v1` loads 1.1.0 by
+default. Its column below is version 1.0.0, in which every variable is
+independent noise (see the erratum in `benchmarks.md`), and the reference rows
+of 1.1.0 are in `results/reference/regime_v1_1/`. The backing JSONs (with 95% episode-cluster
 bootstrap CIs) live under [`results/reference/`](https://github.com/thummd/dotime/tree/main/results/reference).
 
 | Baseline | Identifiability | RegimeSwitch | Continuous | Generic |
