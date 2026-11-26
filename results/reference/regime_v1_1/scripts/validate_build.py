@@ -12,8 +12,9 @@ hold.
    rule and a passed target QA.
 2. Targets: per-arm statistics of the stored episodes, the effect included,
    logged and asserted (``dotime.qa.target_qa``).
-3. Episodes: none has a zeroed arm, all read their parents, and the two arms of
-   every episode agree exactly before the onset. Every query sits at the last
+3. Episodes: none has a zeroed arm or a value above the amplitude limit, all
+   read their parents, and the two arms of every episode agree exactly before
+   the onset. Every query sits at the last
    step of its intervention window on the untreated variable that the
    intervention moves most, and ``y_true`` is the interventional value there.
    A query that the recorded graph cannot reach from the treatment has an
@@ -97,7 +98,14 @@ def check_files(suite_dir: Path, config_text: str, cfg: dict[str, Any]) -> dict[
     assert manifest["config_hash"] == config_hash, "the build is not from this config"
     assert manifest["seed"] == cfg["seed"]
     assert cfg["pair_mode"] == "counterfactual", "this validation is for shared-noise arms"
-    for key in ("prior_config", "pair_mode", "query_row", "record_graph", "stability_retries"):
+    for key in (
+        "prior_config",
+        "pair_mode",
+        "query_row",
+        "record_graph",
+        "stability_retries",
+        "amplitude_limit",
+    ):
         assert manifest[key] == cfg[key], f"manifest {key} differs from the config"
     assert manifest["target_qa"]["passed"] is True, "the build's target QA did not pass"
     return manifest
@@ -125,7 +133,8 @@ def check_episodes(episodes: list, cfg: dict[str, Any], threshold: float) -> dic
     types: Counter = Counter()
     lags: Counter = Counter()
     n_vars: Counter = Counter()
-    gaps, effects, switches = [], [], []
+    gaps, effects, switches, peaks = [], [], [], []
+    limit = float(cfg["amplitude_limit"])
     effect_by_type: dict[str, list[float]] = {}
     reachable = unreachable_with_effect = 0
     acf_above = acf_total = 0
@@ -142,6 +151,11 @@ def check_episodes(episodes: list, cfg: dict[str, Any], threshold: float) -> dic
         assert bool(torch.isfinite(ep.x_int).all()), row
         assert ep.x_obs.shape == ep.x_int.shape, row
         assert ep.x_obs.shape[0] == cfg["T"], row
+        peak = max(float(ep.x_obs.abs().max()), float(ep.x_int.abs().max()))
+        assert peak <= limit, f"episode {row} peaks at {peak:.1f}, above the limit {limit}"
+        assert meta["amplitude_limit"] == limit, row
+        assert meta["over_amplitude_limit"] is False, row
+        peaks.append(peak)
         assert meta["graph"]["reads_parents"] is True, f"episode {row} does not read its parents"
         onset, end = min(ep.intervention.times), max(ep.intervention.times)
         assert torch.equal(ep.x_obs[:onset], ep.x_int[:onset]), (
@@ -187,8 +201,17 @@ def check_episodes(episodes: list, cfg: dict[str, Any], threshold: float) -> dic
     share = acf_above / acf_total
     assert share > ACF_SHARE_FLOOR, f"only {share:.3f} of the variables have lag structure"
     values = np.asarray(effects)
+    targets = np.asarray([float(ep.y_true[0]) for ep in episodes])
     return {
         "n_episodes": len(episodes),
+        "amplitude_limit": limit,
+        "peak_max": float(np.max(peaks)),
+        "peak_quantile_999": float(np.quantile(peaks, 0.999)),
+        "target_abs_max": float(np.abs(targets).max()),
+        "target_variance": float(targets.var()),
+        "target_variance_without_10_largest": float(
+            np.delete(targets, np.argsort(-np.abs(targets))[:10]).var()
+        ),
         "per_density": dict(labels),
         "intervention_types": dict(types),
         "n_vars": {str(k): v for k, v in sorted(n_vars.items())},
@@ -310,6 +333,12 @@ def main(argv: list[str] | None = None) -> None:
     print(
         f"[validate] {summary['n_episodes']} episodes: no zeroed arm, all read their parents, arms "
         f"equal before the onset, most affected variable queried at the window's end"
+    )
+    print(
+        f"[validate] largest value {summary['peak_max']:.1f} (limit {summary['amplitude_limit']:.0f}), "
+        f"largest target {summary['target_abs_max']:.1f}, target variance "
+        f"{summary['target_variance']:.3f} ({summary['target_variance_without_10_largest']:.3f} "
+        f"without the 10 largest)"
     )
     print(
         f"[validate] effect >= {summary['effect_threshold']} in "

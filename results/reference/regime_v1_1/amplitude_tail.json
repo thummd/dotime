@@ -1,0 +1,126 @@
+{
+ "created_utc": "2026-11-26T19:12:43Z",
+ "git_head": "bbccbf25666e2ca333c19668357a4a7ee628873f",
+ "build": {
+  "suite_dir": "dot-RegimeSwitch-v1-1.1.0",
+  "version": "1.1.0",
+  "config_hash": "4b6c2a2928090334",
+  "pair_mode": "counterfactual",
+  "amplitude_limit": null,
+  "shards_md5": [
+   "2e4679118b743730fca16cc075e35b6e",
+   "12ba5a8de188e9604277ee492da4ef92"
+  ]
+ },
+ "summary": {
+  "n_episodes": 9999,
+  "quantile_levels": [
+   0.5,
+   0.9,
+   0.99,
+   0.999,
+   1.0
+  ],
+  "peak_quantiles": [
+   5.006557464599609,
+   10.664102363586426,
+   19.20431510925294,
+   38.19995462036159,
+   322.7638854980469
+  ],
+  "peak_above": {
+   "20": 83,
+   "50": 8,
+   "100": 6,
+   "200": 2
+  },
+  "target_abs_quantiles": [
+   0.7561550140380859,
+   2.3280251979827904,
+   5.657887935638429,
+   11.779421205520897,
+   236.42547607421875
+  ],
+  "target_abs_above": {
+   "20": 3,
+   "50": 1,
+   "100": 1,
+   "200": 1
+  },
+  "target_variance": 7.909237252212774,
+  "target_variance_without_largest": 2.0766428675116932,
+  "n_largest": 10,
+  "largest_peaks": [
+   {
+    "row": 4954,
+    "structure": "regime_3",
+    "n_vars": 9,
+    "peak": 322.7638854980469,
+    "target": -1.44111967086792
+   },
+   {
+    "row": 9087,
+    "structure": "regime_5",
+    "n_vars": 7,
+    "peak": 317.8130187988281,
+    "target": 236.42547607421875
+   },
+   {
+    "row": 4310,
+    "structure": "regime_3",
+    "n_vars": 10,
+    "peak": 191.3955078125,
+    "target": 0.17625127732753754
+   },
+   {
+    "row": 2445,
+    "structure": "regime_2",
+    "n_vars": 6,
+    "peak": 150.02691650390625,
+    "target": 0.5889978408813477
+   },
+   {
+    "row": 4678,
+    "structure": "regime_3",
+    "n_vars": 4,
+    "peak": 145.4370574951172,
+    "target": -0.2780880630016327
+   },
+   {
+    "row": 735,
+    "structure": "regime_2",
+    "n_vars": 7,
+    "peak": 145.3240966796875,
+    "target": 12.43631649017334
+   },
+   {
+    "row": 2821,
+    "structure": "regime_2",
+    "n_vars": 8,
+    "peak": 88.55426788330078,
+    "target": -0.830609917640686
+   },
+   {
+    "row": 4137,
+    "structure": "regime_3",
+    "n_vars": 3,
+    "peak": 60.74158477783203,
+    "target": 22.50775146484375
+   },
+   {
+    "row": 6282,
+    "structure": "regime_3",
+    "n_vars": 6,
+    "peak": 48.639007568359375,
+    "target": 0.7448464035987854
+   },
+   {
+    "row": 3392,
+    "structure": "regime_3",
+    "n_vars": 7,
+    "peak": 38.833648681640625,
+    "target": 0.7482816576957703
+   }
+  ]
+ }
+}
