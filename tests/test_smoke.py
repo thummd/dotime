@@ -517,7 +517,15 @@ def test_load_benchmark_pins_prior_versions(tmp_path, monkeypatch):
     with pytest.raises(ValueError, match="versions"):
         advanced.for_version("0.0.1")
     # End to end through the loader against a seeded local cache for the pinned version.
-    _seed_local_suite(tmp_path, "dot-Identifiability-v1")  # writes <name>-<registered version>
+    # The registry entry is patched to 9.9.9 at this point, so the cache has to be seeded
+    # for the pinned release explicitly. A cache miss would send the loader to the network,
+    # which a unit test must never do, so both download routes fail loudly instead.
+    from unittest.mock import Mock
+
+    refuse = Mock(side_effect=AssertionError("the pinned suite must come from the seeded cache"))
+    monkeypatch.setattr(B, "_download_from_hf", refuse)
+    monkeypatch.setattr(B, "_download_from_zenodo", refuse)
+    _seed_local_suite_version(tmp_path, "dot-Identifiability-v1", base.version)
     suite = B.load_benchmark("dot-Identifiability-v1", version=base.version, cache_dir=tmp_path)
     assert suite.meta.version == base.version
 
