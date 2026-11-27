@@ -558,14 +558,16 @@ structures, `T = 200`, episode count (9,999) and suite seed of
 `dot-Continuous-v1` rows with the same index bit for bit.
 
 **Pairing in the manifest.** The released manifest of `dot-ContinuousIrregular-v1`
-1.0.0 records `pair_mode: interventional`. The build script writes that default
-whenever a config sets no `pair_mode`, and the continuous-time generator does not
-read the key: it always shares one noise realisation across the two arms. The
+1.0.0 records `pair_mode: interventional`. The build script of that release wrote
+this default whenever a config set no `pair_mode`, and the continuous-time generator
+does not read the key: it always shares one noise realisation across the two arms. The
 targets of the suite are therefore counterfactuals. The arms agree before the onset
 in all 9,999 episodes (`results/reference/audit_2026-09/suite_invariants_2026_10.json`).
 The evaluation scripts do not read the manifest field either. They measure the
 pairing on the loaded episodes (`dotime.evaluation.check_shared_noise`). The
-manifest belongs to an immutable release and stays as it is.
+manifest belongs to an immutable release and stays as it is. The build script now
+records `counterfactual` for a continuous-time suite and refuses a continuous-time
+config that asks for `pair_mode: interventional`. This change follows package 0.3.0.
 
 On 300 episodes per structure and schedule, every value stays finite and no
 episode of the irregular schedules exceeds |x| = 10. Without sub-steps, 30% of

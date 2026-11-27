@@ -417,6 +417,36 @@ def _expand_observation_cells(cfg: dict, specs: list[dict]) -> list[dict]:
     ]
 
 
+def suite_pair_mode(cfg: dict) -> str:
+    """Return how a suite config pairs the two arms of an episode.
+
+    The manifest of a build records this value, so it has to say what the
+    generator does and not only what the config asks for. The continuous-time
+    generator draws one noise realisation per episode and uses it in both arms
+    whatever the config says, so its suites are always counterfactual.
+
+    Args:
+        cfg: The config of one suite, with its ``generator`` key.
+
+    Returns:
+        ``"counterfactual"`` when the two arms share their noise, otherwise
+        ``"interventional"``.
+
+    Raises:
+        ValueError: If a continuous-time suite asks for a pairing that its
+            generator cannot produce.
+    """
+    requested = cfg.get("pair_mode")
+    if cfg["generator"] == "continuous":
+        if requested not in (None, "counterfactual"):
+            raise ValueError(
+                "generator: continuous always shares the noise of the two arms, so "
+                f"pair_mode must be counterfactual or absent, got {requested!r}"
+            )
+        return "counterfactual"
+    return "interventional" if requested is None else requested
+
+
 def episode_specs(cfg: dict, suite_seed: int, scale: float) -> list[dict]:
     """Build the per-episode spec list (deterministic seeds) for a suite config."""
     gen, t_len = cfg["generator"], cfg.get("T", 200)
@@ -473,6 +503,9 @@ def episode_specs(cfg: dict, suite_seed: int, scale: float) -> list[dict]:
                     }
                 )
     elif gen == "continuous":
+        # The builder of this generator never reads pair_mode, so a request it
+        # cannot honour has to fail here and not pass silently into a manifest.
+        suite_pair_mode(cfg)
         structures = cfg["structures"]
         per = max(1, scaled(cfg["n_episodes"], scale) // len(structures))
         for structure in structures:

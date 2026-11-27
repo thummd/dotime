@@ -40,7 +40,7 @@ import torch
 import yaml
 
 from dotime import __version__, _release_io
-from dotime._build import _OPT_IN_SPEC_KEYS, build_suite
+from dotime._build import _OPT_IN_SPEC_KEYS, build_suite, suite_pair_mode
 from dotime.benchmarks import SuiteMetadata
 from dotime.qa import target_qa
 
@@ -298,7 +298,9 @@ def main(argv: list[str] | None = None) -> int:
             seed=seed,
             extra_manifest={
                 "generator": cfg["generator"],
-                "pair_mode": cfg.get("pair_mode", "interventional"),
+                # The pairing the generator produces. A continuous-time suite
+                # shares its noise whether or not its config says so.
+                "pair_mode": suite_pair_mode(cfg),
                 "stability_retries": int(cfg.get("stability_retries", 0)),
                 "config_hash": config_hash,
                 "scale": args.scale,

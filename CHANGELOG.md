@@ -18,8 +18,17 @@ All notable changes to `dotime` are documented here. The format follows
 ### Changed
 - `docs/benchmarks.md` notes that the released manifest of `dot-ContinuousIrregular-v1`
   1.0.0 records `pair_mode: interventional` although the arms of the suite share their
-  noise. The field is the default of the build script, the continuous-time generator does
+  noise. The field was the default of the build script, the continuous-time generator does
   not read it, and the evaluation scripts measure the pairing on the episodes.
+
+### Fixed
+- The manifest of a continuous-time suite records `pair_mode: counterfactual`.
+  `scripts/build_release.py` wrote `interventional`, its default for a config without the
+  key, although the continuous-time generator always shares the noise of the two arms.
+  `dotime._build.suite_pair_mode` returns the pairing that a suite config produces, and a
+  continuous-time config that asks for `pair_mode: interventional` is refused before any
+  episode is built. The episode specs of every released config are unchanged, and so are
+  the released files. The manifest of `dot-ContinuousIrregular-v1` 1.0.0 keeps its value.
 
 ## [0.3.0] - 2026-11-26
 

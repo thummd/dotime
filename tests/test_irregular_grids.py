@@ -410,6 +410,9 @@ def test_micro_build_of_the_irregular_release_config(tmp_path):
     manifest = json.loads((suite_dir / "manifest.json").read_text())
     assert manifest["schema_version"] == "2"
     assert manifest["seed"] == 20263719
+    # The released manifest says "interventional", the default the script wrote
+    # then. The generator shares the noise, which the episodes below confirm.
+    assert manifest["pair_mode"] == "counterfactual"
     croissant = json.loads((suite_dir / "croissant.json").read_text())
     ids = [f["@id"] for f in croissant["cr:recordSet"]["field"]]
     assert ids[-2:] == ["obs_times", "obs_mask"]
@@ -425,6 +428,7 @@ def test_micro_build_of_the_irregular_release_config(tmp_path):
     )
     suite = _release_io.read_suite(meta, suite_dir)
     assert len(suite) == 9
+    assert evaluation.check_shared_noise(suite).shared
     assert [ep.metadata["schedule"] for ep in suite] == ["regular", "jittered", "poisson"] * 3
     for ep in suite:
         assert ep.obs_mask is None

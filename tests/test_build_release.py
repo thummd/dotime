@@ -169,6 +169,44 @@ def test_identifiability_retry_seed_stays_in_numpy_range():
         assert s != big
 
 
+def test_suite_pair_mode_reports_what_the_generator_does():
+    """The pairing in a manifest is the generator's, not only the config's."""
+    from dotime._build import suite_pair_mode
+
+    # The continuous-time generator always shares the noise of the two arms.
+    assert suite_pair_mode({"generator": "continuous"}) == "counterfactual"
+    assert (
+        suite_pair_mode({"generator": "continuous", "pair_mode": "counterfactual"})
+        == "counterfactual"
+    )
+    # The other generators pair as their config says, with independent arms by default.
+    for generator in ("identifiability", "generic", "regime"):
+        assert suite_pair_mode({"generator": generator}) == "interventional"
+        cfg = {"generator": generator, "pair_mode": "counterfactual"}
+        assert suite_pair_mode(cfg) == "counterfactual"
+
+
+def test_continuous_suite_refuses_a_pairing_it_cannot_produce():
+    """A continuous-time config that asks for independent arms fails before any episode."""
+    from dotime._build import episode_specs, suite_pair_mode
+
+    cfg = {
+        "generator": "continuous",
+        "T": 40,
+        "n_episodes": 3,
+        "structures": ["back_door", "front_door", "instrumental_variable"],
+        "pair_mode": "interventional",
+    }
+    with pytest.raises(ValueError, match="always shares the noise"):
+        suite_pair_mode(cfg)
+    with pytest.raises(ValueError, match="always shares the noise"):
+        episode_specs(cfg, 1, 1.0)
+    # Without the key the specs are those of the released continuous-time suites.
+    del cfg["pair_mode"]
+    assert [s["kind"] for s in episode_specs(cfg, 1, 1.0)] == ["continuous"] * 3
+    assert all("pair_mode" not in s for s in episode_specs(cfg, 1, 1.0))
+
+
 def test_identifiability_specs_carry_per_structure_query_offsets():
     from dotime._build import episode_specs
 
